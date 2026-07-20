@@ -29,58 +29,111 @@ A comprehensive platform for issuing, verifying, and managing tamper-proof digit
 
 ## Architecture
 
+### Monorepo Structure (Turborepo)
+```
+┌────────────────────────────────────────────────────────┐
+│         Root Workspace (Turborepo orchestration)        │
+│            turbo.json | package.json | pnpm            │
+└────────────────────────────────────────────────────────┘
+         ↓              ↓              ↓
+    ┌────────┐    ┌────────┐    ┌────────────┐
+    │ apps/  │    │packages│    │  Tools &   │
+    │  web   │    │ ├─ ui  │    │   Config   │
+    │ apps/  │    │ ├─shared│    │            │
+    │  api   │    │ └─contract│  │            │
+    └────────┘    └────────┘    └────────────┘
+```
+
+### System Architecture
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js 16)                     │
-│  - Verifier Portal   - Issuer Dashboard   - Admin Dashboard  │
+│     Frontend (Next.js 16, @certfyi/web, apps/web)           │
+│  - Verifier Portal   - Issuer Dashboard   - Admin Dashboard │
 └──────────────────────┬──────────────────────────────────────┘
                        │
-┌──────────────────────────────────────────────────────────────┐
-│              Backend API & Services (Next.js)                │
-│  - Document Anchoring  - Batch Processing  - Verification   │
-└──────────────────────┬───────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-┌───────┴────────┐ ┌──┴──────────┐ ┌─┴─────────────────────┐
-│  PostgreSQL    │ │  Blockchain │ │   Blob Storage        │
-│  Database      │ │  (Ethereum) │ │   (File Upload)       │
-└────────────────┘ └─────────────┘ └───────────────────────┘
+            ┌──────────┴──────────┐
+            ↓                     ↓
+┌───────────────────────┐  ┌──────────────────────┐
+│  Shared Layer         │  │  UI Components       │
+│  @certfyi/shared      │  │  @certfyi/ui         │
+│ ├─ types.ts          │  │ ├─ shadcn/ui        │
+│ ├─ schemas.ts        │  │ ├─ custom           │
+│ ├─ constants.ts      │  │ └─ theme system    │
+└───────────┬───────────┘  └──────────────────────┘
+            │
+┌───────────┴──────────────────────────────────────┐
+│  API Endpoints & Services (apps/web/app/api)     │
+│  - Document Anchoring  - Verification - PDF Ops  │
+└──────────────┬───────────────────────────────────┘
+               │
+    ┌──────────┼──────────┐
+    ↓          ↓          ↓
+┌─────────┐ ┌──────────┐ ┌──────────────┐
+│Database │ │Blockchain│ │  Blob        │
+│Postgres │ │ Ethereum │ │  Storage     │
+│         │ │ (L1/L2)  │ │  (Vercel)    │
+└─────────┘ └──────────┘ └──────────────┘
 ```
 
 ## Technology Stack
 
-### Frontend
+### Build & Monorepo
+- **Monorepo**: Turborepo with pnpm workspaces
+- **Build System**: Turbo with smart caching & parallelization
+- **Package Manager**: pnpm 9.0+
+- **Node.js**: 18.0.0 or higher
+
+### Frontend (`apps/web`)
 - **Framework**: Next.js 16 with App Router
-- **UI Components**: shadcn/ui with Tailwind CSS
-- **Styling**: Tailwind CSS with custom design tokens
-- **State Management**: React Hooks + SWR
-- **Type Safety**: TypeScript
+- **UI Components**: shadcn/ui (built-in components)
+- **Styling**: Tailwind CSS v4 with custom design tokens
+- **State Management**: React Hooks + SWR + Zustand
+- **Wallet**: wagmi + RainbowKit (MetaMask integration)
+- **Type Safety**: TypeScript 5.3+
 
-### Backend
-- **Runtime**: Node.js with Next.js API Routes
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: Session-based with secure tokens
-- **File Storage**: Vercel Blob
+### UI Package (`packages/ui`)
+- **shadcn/ui Components**: Button, Card, Dialog, Input, etc.
+- **Tailwind CSS**: Responsive design system
+- **Custom Components**: Header, Logo, ThemeToggleInline
+- **Barrel Exports**: Clean unified imports
 
-### Smart Contracts
+### Shared Package (`packages/shared`)
+- **Types**: TypeScript interfaces for Document, Issuer, VerificationResult
+- **Validation**: Zod schemas for API/form validation
+- **Constants**: Blockchain addresses, API endpoints, chains
+- **Barrel Exports**: Centralized package interface
+
+### Backend Services
+- **API Routes**: Next.js API routes (`apps/web/app/api`)
+- **Database**: PostgreSQL (configured for Prisma ORM)
+- **Authentication**: Session-based with MetaMask wallet
+- **File Storage**: Vercel Blob for PDF uploads
+- **NestJS**: Backend scaffolded in `apps/api` (ready for expansion)
+
+### Smart Contracts (`packages/contracts`)
 - **Language**: Solidity 0.8.19
 - **Network**: Ethereum (Sepolia testnet / Mainnet)
+- **Framework**: Hardhat/Foundry
 - **Security**: OpenZeppelin contracts
-- **Features**: Merkle tree batching, revocation, access control
+- **Features**: 
+  - Merkle tree batching (100+ documents per transaction)
+  - Document revocation with audit trail
+  - Access control & role management
 
-### Infrastructure
-- **Hosting**: Vercel (Edge Computing)
-- **DNS**: Custom domain with auto SSL
-- **Monitoring**: Sentry for error tracking
-- **Analytics**: Vercel Analytics
+### Infrastructure & Deployment
+- **Hosting**: Vercel (Edge Computing, auto-scaling)
+- **SSL/TLS**: Auto HTTPS with custom domain support
+- **Monitoring**: Error tracking & performance monitoring
+- **Analytics**: Web vitals & user analytics
+- **Wallet**: MetaMask via wagmi & RainbowKit
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ and pnpm
-- Git
-- Web3 wallet (for testing)
+- **Node.js** 18.0.0 or higher
+- **pnpm** 9.0.0 or higher (package manager)
+- **Git** for version control
+- **Web3 wallet** (MetaMask) for blockchain testing
 
 ### Installation
 
@@ -89,44 +142,122 @@ A comprehensive platform for issuing, verifying, and managing tamper-proof digit
 git clone https://github.com/yourrepo/certfyi
 cd certfyi
 
-# Install dependencies
+# Install dependencies (pnpm workspace)
 pnpm install
 
 # Configure environment variables
 cp .env.example .env.local
+# Edit .env.local with your blockchain RPC URL, database URL, etc.
 
-# Start development server
+# Start all development servers (web + api)
 pnpm dev
+
+# Or start specific app:
+pnpm dev:web      # Only frontend on port 3000
+pnpm dev:api      # Only backend (when available)
 ```
 
-Visit http://localhost:3000
+Visit **http://localhost:3000** to access the application.
+
+### Monorepo Commands
+
+```bash
+# Build all packages
+pnpm build
+
+# Build specific app
+pnpm build:web    # Build only web
+pnpm build:api    # Build only API (when ready)
+
+# Type checking
+pnpm type-check   # Check all packages
+
+# Linting
+pnpm lint         # Lint all packages
+
+# Testing
+pnpm test         # Run all tests
+pnpm test:watch   # Run tests in watch mode
+
+# Cleanup
+pnpm clean        # Remove all build artifacts and node_modules
+```
+
+See [MONOREPO.md](./MONOREPO.md) for comprehensive monorepo documentation.
 
 ## Project Structure
 
+This project uses **Turborepo** monorepo architecture for scalability and efficient builds:
+
 ```
 certfyi/
-├── app/                        # Next.js App Router
-│   ├── page.tsx               # Home page
-│   ├── verify/                # Verifier portal
-│   ├── issuer/                # Issuer dashboard
-│   ├── admin/                 # Admin dashboard
-│   └── api/                   # API routes
-│       ├── documents/         # Document operations
-│       └── pdf/              # PDF processing
-├── components/               # React components
-├── lib/                       # Utilities
-│   ├── contracts.ts          # Smart contract configs
-│   └── utils.ts              # Helper functions
-├── contracts/                # Smart contracts
-│   ├── src/
-│   │   └── DocumentAnchor.sol
-│   └── README.md
-├── public/                    # Static assets
-├── DATABASE.md               # Database schema
-├── SECURITY.md               # Security guidelines
-├── DEPLOYMENT.md             # Deployment guide
-└── README.md                 # This file
+├── apps/
+│   ├── web/                           # Next.js 16 Frontend (@certfyi/web)
+│   │   ├── app/                       # Next.js App Router
+│   │   │   ├── page.tsx              # Home page
+│   │   │   ├── verify/               # Verifier portal
+│   │   │   ├── issuer/               # Issuer dashboard
+│   │   │   ├── admin/                # Admin dashboard
+│   │   │   ├── api/                  # API routes
+│   │   │   │   ├── documents/        # Document operations
+│   │   │   │   └── pdf/              # PDF processing
+│   │   │   └── providers.tsx         # Client providers
+│   │   ├── components/               # React components
+│   │   │   ├── header.tsx
+│   │   │   ├── logo.tsx
+│   │   │   └── theme-toggle-inline.tsx
+│   │   ├── lib/                      # Utilities
+│   │   ├── public/                   # Static assets
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── api/                           # NestJS Backend (@certfyi/api) [Scaffolded]
+│       ├── src/
+│       ├── package.json
+│       └── tsconfig.json
+│
+├── packages/
+│   ├── shared/                        # Shared Types & Schemas (@certfyi/shared)
+│   │   ├── src/
+│   │   │   ├── types.ts              # TypeScript types
+│   │   │   ├── schemas.ts            # Zod validation schemas
+│   │   │   ├── constants.ts          # App constants
+│   │   │   └── index.ts              # Barrel exports
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── ui/                            # UI Components (@certfyi/ui)
+│   │   ├── src/
+│   │   │   ├── components/           # All shadcn/ui components
+│   │   │   └── index.ts              # Barrel exports
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── contracts/                     # Smart Contracts (@certfyi/contracts)
+│       ├── src/
+│       │   ├── DocumentAnchor.sol
+│       │   └── IssuerRegistry.sol
+│       ├── test/
+│       ├── scripts/
+│       ├── package.json
+│       └── hardhat.config.ts
+│
+├── turbo.json                         # Turbo build configuration
+├── pnpm-workspace.yaml               # pnpm workspace configuration
+├── package.json                       # Root workspace package
+├── MONOREPO.md                        # Detailed monorepo guide
+├── TURBOREPO_SETUP.md                # Turborepo setup documentation
+├── DATABASE.md                        # Database schema
+├── SECURITY.md                        # Security guidelines
+├── DEPLOYMENT.md                      # Deployment guide
+└── README.md                          # This file
 ```
+
+### Workspace Dependencies
+The monorepo uses **pnpm workspaces** with the following dependency structure:
+- `@certfyi/web` depends on `@certfyi/shared` and `@certfyi/ui`
+- `@certfyi/api` depends on `@certfyi/shared`
+- All packages are linked locally for fast development iteration
 
 ## API Endpoints
 
