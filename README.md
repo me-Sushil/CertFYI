@@ -1,8 +1,10 @@
 # CertFyi - Blockchain Document Verification Platform
 
-A comprehensive platform for issuing, verifying, and managing tamper-proof digital documents on the blockchain.
+A comprehensive platform for issuing, verifying, and managing tamper-proof digital documents on the blockchain using a **Turborepo monorepo** architecture.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourrepo%2Fcertfyi)
+
+> **Note**: This project uses **Turborepo** for managing multiple applications and shared packages. See [MONOREPO.md](./MONOREPO.md) for detailed architecture and development guide.
 
 ## Features
 
