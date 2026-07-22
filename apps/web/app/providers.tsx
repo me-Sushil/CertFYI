@@ -37,14 +37,6 @@ function createWagmiConfig() {
   })
 }
 
-console.log('Wagmi config created with chains:', [
-  mainnet,
-  polygon,
-  arbitrum,
-  base,
-  optimism,
-  ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [sepolia] : []),
-])
 
 function AuthedRainbowKit({ children }: { children: ReactNode }) {
   const reactQueryClient = useQueryClient()
