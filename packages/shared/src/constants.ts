@@ -34,6 +34,14 @@ export const ISSUER_STATUS = {
   REJECTED: 'rejected',
 } as const
 
+// Wallet access-request status values (SIWE auth flow)
+export const REQUEST_STATUS = {
+  NONE: 'NONE',
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const
+
 export const DOCUMENT_STATUS = {
   ISSUED: 'issued',
   REVOKED: 'revoked',

@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title DocumentAnchor
- * @dev Anchors document hashes and revocations on-chain with Merkle tree support
+ * @dev Anchors document hashes and revocations on-chain with Merkle tree support.
+ * Access is role-gated via OpenZeppelin AccessControl: ADMIN_ROLE manages ISSUER_ROLE
+ * membership (grantRole/revokeRole), and only ISSUER_ROLE holders may anchor documents.
  */
-contract DocumentAnchor is Ownable, ReentrancyGuard {
-    
+contract DocumentAnchor is AccessControl, ReentrancyGuard {
+
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant ISSUER_ROLE = keccak256("ISSUER_ROLE");
+
     // Document struct to store metadata
     struct Document {
         bytes32 hash;
@@ -32,7 +37,6 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
     mapping(bytes32 => Document) public documents;
     mapping(bytes32 => bool) public revokedDocuments;
     mapping(bytes32 => MerkleBatch) public merkleBatches;
-    mapping(address => bool) public approvedIssuers;
     mapping(bytes32 => bool) public usedMerkleRoots;
 
     // Events
@@ -57,29 +61,15 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
         string batchId
     );
 
-    event IssuerApproved(address indexed issuer);
-    event IssuerRevoked(address indexed issuer);
-
-    // Modifiers
-    modifier onlyApprovedIssuer() {
-        require(approvedIssuers[msg.sender], "Issuer not approved");
-        _;
-    }
-
     /**
-     * @dev Approve an issuer address
+     * @dev Deployer receives root ADMIN_ROLE (and DEFAULT_ADMIN_ROLE so it can
+     * manage ADMIN_ROLE membership itself). ADMIN_ROLE is set as the admin of
+     * ISSUER_ROLE, so any admin can grantRole(ISSUER_ROLE, wallet) directly.
      */
-    function approveIssuer(address _issuer) external onlyOwner {
-        approvedIssuers[_issuer] = true;
-        emit IssuerApproved(_issuer);
-    }
-
-    /**
-     * @dev Revoke an issuer's privileges
-     */
-    function revokeIssuer(address _issuer) external onlyOwner {
-        approvedIssuers[_issuer] = false;
-        emit IssuerRevoked(_issuer);
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(ISSUER_ROLE, ADMIN_ROLE);
     }
 
     /**
@@ -88,7 +78,7 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
     function anchorDocument(
         bytes32 _documentHash,
         string memory _documentType
-    ) external onlyApprovedIssuer nonReentrant {
+    ) external onlyRole(ISSUER_ROLE) nonReentrant {
         require(_documentHash != bytes32(0), "Invalid document hash");
         require(documents[_documentHash].timestamp == 0, "Document already anchored");
 
@@ -110,7 +100,7 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
         bytes32 _merkleRoot,
         uint256 _documentCount,
         string memory _batchId
-    ) external onlyApprovedIssuer nonReentrant {
+    ) external onlyRole(ISSUER_ROLE) nonReentrant {
         require(_merkleRoot != bytes32(0), "Invalid merkle root");
         require(!usedMerkleRoots[_merkleRoot], "Merkle root already used");
         require(_documentCount > 0, "Invalid document count");
@@ -133,7 +123,7 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
     function revokeDocument(bytes32 _documentHash) external nonReentrant {
         Document storage doc = documents[_documentHash];
         require(doc.timestamp != 0, "Document not found");
-        require(doc.issuer == msg.sender || msg.sender == owner(), "Only issuer or owner can revoke");
+        require(doc.issuer == msg.sender || hasRole(ADMIN_ROLE, msg.sender), "Only issuer or admin can revoke");
         require(!doc.revoked, "Document already revoked");
 
         doc.revoked = true;
@@ -190,10 +180,10 @@ contract DocumentAnchor is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Check if an issuer is approved
+     * @dev Check if an issuer is approved (holds ISSUER_ROLE)
      */
     function isIssuerApproved(address _issuer) external view returns (bool) {
-        return approvedIssuers[_issuer];
+        return hasRole(ISSUER_ROLE, _issuer);
     }
 
     /**

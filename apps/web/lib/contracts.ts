@@ -1,26 +1,61 @@
 /**
  * Smart contract configuration and utilities for CertFyi
  */
+import { keccak256, stringToBytes } from 'viem'
 
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || 
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
   '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE'
 
 export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111') // Sepolia
 
+// Role identifiers, matching `keccak256("ADMIN_ROLE")` / `keccak256("ISSUER_ROLE")` on-chain
+export const ADMIN_ROLE = keccak256(stringToBytes('ADMIN_ROLE'))
+export const ISSUER_ROLE = keccak256(stringToBytes('ISSUER_ROLE'))
+
 // Contract ABI (DocumentAnchor)
 export const CONTRACT_ABI = [
   {
-    inputs: [{ internalType: 'address', name: '_issuer', type: 'address' }],
-    name: 'approveIssuer',
+    inputs: [
+      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      { internalType: 'address', name: 'account', type: 'address' },
+    ],
+    name: 'grantRole',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: '_issuer', type: 'address' }],
-    name: 'revokeIssuer',
+    inputs: [
+      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      { internalType: 'address', name: 'account', type: 'address' },
+    ],
+    name: 'revokeRole',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      { internalType: 'address', name: 'account', type: 'address' },
+    ],
+    name: 'hasRole',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'ADMIN_ROLE',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'ISSUER_ROLE',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {

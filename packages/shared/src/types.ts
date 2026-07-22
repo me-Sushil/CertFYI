@@ -38,6 +38,15 @@ export interface VerificationResult {
   timestamp: Date
 }
 
+// Wallet-based access request status (SIWE-authenticated Issuer applicants).
+// 'NONE' is derived (no request record exists) rather than persisted.
+export type RequestStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface SessionUser {
+  address: string
+  role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED'
+}
+
 export interface AuditLog {
   id: string
   action: string

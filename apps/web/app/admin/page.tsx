@@ -1,40 +1,161 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import type { Hex } from 'viem'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users, FileText, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Users, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { useSession } from '@/lib/auth/use-session'
+import { CONTRACT_ADDRESS, CONTRACT_ABI, ISSUER_ROLE } from '@/lib/contracts'
+
+interface AccessRequestRow {
+  id: string
+  walletAddress: string
+  name: string | null
+  email: string | null
+  organization: string | null
+  createdAt: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+}
+
+async function fetchPendingRequests(): Promise<AccessRequestRow[]> {
+  const res = await fetch('/api/admin/requests')
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.requests ?? []
+}
+
+function PendingRequestCard({
+  request,
+  onSettled,
+}: {
+  request: AccessRequestRow
+  onSettled: () => void
+}) {
+  const [rejecting, setRejecting] = useState(false)
+  const [approvalError, setApprovalError] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+
+  const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract()
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+
+  useEffect(() => {
+    if (!isTxConfirmed || !txHash) return
+
+    let cancelled = false
+    setConfirming(true)
+    fetch('/api/admin/approve-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: request.walletAddress, txHash }),
+    })
+      .then(async (res) => {
+        if (cancelled) return
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          setApprovalError(data.error || 'Approval failed to record')
+          return
+        }
+        onSettled()
+      })
+      .finally(() => {
+        if (!cancelled) setConfirming(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTxConfirmed, txHash])
+
+  const handleApprove = () => {
+    setApprovalError(null)
+    writeContract({
+      address: CONTRACT_ADDRESS as Hex,
+      abi: CONTRACT_ABI,
+      functionName: 'grantRole',
+      args: [ISSUER_ROLE, request.walletAddress as Hex],
+    })
+  }
+
+  const handleReject = async () => {
+    setRejecting(true)
+    try {
+      const res = await fetch('/api/admin/reject-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: request.walletAddress }),
+      })
+      if (res.ok) onSettled()
+    } finally {
+      setRejecting(false)
+    }
+  }
+
+  const busy = isWritePending || confirming || rejecting
+
+  return (
+    <div className="p-6 rounded-lg border border-border bg-card">
+      <h3 className="font-semibold text-lg mb-1">
+        {request.organization || request.name || 'Unnamed Applicant'}
+      </h3>
+      <p className="text-sm text-muted-foreground mb-2">{request.email || 'No email provided'}</p>
+      <p className="font-mono text-xs text-muted-foreground mb-4 break-all">
+        {request.walletAddress}
+      </p>
+      <p className="text-xs text-muted-foreground mb-4">
+        Applied {new Date(request.createdAt).toLocaleString()}
+      </p>
+      {(writeError || approvalError) && (
+        <p className="text-xs text-destructive mb-3">
+          {approvalError || 'Transaction failed or was rejected'}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button size="sm" className="flex-1" onClick={handleApprove} disabled={busy}>
+          {(isWritePending || confirming) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Approve On-Chain
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1" onClick={handleReject} disabled={busy}>
+          Reject
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminDashboard() {
+  const router = useRouter()
+  const { role, isLoading: sessionLoading } = useSession()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!sessionLoading && role !== 'ADMIN') {
+      router.replace('/')
+    }
+  }, [sessionLoading, role, router])
+
+  const requestsQuery = useQuery({
+    queryKey: ['admin-requests'],
+    queryFn: fetchPendingRequests,
+    enabled: role === 'ADMIN',
+  })
+
+  const pendingApplications = requestsQuery.data ?? []
+
   const stats = [
     { label: 'Total Issuers', value: '42', icon: Users, color: 'text-primary' },
-    { label: 'Pending Approvals', value: '7', icon: AlertCircle, color: 'text-destructive' },
+    {
+      label: 'Pending Approvals',
+      value: String(pendingApplications.length),
+      icon: AlertCircle,
+      color: 'text-destructive',
+    },
     { label: 'Documents Anchored', value: '52,481', icon: FileText, color: 'text-accent' },
     { label: 'Active Users', value: '1,283', icon: CheckCircle, color: 'text-secondary' },
-  ]
-
-  const pendingApplications = [
-    {
-      id: 1,
-      organization: 'Harvard University',
-      contact: 'admin@harvard.edu',
-      applied: '2 hours ago',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      organization: 'Yale University',
-      contact: 'contact@yale.edu',
-      applied: '1 day ago',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      organization: 'Princeton University',
-      contact: 'support@princeton.edu',
-      applied: '2 days ago',
-      status: 'pending'
-    },
   ]
 
   const recentActivity = [
@@ -43,6 +164,14 @@ export default function AdminDashboard() {
     { action: 'Document Revoked', actor: 'Harvard', target: 'Diploma #4521', time: '2 hours ago' },
     { action: 'Issuer Suspended', actor: 'Admin', target: 'TestOrg Inc', time: '1 day ago' },
   ]
+
+  if (sessionLoading || role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,19 +214,25 @@ export default function AdminDashboard() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {pendingApplications.map((app) => (
-              <div key={app.id} className="p-6 rounded-lg border border-border bg-card">
-                <h3 className="font-semibold text-lg mb-1">{app.organization}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{app.contact}</p>
-                <p className="text-xs text-muted-foreground mb-4">Applied {app.applied}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1">Approve</Button>
-                  <Button size="sm" variant="outline" className="flex-1">Reject</Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          {requestsQuery.isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : pendingApplications.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No pending issuer applications.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {pendingApplications.map((request) => (
+                <PendingRequestCard
+                  key={request.id}
+                  request={request}
+                  onSettled={() => queryClient.invalidateQueries({ queryKey: ['admin-requests'] })}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Management Links */}

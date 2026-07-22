@@ -1,12 +1,30 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Plus, Upload, History, Settings, LogOut, BarChart3, FileText, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Upload, History, Settings, LogOut, BarChart3, FileText, CheckCircle, Loader2 } from 'lucide-react'
+import { useSession } from '@/lib/auth/use-session'
 
 export default function IssuerDashboard() {
+  const router = useRouter()
+  const { role, isLoading: sessionLoading } = useSession()
   const [activeTab, setActiveTab] = useState<'overview' | 'issue' | 'history'>('overview')
+
+  useEffect(() => {
+    if (!sessionLoading && role !== 'ISSUER') {
+      router.replace('/request-access')
+    }
+  }, [sessionLoading, role, router])
+
+  if (sessionLoading || role !== 'ISSUER') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    )
+  }
 
   const stats = [
     { label: 'Total Issued', value: '1,247', icon: FileText, color: 'text-primary' },

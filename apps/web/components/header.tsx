@@ -6,9 +6,18 @@ import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/use-session'
+
+function roleDestination(role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED' | null) {
+  if (role === 'ADMIN') return { href: '/admin', label: 'Admin Dashboard' }
+  if (role === 'ISSUER') return { href: '/issuer', label: 'Issuer Dashboard' }
+  return { href: '/request-access', label: 'Request Access' }
+}
 
 export function Header() {
   const router = useRouter()
+  const { role } = useSession()
+  const dashboard = roleDestination(role)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,10 +38,10 @@ export function Header() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push('/issuer/register')}
+            onClick={() => router.push(dashboard.href)}
             className="text-sm"
           >
-            Issue Certificate
+            {dashboard.label}
           </Button>
         </nav>
 
@@ -51,9 +60,9 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/issuer/register')}
+                onClick={() => router.push(dashboard.href)}
               >
-                Issue
+                {role === 'ADMIN' ? 'Admin' : role === 'ISSUER' ? 'Issuer' : 'Access'}
               </Button>
             </div>
           </div>

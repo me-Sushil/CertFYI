@@ -1,11 +1,17 @@
 'use client'
 
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { ThemeProvider } from '@/lib/theme-context'
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import {
+  RainbowKitProvider,
+  RainbowKitAuthenticationProvider,
+  createAuthenticationAdapter,
+  type AuthenticationStatus,
+} from '@rainbow-me/rainbowkit'
 import { WagmiProvider, createConfig, http } from 'wagmi'
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { QueryClientProvider, QueryClient, useQueryClient } from '@tanstack/react-query'
 import { mainnet, polygon, arbitrum, base, optimism, sepolia } from 'wagmi/chains'
+import { SiweMessage } from 'siwe'
 
 const queryClient = new QueryClient()
 
@@ -31,6 +37,69 @@ function createWagmiConfig() {
   })
 }
 
+// Wires RainbowKit's built-in SIWE support to our stateless (cookie-based)
+// nonce + JWT session API routes. `status` reflects whether the connected
+// wallet has completed a valid SIWE sign-in - role/authorization (Viewer vs
+// Issuer vs Admin) is a separate, app-level concern layered on top via
+// middleware + /request-access, not something RainbowKit's binary auth status
+// can express.
+function AuthedRainbowKit({ children }: { children: ReactNode }) {
+  const reactQueryClient = useQueryClient()
+  const [status, setStatus] = useState<AuthenticationStatus>('loading')
+
+  const refreshStatus = useCallback(async () => {
+    const res = await fetch('/api/auth/session')
+    const data = await res.json().catch(() => ({ address: null }))
+    setStatus(data.address ? 'authenticated' : 'unauthenticated')
+    reactQueryClient.invalidateQueries({ queryKey: ['session'] })
+  }, [reactQueryClient])
+
+  useEffect(() => {
+    refreshStatus()
+  }, [refreshStatus])
+
+  const adapter = useMemo(
+    () =>
+      createAuthenticationAdapter({
+        getNonce: async () => {
+          const res = await fetch('/api/auth/nonce')
+          const { nonce } = await res.json()
+          return nonce
+        },
+        createMessage: ({ nonce, address, chainId }) =>
+          new SiweMessage({
+            domain: window.location.host,
+            address,
+            statement: 'Sign in to CertFyi with your Ethereum wallet.',
+            uri: window.location.origin,
+            version: '1',
+            chainId,
+            nonce,
+          }),
+        verify: async ({ message, signature }) => {
+          const res = await fetch('/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message.prepareMessage(), signature }),
+          })
+          await refreshStatus()
+          return res.ok
+        },
+        signOut: async () => {
+          await fetch('/api/auth/logout', { method: 'POST' })
+          await refreshStatus()
+        },
+      }),
+    [refreshStatus]
+  )
+
+  return (
+    <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
+      <RainbowKitProvider>{children}</RainbowKitProvider>
+    </RainbowKitAuthenticationProvider>
+  )
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const wagmiConfig = useMemo(() => createWagmiConfig(), [])
 
@@ -38,9 +107,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>
-            {children}
-          </RainbowKitProvider>
+          <AuthedRainbowKit>{children}</AuthedRainbowKit>
         </QueryClientProvider>
       </WagmiProvider>
     </ThemeProvider>
