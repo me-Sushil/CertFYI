@@ -37,15 +37,6 @@ function createWagmiConfig() {
   })
 }
 
-//jckahf ciajcjaskcsjcliajkc doduvei ckjh  9jlfjjcn iho ccmhb ic 
-// ;cpou cj'smnc8 hc
-// kcj 9pj
-// C\
-// 'OJ CCPJC L'OM OCJ
-// PCC 
-// 'I CKJ D[  
-// ;PC; CUHK 0'
-
 function AuthedRainbowKit({ children }: { children: ReactNode }) {
   const reactQueryClient = useQueryClient()
   const [status, setStatus] = useState<AuthenticationStatus>('loading')
