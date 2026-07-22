@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Tracks issuer access requests. Absence of a row for a wallet means
+// its request status is "NONE" (never applied) - not persisted.
+model AccessRequest {
+  id              String         @id @default(cuid())
+  walletAddress   String         @unique
+  name            String?
+  email           String?
+  organization    String?
+  website         String?
+  description     String?
+  status          RequestStatus  @default(PENDING)
+  createdAt       DateTime       @default(now())
+  decidedAt       DateTime?
+  rejectionReason String?
+
+  @@index([status])
+}
