@@ -36,7 +36,6 @@ function createWagmiConfig() {
     ssr: true,
   })
 }
-// this sis test for handle multiple ssh key 
 
 function AuthedRainbowKit({ children }: { children: ReactNode }) {
   const reactQueryClient = useQueryClient()
