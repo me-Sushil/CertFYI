@@ -3,24 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { useRouter } from 'next/navigation'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useSession } from '@/lib/auth/use-session'
+import { useSession } from '@/lib/auth-context'
+import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/hooks/use-issuer-queries'
 import { Loader2, AlertCircle, Wallet, Clock, ShieldCheck } from 'lucide-react'
-
-interface RequestStatusResponse {
-  requestStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
-}
-
-async function fetchRequestStatus(): Promise<RequestStatusResponse> {
-  const res = await fetch('/api/issuer/request')
-  if (!res.ok) return { requestStatus: 'NONE' }
-  return res.json()
-}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -37,11 +28,7 @@ export default function RequestAccessPage() {
   const { address, role, isLoading: sessionLoading } = useSession()
   const queryClient = useQueryClient()
 
-  const requestQuery = useQuery({
-    queryKey: ['issuer-request-status'],
-    queryFn: fetchRequestStatus,
-    enabled: role === 'UNAPPROVED',
-  })
+  const requestQuery = useIssuerRequestStatus(role === 'UNAPPROVED')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -165,28 +152,19 @@ export default function RequestAccessPage() {
     )
   }
 
+  const submitRequest = useSubmitIssuerRequest()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/issuer/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to submit request')
-        return
-      }
-
+      await submitRequest.mutateAsync(formData)
       queryClient.invalidateQueries({ queryKey: ['issuer-request-status'] })
     } catch (err) {
       console.error('Access request error:', err)
-      setError('An error occurred while submitting your request')
+      setError(err instanceof Error ? err.message : 'An error occurred while submitting your request')
     } finally {
       setSubmitting(false)
     }

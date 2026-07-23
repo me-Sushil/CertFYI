@@ -12,6 +12,7 @@ import { WagmiProvider, createConfig, http } from 'wagmi'
 import { QueryClientProvider, QueryClient, useQueryClient } from '@tanstack/react-query'
 import { mainnet, polygon, arbitrum, base, optimism, sepolia } from 'wagmi/chains'
 import { SiweMessage } from 'siwe'
+import { authApi } from '@/lib/api'
 
 const queryClient = new QueryClient()
 
@@ -42,8 +43,7 @@ function AuthedRainbowKit({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthenticationStatus>('loading')
 
   const refreshStatus = useCallback(async () => {
-    const res = await fetch('/api/auth/session')
-    const data = await res.json().catch(() => ({ address: null }))
+    const data = await authApi.getSession().catch(() => ({ address: null, role: null }))
     setStatus(data.address ? 'authenticated' : 'unauthenticated')
     reactQueryClient.invalidateQueries({ queryKey: ['session'] })
   }, [reactQueryClient])
@@ -56,8 +56,7 @@ function AuthedRainbowKit({ children }: { children: ReactNode }) {
     () =>
       createAuthenticationAdapter({
         getNonce: async () => {
-          const res = await fetch('/api/auth/nonce')
-          const { nonce } = await res.json()
+          const { nonce } = await authApi.getNonce()
           return nonce
         },
         createMessage: ({ nonce, address, chainId }) =>
@@ -71,16 +70,15 @@ function AuthedRainbowKit({ children }: { children: ReactNode }) {
             nonce,
           }),
         verify: async ({ message, signature }) => {
-          const res = await fetch('/api/auth/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message.prepareMessage(), signature }),
-          })
+          const ok = await authApi
+            .verify({ message: message.prepareMessage(), signature })
+            .then(() => true)
+            .catch(() => false)
           await refreshStatus()
-          return res.ok
+          return ok
         },
         signOut: async () => {
-          await fetch('/api/auth/logout', { method: 'POST' })
+          await authApi.logout().catch(() => undefined)
           await refreshStatus()
         },
       }),

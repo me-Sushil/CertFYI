@@ -1,0 +1,105 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthController = void 0;
+const common_1 = require("@nestjs/common");
+const auth_service_1 = require("./auth.service");
+const nonce_service_1 = require("./nonce.service");
+const auth_dto_1 = require("../common/dto/auth.dto");
+const session_token_1 = require("../common/session/session-token");
+const roles_constant_1 = require("../common/constants/roles.constant");
+let AuthController = class AuthController {
+    constructor(authService, nonceService) {
+        this.authService = authService;
+        this.nonceService = nonceService;
+    }
+    getNonce(res) {
+        const nonce = this.nonceService.generate();
+        res.cookie(roles_constant_1.NONCE_COOKIE, nonce, roles_constant_1.NONCE_COOKIE_OPTIONS);
+        return { nonce };
+    }
+    async verify(body, req, res) {
+        if (!body?.message || !body?.signature) {
+            throw new common_1.BadRequestException('Missing message or signature');
+        }
+        const nonce = req.cookies?.[roles_constant_1.NONCE_COOKIE];
+        if (!nonce) {
+            throw new common_1.UnauthorizedException('Missing or expired nonce - request a new one');
+        }
+        try {
+            const { address, role, requestStatus, token } = await this.authService.verifySiwe(body.message, body.signature, nonce);
+            res.cookie(roles_constant_1.SESSION_COOKIE, token, roles_constant_1.SESSION_COOKIE_OPTIONS);
+            res.clearCookie(roles_constant_1.NONCE_COOKIE, { path: '/' });
+            return { address, role, requestStatus };
+        }
+        catch (error) {
+            res.clearCookie(roles_constant_1.NONCE_COOKIE, { path: '/' });
+            throw error;
+        }
+    }
+    async session(req) {
+        const token = req.cookies?.[roles_constant_1.SESSION_COOKIE];
+        if (!token) {
+            return { address: null, role: null };
+        }
+        const session = await (0, session_token_1.verifySessionToken)(token);
+        if (!session) {
+            return { address: null, role: null };
+        }
+        return { address: session.address, role: session.role };
+    }
+    logout(res) {
+        res.clearCookie(roles_constant_1.SESSION_COOKIE, { path: '/' });
+        return { success: true };
+    }
+};
+exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Get)('nonce'),
+    __param(0, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "getNonce", null);
+__decorate([
+    (0, common_1.Post)('verify'),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.VerifyDto, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verify", null);
+__decorate([
+    (0, common_1.Get)('session'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "session", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "logout", null);
+exports.AuthController = AuthController = __decorate([
+    (0, common_1.Controller)('auth'),
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        nonce_service_1.NonceService])
+], AuthController);
+//# sourceMappingURL=auth.controller.js.map

@@ -6,7 +6,7 @@ import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { useSession } from '@/lib/auth/use-session'
+import { useSession } from '@/lib/auth-context'
 
 function roleDestination(role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED' | null) {
   if (role === 'ADMIN') return { href: '/admin', label: 'Admin Dashboard' }
