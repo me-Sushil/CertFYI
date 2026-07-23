@@ -3,30 +3,15 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import type { Hex } from 'viem'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Users, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { useSession } from '@/lib/auth/use-session'
-import { CONTRACT_ADDRESS, CONTRACT_ABI, ISSUER_ROLE } from '@/lib/contracts'
-
-interface AccessRequestRow {
-  id: string
-  walletAddress: string
-  name: string | null
-  email: string | null
-  organization: string | null
-  createdAt: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
-}
-
-async function fetchPendingRequests(): Promise<AccessRequestRow[]> {
-  const res = await fetch('/api/admin/requests')
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.requests ?? []
-}
+import { useSession } from '@/lib/auth-context'
+import { CONTRACT_ADDRESS, CONTRACT_ABI, ISSUER_ROLE } from '@/lib/contracts/document-anchor'
+import { useAdminRequests, useApproveUser, useRejectUser } from '@/hooks/use-admin-queries'
+import type { AccessRequestRow } from '@/lib/api-types'
 
 function PendingRequestCard({
   request,
@@ -41,25 +26,23 @@ function PendingRequestCard({
 
   const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract()
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+  const approveUser = useApproveUser()
+  const rejectUser = useRejectUser()
 
   useEffect(() => {
     if (!isTxConfirmed || !txHash) return
 
     let cancelled = false
     setConfirming(true)
-    fetch('/api/admin/approve-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: request.walletAddress, txHash }),
-    })
-      .then(async (res) => {
+    approveUser
+      .mutateAsync({ walletAddress: request.walletAddress, txHash })
+      .then(() => {
         if (cancelled) return
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          setApprovalError(data.error || 'Approval failed to record')
-          return
-        }
         onSettled()
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setApprovalError(error instanceof Error ? error.message : 'Approval failed to record')
       })
       .finally(() => {
         if (!cancelled) setConfirming(false)
@@ -84,12 +67,10 @@ function PendingRequestCard({
   const handleReject = async () => {
     setRejecting(true)
     try {
-      const res = await fetch('/api/admin/reject-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: request.walletAddress }),
-      })
-      if (res.ok) onSettled()
+      await rejectUser.mutateAsync({ walletAddress: request.walletAddress })
+      onSettled()
+    } catch {
+      // surfaced via rejectUser.error if needed
     } finally {
       setRejecting(false)
     }
@@ -138,11 +119,7 @@ export default function AdminDashboard() {
     }
   }, [sessionLoading, role, router])
 
-  const requestsQuery = useQuery({
-    queryKey: ['admin-requests'],
-    queryFn: fetchPendingRequests,
-    enabled: role === 'ADMIN',
-  })
+  const requestsQuery = useAdminRequests(role === 'ADMIN')
 
   const pendingApplications = requestsQuery.data ?? []
 

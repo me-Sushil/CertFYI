@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Plus, Upload, History, Settings, LogOut, BarChart3, FileText, CheckCircle, Loader2 } from 'lucide-react'
-import { useSession } from '@/lib/auth/use-session'
+import { useSession } from '@/lib/auth-context'
 
 export default function IssuerDashboard() {
   const router = useRouter()
