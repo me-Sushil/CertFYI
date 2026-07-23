@@ -37,12 +37,6 @@ function createWagmiConfig() {
   })
 }
 
-// Wires RainbowKit's built-in SIWE support to our stateless (cookie-based)
-// nonce + JWT session API routes. `status` reflects whether the connected
-// wallet has completed a valid SIWE sign-in - role/authorization (Viewer vs
-// Issuer vs Admin) is a separate, app-level concern layered on top via
-// middleware + /request-access, not something RainbowKit's binary auth status
-// can express.
 function AuthedRainbowKit({ children }: { children: ReactNode }) {
   const reactQueryClient = useQueryClient()
   const [status, setStatus] = useState<AuthenticationStatus>('loading')
