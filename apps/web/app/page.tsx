@@ -65,7 +65,7 @@ export default function HomePage() {
 
       {/* Features Section */}
       <section id="features" className="px-4 sm:px-6 lg:px-8 py-24 sm:py-32 border-t border-border">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Powerful Features</h2>
             <p className="text-xl text-muted-foreground">Everything you need to verify and issue blockchain-backed documents</p>
