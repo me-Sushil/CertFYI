@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
-import { Check, Zap, FileCheck, Lock, Clock, Shield } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Check, Zap, FileCheck, Lock, Clock, Shield, Upload, Search, Eye } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -120,41 +121,49 @@ export default function HomePage() {
 
       {/* How It Works Section */}
       <section id="how-it-works" className="px-4 sm:px-6 lg:px-8 py-24 sm:py-32 border-t border-border bg-muted/20">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">How It Works</h2>
             <p className="text-xl text-muted-foreground">Three simple steps to verify document authenticity</p>
           </div>
 
-          <div className="space-y-12">
+          <div className="space-y-6">
             {[
               {
                 step: '01',
                 title: 'Upload Your PDF',
-                description: 'Drag and drop any PDF file into the verification portal. It takes just seconds.'
+                description: 'Drag and drop any PDF file into the verification portal. It takes just seconds.',
+                icon: Upload,
               },
               {
                 step: '02',
                 title: 'Instant Verification',
-                description: 'Our system calculates the document hash and checks it against the blockchain in real-time.'
+                description: 'Our system calculates the document hash and checks it against the blockchain in real-time.',
+                icon: Search,
               },
               {
                 step: '03',
                 title: 'View Results',
-                description: 'See the issuer identity, issuance date, and proof on the blockchain explorer.'
+                description: 'See the issuer identity, issuance date, and proof on the blockchain explorer.',
+                icon: Eye,
               },
             ].map((item, idx) => (
-              <div key={idx} className="flex gap-6 sm:gap-8 items-start">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-bold text-lg">
-                    {item.step}
+              <Card key={idx} className="border-border/50 bg-card/50 backdrop-blur transition-shadow hover:shadow-lg">
+                <CardContent className="flex items-center gap-6 p-6">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10 ring-1 ring-primary/10">
+                    <item.icon className="h-6 w-6 text-primary" />
                   </div>
-                </div>
-                <div className="flex-1 pt-2">
-                  <h3 className="text-2xl font-semibold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground text-lg">{item.description}</p>
-                </div>
-              </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-[11px] font-bold text-primary-foreground">
+                        {item.step}
+                      </span>
+                      <h3 className="text-xl font-semibold">{item.title}</h3>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
