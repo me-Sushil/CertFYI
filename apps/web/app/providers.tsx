@@ -1,22 +1,26 @@
 'use client'
 
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef } from 'react'
 import { ThemeProvider } from '@/lib/theme-context'
-import {
-  RainbowKitProvider,
-  RainbowKitAuthenticationProvider,
-  createAuthenticationAdapter,
-  type AuthenticationStatus,
-} from '@rainbow-me/rainbowkit'
-import { WagmiProvider, createConfig, http } from 'wagmi'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { WagmiProvider, createConfig, http, useAccount } from 'wagmi'
 import { QueryClientProvider, QueryClient, useQueryClient } from '@tanstack/react-query'
 import { mainnet, polygon, arbitrum, base, optimism, sepolia } from 'wagmi/chains'
-import { SiweMessage } from 'siwe'
 import { authApi } from '@/lib/api'
+import { clearToken } from '@/lib/authClient'
 
 const queryClient = new QueryClient()
 
 function createWagmiConfig() {
+  const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+  if (!projectId) {
+    console.warn(
+      '[CertFyi] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set. ' +
+        'RainbowKit will fall back to injected wallets only (MetaMask, etc.). ' +
+        'Set this env var to enable WalletConnect.',
+    )
+  }
+
   return createConfig({
     chains: [
       mainnet,
@@ -38,58 +42,27 @@ function createWagmiConfig() {
   })
 }
 
-function AuthedRainbowKit({ children }: { children: ReactNode }) {
-  const reactQueryClient = useQueryClient()
-  const [status, setStatus] = useState<AuthenticationStatus>('loading')
-
-  const refreshStatus = useCallback(async () => {
-    const data = await authApi.getSession().catch(() => ({ address: null, role: null }))
-    setStatus(data.address ? 'authenticated' : 'unauthenticated')
-    reactQueryClient.invalidateQueries({ queryKey: ['session'] })
-  }, [reactQueryClient])
+/** Syncs wallet disconnect → backend logout + localStorage clear. Replaces "Sign Out" button. */
+function SessionSync() {
+  const { isConnected } = useAccount()
+  const wasConnectedRef = useRef(isConnected)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
-    refreshStatus()
-  }, [refreshStatus])
+    if (wasConnectedRef.current && !isConnected) {
+      // Wallet was just disconnected — clear the backend session too.
+      authApi.logout().catch(() => {})
+      clearToken()
+      try {
+        localStorage.removeItem('certfyi_role')
+        localStorage.removeItem('certfyi_address')
+      } catch { /* ignore */ }
+      queryClient.invalidateQueries({ queryKey: ['session'] })
+    }
+    wasConnectedRef.current = isConnected
+  }, [isConnected, queryClient])
 
-  const adapter = useMemo(
-    () =>
-      createAuthenticationAdapter({
-        getNonce: async () => {
-          const { nonce } = await authApi.getNonce()
-          return nonce
-        },
-        createMessage: ({ nonce, address, chainId }) =>
-          new SiweMessage({
-            domain: window.location.host,
-            address,
-            statement: 'Sign in to CertFyi with your Ethereum wallet.',
-            uri: window.location.origin,
-            version: '1',
-            chainId,
-            nonce,
-          }),
-        verify: async ({ message, signature }) => {
-          const ok = await authApi
-            .verify({ message: message.prepareMessage(), signature })
-            .then(() => true)
-            .catch(() => false)
-          await refreshStatus()
-          return ok
-        },
-        signOut: async () => {
-          await authApi.logout().catch(() => undefined)
-          await refreshStatus()
-        },
-      }),
-    [refreshStatus]
-  )
-
-  return (
-    <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-      <RainbowKitProvider>{children}</RainbowKitProvider>
-    </RainbowKitAuthenticationProvider>
-  )
+  return null
 }
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -99,7 +72,10 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <AuthedRainbowKit>{children}</AuthedRainbowKit>
+          <RainbowKitProvider>
+            <SessionSync />
+            {children}
+          </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </ThemeProvider>

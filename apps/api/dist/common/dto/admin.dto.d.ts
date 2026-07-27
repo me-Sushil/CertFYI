@@ -30,3 +30,28 @@ export declare class AccessRequestListResponseDto {
 export declare class AccessRequestDecisionResponseDto {
     accessRequest: AccessRequestEntityDto;
 }
+export declare class IssuerRowDto {
+    walletAddress: string;
+    name: string | null;
+    email: string | null;
+    organization: string | null;
+    approvedAt: Date | null;
+    documentCount: number;
+}
+export declare class IssuerListResponseDto {
+    issuers: IssuerRowDto[];
+}
+export declare class SuspendIssuerDto {
+    walletAddress: string;
+}
+export declare class AuditLogEntryDto {
+    id: string;
+    action: string;
+    actor: string;
+    target: string | null;
+    details: string | null;
+    timestamp: Date;
+}
+export declare class AuditLogListResponseDto {
+    entries: AuditLogEntryDto[];
+}

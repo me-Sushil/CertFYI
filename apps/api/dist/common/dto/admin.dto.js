@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccessRequestDecisionResponseDto = exports.AccessRequestListResponseDto = exports.AccessRequestEntityDto = exports.RequestsQueryDto = exports.RejectUserDto = exports.ApproveUserDto = exports.REQUEST_STATUS_FILTERS = exports.REQUEST_STATUSES = void 0;
+exports.AuditLogListResponseDto = exports.AuditLogEntryDto = exports.SuspendIssuerDto = exports.IssuerListResponseDto = exports.IssuerRowDto = exports.AccessRequestDecisionResponseDto = exports.AccessRequestListResponseDto = exports.AccessRequestEntityDto = exports.RequestsQueryDto = exports.RejectUserDto = exports.ApproveUserDto = exports.REQUEST_STATUS_FILTERS = exports.REQUEST_STATUSES = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
@@ -161,4 +161,100 @@ __decorate([
     (0, swagger_1.ApiProperty)({ type: AccessRequestEntityDto, description: 'The request after the decision.' }),
     __metadata("design:type", AccessRequestEntityDto)
 ], AccessRequestDecisionResponseDto.prototype, "accessRequest", void 0);
+class IssuerRowDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { walletAddress: { required: true, type: () => String }, name: { required: true, type: () => String, nullable: true }, email: { required: true, type: () => String, nullable: true }, organization: { required: true, type: () => String, nullable: true }, approvedAt: { required: true, type: () => Date, nullable: true }, documentCount: { required: true, type: () => Number } };
+    }
+}
+exports.IssuerRowDto = IssuerRowDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '0x1234567890abcdef1234567890abcdef12345678' }),
+    __metadata("design:type", String)
+], IssuerRowDto.prototype, "walletAddress", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: 'Ada Lovelace' }),
+    __metadata("design:type", Object)
+], IssuerRowDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: 'ada@university.edu' }),
+    __metadata("design:type", Object)
+], IssuerRowDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: 'Example University' }),
+    __metadata("design:type", Object)
+], IssuerRowDto.prototype, "organization", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' }),
+    __metadata("design:type", Object)
+], IssuerRowDto.prototype, "approvedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Number of documents anchored by this issuer.', example: 142 }),
+    __metadata("design:type", Number)
+], IssuerRowDto.prototype, "documentCount", void 0);
+class IssuerListResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { issuers: { required: true, type: () => [require("./admin.dto").IssuerRowDto] } };
+    }
+}
+exports.IssuerListResponseDto = IssuerListResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: [IssuerRowDto] }),
+    __metadata("design:type", Array)
+], IssuerListResponseDto.prototype, "issuers", void 0);
+class SuspendIssuerDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { walletAddress: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{40}$/" } };
+    }
+}
+exports.SuspendIssuerDto = SuspendIssuerDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Wallet address to suspend (revoke ISSUER_ROLE from).',
+        example: '0x1234567890abcdef1234567890abcdef12345678',
+        pattern: '^0x[a-fA-F0-9]{40}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum wallet address' }),
+    __metadata("design:type", String)
+], SuspendIssuerDto.prototype, "walletAddress", void 0);
+class AuditLogEntryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { id: { required: true, type: () => String }, action: { required: true, type: () => String }, actor: { required: true, type: () => String }, target: { required: true, type: () => String, nullable: true }, details: { required: true, type: () => String, nullable: true }, timestamp: { required: true, type: () => Date } };
+    }
+}
+exports.AuditLogEntryDto = AuditLogEntryDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'clx7f2k9a0000qw8h3n1e5r2t' }),
+    __metadata("design:type", String)
+], AuditLogEntryDto.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Issuer Approved' }),
+    __metadata("design:type", String)
+], AuditLogEntryDto.prototype, "action", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '0xabcd...' }),
+    __metadata("design:type", String)
+], AuditLogEntryDto.prototype, "actor", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '0x1234...', nullable: true }),
+    __metadata("design:type", Object)
+], AuditLogEntryDto.prototype, "target", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Admin approved MIT as issuer' }),
+    __metadata("design:type", Object)
+], AuditLogEntryDto.prototype, "details", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' }),
+    __metadata("design:type", Date)
+], AuditLogEntryDto.prototype, "timestamp", void 0);
+class AuditLogListResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { entries: { required: true, type: () => [require("./admin.dto").AuditLogEntryDto] } };
+    }
+}
+exports.AuditLogListResponseDto = AuditLogListResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: [AuditLogEntryDto] }),
+    __metadata("design:type", Array)
+], AuditLogListResponseDto.prototype, "entries", void 0);
 //# sourceMappingURL=admin.dto.js.map

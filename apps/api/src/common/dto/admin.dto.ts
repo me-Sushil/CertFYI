@@ -110,3 +110,66 @@ export class AccessRequestDecisionResponseDto {
   @ApiProperty({ type: AccessRequestEntityDto, description: 'The request after the decision.' })
   accessRequest!: AccessRequestEntityDto
 }
+
+/** An approved issuer (wallet that has been granted ISSUER role). */
+export class IssuerRowDto {
+  @ApiProperty({ example: '0x1234567890abcdef1234567890abcdef12345678' })
+  walletAddress!: string
+
+  @ApiProperty({ nullable: true, type: String, example: 'Ada Lovelace' })
+  name!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'ada@university.edu' })
+  email!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'Example University' })
+  organization!: string | null
+
+  @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
+  approvedAt!: Date | null
+
+  @ApiProperty({ description: 'Number of documents anchored by this issuer.', example: 142 })
+  documentCount!: number
+}
+
+export class IssuerListResponseDto {
+  @ApiProperty({ type: [IssuerRowDto] })
+  issuers!: IssuerRowDto[]
+}
+
+export class SuspendIssuerDto {
+  @ApiProperty({
+    description: 'Wallet address to suspend (revoke ISSUER_ROLE from).',
+    example: '0x1234567890abcdef1234567890abcdef12345678',
+    pattern: '^0x[a-fA-F0-9]{40}$',
+  })
+  @IsString()
+  @Matches(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum wallet address' })
+  walletAddress!: string
+}
+
+/** Single audit-log entry. */
+export class AuditLogEntryDto {
+  @ApiProperty({ example: 'clx7f2k9a0000qw8h3n1e5r2t' })
+  id!: string
+
+  @ApiProperty({ example: 'Issuer Approved' })
+  action!: string
+
+  @ApiProperty({ example: '0xabcd...' })
+  actor!: string
+
+  @ApiProperty({ example: '0x1234...', nullable: true })
+  target!: string | null
+
+  @ApiProperty({ example: 'Admin approved MIT as issuer' })
+  details!: string | null
+
+  @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
+  timestamp!: Date
+}
+
+export class AuditLogListResponseDto {
+  @ApiProperty({ type: [AuditLogEntryDto] })
+  entries!: AuditLogEntryDto[]
+}

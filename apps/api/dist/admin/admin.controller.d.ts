@@ -1,5 +1,5 @@
 import { AdminService } from './admin.service';
-import { ApproveUserDto, RejectUserDto, RequestsQueryDto } from '../common/dto/admin.dto';
+import { ApproveUserDto, RejectUserDto, RequestsQueryDto, SuspendIssuerDto } from '../common/dto/admin.dto';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
@@ -11,5 +11,14 @@ export declare class AdminController {
     }>;
     rejectUser(body: RejectUserDto): Promise<{
         accessRequest: any;
+    }>;
+    getIssuers(): Promise<{
+        issuers: any;
+    }>;
+    suspendIssuer(body: SuspendIssuerDto): Promise<{
+        accessRequest: any;
+    }>;
+    getAuditLog(): Promise<{
+        entries: any;
     }>;
 }

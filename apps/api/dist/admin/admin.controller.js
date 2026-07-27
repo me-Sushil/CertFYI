@@ -36,6 +36,15 @@ let AdminController = class AdminController {
     rejectUser(body) {
         return this.adminService.rejectUser(body.walletAddress, body.reason);
     }
+    getIssuers() {
+        return this.adminService.getIssuers();
+    }
+    suspendIssuer(body) {
+        return this.adminService.suspendIssuer(body.walletAddress);
+    }
+    getAuditLog() {
+        return this.adminService.getAuditLog();
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -85,6 +94,46 @@ __decorate([
     __metadata("design:paramtypes", [admin_dto_1.RejectUserDto]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "rejectUser", null);
+__decorate([
+    (0, common_1.Get)('issuers'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'List approved issuers',
+        description: 'All wallets that have been granted the ISSUER role, newest approvals first.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Approved issuers.', type: admin_dto_1.IssuerListResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getIssuers", null);
+__decorate([
+    (0, common_1.Post)('issuers/suspend'),
+    (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Suspend an issuer',
+        description: 'Marks an issuer as suspended (REJECTED status). The admin must also call ' +
+            '`revokeRole(ISSUER_ROLE, walletAddress)` on-chain separately.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Issuer suspended.', type: admin_dto_1.AccessRequestDecisionResponseDto }),
+    (0, swagger_1.ApiNotFoundResponse)({ description: 'Issuer not found.', type: api_error_dto_1.ApiErrorDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [admin_dto_1.SuspendIssuerDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "suspendIssuer", null);
+__decorate([
+    (0, common_1.Get)('audit-log'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'List audit log entries',
+        description: 'Platform-wide activity feed aggregated from access request decisions.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Audit log entries.', type: admin_dto_1.AuditLogListResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getAuditLog", null);
 exports.AdminController = AdminController = __decorate([
     (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.ADMIN),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),

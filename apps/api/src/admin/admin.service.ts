@@ -63,4 +63,71 @@ export class AdminService {
 
     return { accessRequest }
   }
+
+  /** List all approved issuers (wallets with APPROVED request status). */
+  async getIssuers() {
+    const requests = await this.prisma.accessRequest.findMany({
+      where: { status: 'APPROVED' },
+      orderBy: { decidedAt: 'desc' },
+    })
+
+    const issuers = requests.map((r) => ({
+      walletAddress: r.walletAddress,
+      name: r.name,
+      email: r.email,
+      organization: r.organization,
+      approvedAt: r.decidedAt,
+      documentCount: 0, // TODO: count from documents table when available
+    }))
+
+    return { issuers }
+  }
+
+  /** Suspend an issuer (revoke their APPROVED status). On-chain revocation is done client-side. */
+  async suspendIssuer(walletAddress: string) {
+    const normalized = walletAddress.toLowerCase()
+    const accessRequest = await this.prisma.accessRequest
+      .update({
+        where: { walletAddress: normalized },
+        data: { status: 'REJECTED', decidedAt: new Date(), rejectionReason: 'Suspended by admin' },
+      })
+      .catch(() => null)
+
+    if (!accessRequest) {
+      throw new NotFoundException('Issuer not found')
+    }
+
+    return { accessRequest }
+  }
+
+  /** Return aggregated audit log entries. */
+  async getAuditLog() {
+    const requests = await this.prisma.accessRequest.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+
+    const entries = requests.map((r) => {
+      let action = 'Issuer Request Submitted'
+      let details = `${r.name ?? 'Unknown'} requested issuer access`
+      if (r.status === 'APPROVED') {
+        action = 'Issuer Approved'
+        details = `${r.name ?? 'Unknown'} was approved as an issuer`
+      } else if (r.status === 'REJECTED') {
+        action = r.rejectionReason === 'Suspended by admin' ? 'Issuer Suspended' : 'Issuer Rejected'
+        details = `${r.name ?? 'Unknown'} was ${action.toLowerCase()}${r.rejectionReason ? `: ${r.rejectionReason}` : ''}`
+      }
+
+      return {
+        id: r.id,
+        action,
+        actor: r.walletAddress,
+        target: r.walletAddress,
+        details,
+        timestamp: r.decidedAt ?? r.createdAt,
+      }
+    })
+
+    return { entries }
+  }
 }

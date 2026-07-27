@@ -69,6 +69,12 @@ export const adminApi = {
     request('/admin/approve-user', { method: 'POST', body: JSON.stringify(body) }),
   rejectUser: (body: RejectUserRequest) =>
     request('/admin/reject-user', { method: 'POST', body: JSON.stringify(body) }),
+  getIssuers: () =>
+    request<{ issuers: IssuerRow[] }>('/admin/issuers'),
+  suspendIssuer: (body: { walletAddress: string }) =>
+    request('/admin/issuers/suspend', { method: 'POST', body: JSON.stringify(body) }),
+  getAuditLog: () =>
+    request<{ entries: AuditLogEntry[] }>('/admin/audit-log'),
 }
 
 /** Issuer */

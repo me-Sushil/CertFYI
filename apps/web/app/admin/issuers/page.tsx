@@ -1,61 +1,61 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Search, MoreVertical, Shield, AlertTriangle } from 'lucide-react'
-
-interface Issuer {
-  id: string
-  name: string
-  email: string
-  wallet: string
-  documents: number
-  status: 'approved' | 'suspended'
-  joinedDate: string
-}
+import { ArrowLeft, Search, Shield, AlertTriangle, Loader2 } from 'lucide-react'
+import { useSession } from '@/lib/auth-context'
+import { adminApi } from '@/lib/api'
+import type { IssuerRow } from '@/lib/api-types'
 
 export default function IssuerManagementPage() {
+  const router = useRouter()
+  const { role, isLoading: sessionLoading } = useSession()
+  const [issuers, setIssuers] = useState<IssuerRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'suspended'>('all')
-  const [showDetails, setShowDetails] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const issuers: Issuer[] = [
-    {
-      id: '1',
-      name: 'Stanford University',
-      email: 'admin@stanford.edu',
-      wallet: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE',
-      documents: 2847,
-      status: 'approved',
-      joinedDate: '3 months ago'
-    },
-    {
-      id: '2',
-      name: 'MIT',
-      email: 'contact@mit.edu',
-      wallet: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
-      documents: 1956,
-      status: 'approved',
-      joinedDate: '2 months ago'
-    },
-    {
-      id: '3',
-      name: 'Harvard University',
-      email: 'support@harvard.edu',
-      wallet: '0x555555555555555555555555555555555555555555',
-      documents: 0,
-      status: 'suspended',
-      joinedDate: '1 month ago'
-    },
-  ]
+  useEffect(() => {
+    if (!sessionLoading && role !== 'ADMIN') {
+      router.replace('/')
+      return
+    }
+    if (role === 'ADMIN') {
+      adminApi.getIssuers()
+        .then((data) => { setIssuers(data.issuers); setLoading(false) })
+        .catch(() => { setError('Failed to load issuers'); setLoading(false) })
+    }
+  }, [sessionLoading, role, router])
 
-  const filteredIssuers = issuers.filter(issuer => {
-    const matchesSearch = issuer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         issuer.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || issuer.status === filterStatus
-    return matchesSearch && matchesFilter
+  const handleSuspend = async (walletAddress: string) => {
+    try {
+      await adminApi.suspendIssuer({ walletAddress })
+      setIssuers((prev) => prev.filter((i) => i.walletAddress !== walletAddress))
+    } catch {
+      setError('Failed to suspend issuer')
+    }
+  }
+
+  const filteredIssuers = issuers.filter((issuer) => {
+    const name = issuer.name ?? ''
+    const email = issuer.email ?? ''
+    const org = issuer.organization ?? ''
+    return (
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      org.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   })
+
+  if (sessionLoading || role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,119 +76,78 @@ export default function IssuerManagementPage() {
           <p className="text-muted-foreground">Manage verified issuers and their credentials</p>
         </div>
 
-        {/* Search and Filters */}
+        {error && (
+          <div className="flex gap-2 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Search */}
         <div className="space-y-4 mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search issuers..."
+              placeholder="Search issuers by name, email, or organization..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
             />
           </div>
-
-          <div className="flex gap-2">
-            {(['all', 'approved', 'suspended'] as const).map(status => (
-              <Button
-                key={status}
-                variant={filterStatus === status ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilterStatus(status)}
-                className="capitalize"
-              >
-                {status === 'all' ? 'All' : status}
-              </Button>
-            ))}
-          </div>
         </div>
 
-        {/* Issuers Table */}
-        <div className="border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Organization</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden sm:table-cell">Documents</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden md:table-cell">Status</th>
-                  <th className="px-4 sm:px-6 py-3 text-right text-sm font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredIssuers.map((issuer) => (
-                  <React.Fragment key={issuer.id}>
-                    <tr className="border-b border-border hover:bg-muted/30 transition">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Organization / Name</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden sm:table-cell">Wallet</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden md:table-cell">Approved</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-sm font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredIssuers.map((issuer) => (
+                    <tr key={issuer.walletAddress} className="border-b border-border hover:bg-muted/30 transition">
                       <td className="px-4 sm:px-6 py-4">
-                        <div>
-                          <p className="font-medium">{issuer.name}</p>
-                          <p className="text-xs text-muted-foreground">{issuer.email}</p>
-                        </div>
+                        <p className="font-medium">{issuer.organization || issuer.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{issuer.email || 'No email'}</p>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm hidden sm:table-cell">{issuer.documents.toLocaleString()}</td>
-                      <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                          issuer.status === 'approved'
-                            ? 'bg-accent/10 text-accent'
-                            : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${issuer.status === 'approved' ? 'bg-accent' : 'bg-destructive'}`} />
-                          {issuer.status === 'approved' ? 'Approved' : 'Suspended'}
-                        </span>
+                      <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
+                        <p className="font-mono text-xs text-muted-foreground break-all max-w-[200px] truncate" title={issuer.walletAddress}>
+                          {issuer.walletAddress}
+                        </p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 hidden md:table-cell text-sm text-muted-foreground">
+                        {issuer.approvedAt ? new Date(issuer.approvedAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-right">
-                        <button
-                          onClick={() => setShowDetails(showDetails === issuer.id ? null : issuer.id)}
-                          className="p-2 hover:bg-muted rounded-lg transition"
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-2 text-destructive hover:text-destructive"
+                          onClick={() => handleSuspend(issuer.walletAddress)}
                         >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                          <AlertTriangle className="w-4 h-4" />
+                          Suspend
+                        </Button>
                       </td>
                     </tr>
-                    {showDetails === issuer.id && (
-                      <tr className="border-b border-border bg-muted/20">
-                        <td colSpan={4} className="px-4 sm:px-6 py-4">
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Wallet Address</p>
-                                <p className="font-mono text-xs break-all">{issuer.wallet}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Joined</p>
-                                <p className="font-medium text-sm">{issuer.joinedDate}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Status</p>
-                                <p className="font-medium capitalize text-sm">{issuer.status}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2 pt-2 flex-wrap">
-                              {issuer.status === 'approved' ? (
-                                <Button size="sm" variant="outline" className="gap-2 text-destructive hover:text-destructive">
-                                  <AlertTriangle className="w-4 h-4" />
-                                  Suspend Issuer
-                                </Button>
-                              ) : (
-                                <Button size="sm" variant="outline" className="gap-2">
-                                  <Shield className="w-4 h-4" />
-                                  Reactivate
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
-        {filteredIssuers.length === 0 && (
+        {!loading && filteredIssuers.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No issuers found matching your criteria.</p>
           </div>

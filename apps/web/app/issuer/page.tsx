@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Plus, Upload, History, Settings, LogOut, BarChart3, FileText, CheckCircle, Loader2 } from 'lucide-react'
 import { useSession } from '@/lib/auth-context'
+import { useLogout } from '@/hooks/use-auth-mutations'
 
 export default function IssuerDashboard() {
   const router = useRouter()
   const { role, isLoading: sessionLoading } = useSession()
+  const logout = useLogout()
   const [activeTab, setActiveTab] = useState<'overview' | 'issue' | 'history'>('overview')
 
   useEffect(() => {
@@ -48,9 +50,9 @@ export default function IssuerDashboard() {
             <span className="font-semibold">Back</span>
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold">Issuer Dashboard</h1>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => logout.mutate()}>
             <LogOut className="w-4 h-4" />
-            Disconnect
+            Sign Out
           </Button>
         </div>
       </nav>

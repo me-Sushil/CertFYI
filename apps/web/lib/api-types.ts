@@ -99,6 +99,24 @@ export interface PdfHashRequest {
   filename: string
 }
 
+export interface IssuerRow {
+  walletAddress: string
+  name: string | null
+  email: string | null
+  organization: string | null
+  approvedAt: string | null
+  documentCount: number
+}
+
+export interface AuditLogEntry {
+  id: string
+  action: string
+  actor: string
+  target: string | null
+  details: string | null
+  timestamp: string
+}
+
 export interface ApiErrorBody {
   error?: string
   message?: string | string[]

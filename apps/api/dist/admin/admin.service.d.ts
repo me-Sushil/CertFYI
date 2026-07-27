@@ -13,4 +13,13 @@ export declare class AdminService {
     rejectUser(walletAddress: string, reason?: string): Promise<{
         accessRequest: any;
     }>;
+    getIssuers(): Promise<{
+        issuers: any;
+    }>;
+    suspendIssuer(walletAddress: string): Promise<{
+        accessRequest: any;
+    }>;
+    getAuditLog(): Promise<{
+        entries: any;
+    }>;
 }
