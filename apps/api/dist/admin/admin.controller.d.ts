@@ -4,48 +4,12 @@ export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
     getRequests(query: RequestsQueryDto): Promise<{
-        requests: {
-            name: string | null;
-            description: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
-            walletAddress: string;
-            email: string | null;
-            organization: string | null;
-            website: string | null;
-            createdAt: Date;
-            decidedAt: Date | null;
-            rejectionReason: string | null;
-        }[];
+        requests: $Public.PrismaPromise<T>;
     }>;
     approveUser(body: ApproveUserDto): Promise<{
-        accessRequest: {
-            name: string | null;
-            description: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
-            walletAddress: string;
-            email: string | null;
-            organization: string | null;
-            website: string | null;
-            createdAt: Date;
-            decidedAt: Date | null;
-            rejectionReason: string | null;
-        };
+        accessRequest: $Result.GetResult<import(".prisma/client").Prisma.$AccessRequestPayload<ExtArgs>, T, "upsert">;
     }>;
     rejectUser(body: RejectUserDto): Promise<{
-        accessRequest: {
-            name: string | null;
-            description: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
-            walletAddress: string;
-            email: string | null;
-            organization: string | null;
-            website: string | null;
-            createdAt: Date;
-            decidedAt: Date | null;
-            rejectionReason: string | null;
-        };
+        accessRequest: any;
     }>;
 }

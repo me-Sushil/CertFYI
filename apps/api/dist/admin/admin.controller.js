@@ -45,7 +45,6 @@ __decorate([
         description: 'Newest first. Defaults to `PENDING` when no `status` filter is supplied.',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Matching access requests.', type: admin_dto_1.AccessRequestListResponseDto }),
-    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [admin_dto_1.RequestsQueryDto]),
