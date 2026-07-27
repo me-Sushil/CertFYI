@@ -1,3 +1,5 @@
+export declare const REQUEST_STATUSES: readonly ["PENDING", "APPROVED", "REJECTED"];
+export declare const REQUEST_STATUS_FILTERS: readonly ["ALL", "PENDING", "APPROVED", "REJECTED"];
 export declare class ApproveUserDto {
     walletAddress: string;
     txHash: string;
@@ -8,4 +10,23 @@ export declare class RejectUserDto {
 }
 export declare class RequestsQueryDto {
     status?: string;
+}
+export declare class AccessRequestEntityDto {
+    id: string;
+    walletAddress: string;
+    name: string | null;
+    email: string | null;
+    organization: string | null;
+    website: string | null;
+    description: string | null;
+    status: string;
+    createdAt: Date;
+    decidedAt: Date | null;
+    rejectionReason: string | null;
+}
+export declare class AccessRequestListResponseDto {
+    requests: AccessRequestEntityDto[];
+}
+export declare class AccessRequestDecisionResponseDto {
+    accessRequest: AccessRequestEntityDto;
 }

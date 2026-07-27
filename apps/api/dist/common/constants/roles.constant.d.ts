@@ -1,5 +1,6 @@
 import type { CookieOptions } from 'express';
-export type SessionRole = 'ADMIN' | 'ISSUER' | 'UNAPPROVED';
+export declare const SESSION_ROLES: readonly ["ADMIN", "ISSUER", "UNAPPROVED"];
+export type SessionRole = (typeof SESSION_ROLES)[number];
 export interface SessionPayload {
     address: string;
     role: SessionRole;

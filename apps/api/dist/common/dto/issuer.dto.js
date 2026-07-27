@@ -9,39 +9,75 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccessRequestDto = void 0;
+exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
+const openapi = require("@nestjs/swagger");
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const MIN_NAME_LENGTH = 2;
 const MAX_DESCRIPTION_LENGTH = 1000;
 class AccessRequestDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { name: { required: false, type: () => String, minLength: MIN_NAME_LENGTH }, email: { required: false, type: () => String }, organization: { required: false, type: () => String }, website: { required: false, type: () => String }, description: { required: false, type: () => String, maxLength: MAX_DESCRIPTION_LENGTH } };
+    }
 }
 exports.AccessRequestDto = AccessRequestDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Contact name of the applicant.',
+        minLength: MIN_NAME_LENGTH,
+        example: 'Ada Lovelace',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(MIN_NAME_LENGTH),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ format: 'email', example: 'ada@university.edu' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "email", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Example University' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "organization", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Organization website. Send an empty string to omit.',
+        format: 'url',
+        example: 'https://university.edu',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateIf)((o) => o.website !== ''),
     (0, class_validator_1.IsUrl)({}, { message: 'Invalid URL' }),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "website", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'What the organization intends to issue.',
+        maxLength: MAX_DESCRIPTION_LENGTH,
+        example: 'We issue degree certificates to graduating students.',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(MAX_DESCRIPTION_LENGTH),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "description", void 0);
+class RequestStatusResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { requestStatus: { required: true, type: () => String } };
+    }
+}
+exports.RequestStatusResponseDto = RequestStatusResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Status of the caller’s own access request. `NONE` means never applied.',
+        enum: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'],
+        example: 'PENDING',
+    }),
+    __metadata("design:type", String)
+], RequestStatusResponseDto.prototype, "requestStatus", void 0);
 //# sourceMappingURL=issuer.dto.js.map

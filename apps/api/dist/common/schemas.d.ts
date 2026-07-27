@@ -11,15 +11,15 @@ export declare const IssuerRegistrationSchema: z.ZodObject<{
     walletAddress: string;
     email: string;
     organization: string;
-    website?: string | undefined;
     description?: string | undefined;
+    website?: string | undefined;
 }, {
     name: string;
     walletAddress: string;
     email: string;
     organization: string;
-    website?: string | undefined;
     description?: string | undefined;
+    website?: string | undefined;
 }>;
 export type IssuerRegistration = z.infer<typeof IssuerRegistrationSchema>;
 export declare const DocumentVerificationSchema: z.ZodObject<{
