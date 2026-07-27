@@ -11,7 +11,7 @@ export declare class AuthController {
     };
     verify(body: VerifyDto, req: Request, res: Response): Promise<{
         address: string;
-        role: import("../common/constants/roles.constant").SessionRole;
+        role: "ADMIN" | "ISSUER" | "UNAPPROVED";
         requestStatus: string | undefined;
     }>;
     session(req: Request): Promise<{
@@ -19,7 +19,7 @@ export declare class AuthController {
         role: null;
     } | {
         address: string;
-        role: import("../common/constants/roles.constant").SessionRole;
+        role: "ADMIN" | "ISSUER" | "UNAPPROVED";
     }>;
     logout(res: Response): {
         success: boolean;

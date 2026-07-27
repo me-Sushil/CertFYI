@@ -10,8 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const app_service_1 = require("./app.service");
+const swagger_constants_1 = require("./common/swagger/swagger.constants");
+const health_dto_1 = require("./common/dto/health.dto");
 let AppController = class AppController {
     constructor(appService) {
         this.appService = appService;
@@ -23,11 +27,18 @@ let AppController = class AppController {
 exports.AppController = AppController;
 __decorate([
     (0, common_1.Get)('health'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Liveness probe',
+        description: 'Returns 200 as long as the process is serving traffic. Unauthenticated.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Service is up.', type: health_dto_1.HealthResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "getHealth", null);
 exports.AppController = AppController = __decorate([
+    (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.HEALTH),
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService])
 ], AppController);

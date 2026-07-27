@@ -13,10 +13,14 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("./auth.service");
 const nonce_service_1 = require("./nonce.service");
 const auth_dto_1 = require("../common/dto/auth.dto");
+const api_error_dto_1 = require("../common/dto/api-error.dto");
+const swagger_constants_1 = require("../common/swagger/swagger.constants");
 const session_token_1 = require("../common/session/session-token");
 const roles_constant_1 = require("../common/constants/roles.constant");
 let AuthController = class AuthController {
@@ -67,6 +71,14 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Get)('nonce'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Issue a SIWE nonce',
+        description: 'Step 1 of sign-in. Returns a single-use nonce and stores it in the short-lived httpOnly ' +
+            `\`${roles_constant_1.NONCE_COOKIE}\` cookie (5 minutes). Embed the nonce in the SIWE message you ask the ` +
+            'wallet to sign.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Nonce issued and cookie set.', type: auth_dto_1.NonceResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -75,6 +87,19 @@ __decorate([
 __decorate([
     (0, common_1.Post)('verify'),
     (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Verify a SIWE signature and open a session',
+        description: 'Step 2 of sign-in. Validates the signature against the nonce cookie, resolves the ' +
+            `caller's role, and sets the httpOnly \`${roles_constant_1.SESSION_COOKIE}\` cookie (7 days). The nonce ` +
+            'is consumed either way, so a failed attempt requires a fresh `GET /auth/nonce`.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Signature verified; session cookie set.', type: auth_dto_1.VerifyResponseDto }),
+    (0, swagger_1.ApiBadRequestResponse)({ description: 'Missing `message` or `signature`.', type: api_error_dto_1.ApiErrorDto }),
+    (0, swagger_1.ApiUnauthorizedResponse)({
+        description: 'Nonce missing/expired, SIWE message malformed, or signature invalid.',
+        type: api_error_dto_1.ApiErrorDto,
+    }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)({ passthrough: true })),
@@ -84,6 +109,13 @@ __decorate([
 ], AuthController.prototype, "verify", null);
 __decorate([
     (0, common_1.Get)('session'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Read the current session',
+        description: 'Returns the signed-in wallet and role. Always 200 - a missing or invalid session cookie ' +
+            'yields `{ address: null, role: null }` rather than a 401, so clients can poll it safely.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Current session, or nulls when signed out.', type: auth_dto_1.SessionResponseDto }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -92,12 +124,19 @@ __decorate([
 __decorate([
     (0, common_1.Post)('logout'),
     (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiOperation)({
+        summary: 'End the session',
+        description: `Clears the \`${roles_constant_1.SESSION_COOKIE}\` cookie. Idempotent.`,
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Session cookie cleared.', type: auth_dto_1.LogoutResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([
+    (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.AUTH),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         nonce_service_1.NonceService])

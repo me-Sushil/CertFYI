@@ -1,6 +1,9 @@
 import type { CookieOptions } from 'express'
 
-export type SessionRole = 'ADMIN' | 'ISSUER' | 'UNAPPROVED'
+/** Runtime list of session roles - also drives the `enum` in the OpenAPI spec. */
+export const SESSION_ROLES = ['ADMIN', 'ISSUER', 'UNAPPROVED'] as const
+
+export type SessionRole = (typeof SESSION_ROLES)[number]
 
 export interface SessionPayload {
   address: string

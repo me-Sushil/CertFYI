@@ -5,3 +5,6 @@ export declare class AccessRequestDto {
     website?: string;
     description?: string;
 }
+export declare class RequestStatusResponseDto {
+    requestStatus: string;
+}

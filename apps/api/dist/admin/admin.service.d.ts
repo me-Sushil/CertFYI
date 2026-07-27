@@ -5,12 +5,48 @@ export declare class AdminService {
     private readonly blockchain;
     constructor(prisma: PrismaService, blockchain: BlockchainService);
     getRequests(statusParam?: string): Promise<{
-        requests: $Public.PrismaPromise<T>;
+        requests: {
+            name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        }[];
     }>;
     approveUser(walletAddress: string, txHash: string): Promise<{
-        accessRequest: $Result.GetResult<import(".prisma/client").Prisma.$AccessRequestPayload<ExtArgs>, T, "upsert">;
+        accessRequest: {
+            name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        };
     }>;
     rejectUser(walletAddress: string, reason?: string): Promise<{
-        accessRequest: any;
+        accessRequest: {
+            name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        };
     }>;
 }
