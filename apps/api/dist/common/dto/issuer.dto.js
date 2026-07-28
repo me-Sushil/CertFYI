@@ -12,9 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const MIN_NAME_LENGTH = 2;
 const MAX_DESCRIPTION_LENGTH = 1000;
+const BlankToUndefined = () => (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value));
 class AccessRequestDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { name: { required: false, type: () => String, minLength: MIN_NAME_LENGTH }, email: { required: false, type: () => String }, organization: { required: false, type: () => String }, website: { required: false, type: () => String }, description: { required: false, type: () => String, maxLength: MAX_DESCRIPTION_LENGTH } };
@@ -27,6 +29,7 @@ __decorate([
         minLength: MIN_NAME_LENGTH,
         example: 'Ada Lovelace',
     }),
+    BlankToUndefined(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(MIN_NAME_LENGTH),
@@ -34,12 +37,14 @@ __decorate([
 ], AccessRequestDto.prototype, "name", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ format: 'email', example: 'ada@university.edu' }),
+    BlankToUndefined(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "email", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 'Example University' }),
+    BlankToUndefined(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -50,9 +55,9 @@ __decorate([
         format: 'url',
         example: 'https://university.edu',
     }),
+    BlankToUndefined(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.ValidateIf)((o) => o.website !== ''),
-    (0, class_validator_1.IsUrl)({}, { message: 'Invalid URL' }),
+    (0, class_validator_1.IsUrl)({}, { message: 'website must be a valid URL, for example https://example.com' }),
     __metadata("design:type", String)
 ], AccessRequestDto.prototype, "website", void 0);
 __decorate([
@@ -61,6 +66,7 @@ __decorate([
         maxLength: MAX_DESCRIPTION_LENGTH,
         example: 'We issue degree certificates to graduating students.',
     }),
+    BlankToUndefined(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(MAX_DESCRIPTION_LENGTH),

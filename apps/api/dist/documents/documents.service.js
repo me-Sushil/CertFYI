@@ -16,15 +16,36 @@ exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
 const crypto_1 = __importDefault(require("crypto"));
 const blockchain_service_1 = require("../blockchain/blockchain.service");
+const audit_service_1 = require("../audit/audit.service");
+const prisma_service_1 = require("../prisma/prisma.service");
 let DocumentsService = class DocumentsService {
-    constructor(blockchain) {
+    constructor(blockchain, audit, prisma) {
         this.blockchain = blockchain;
+        this.audit = audit;
+        this.prisma = prisma;
         this.anchoredDocuments = new Map();
         this.anchoredBatches = new Map();
     }
-    anchor(body) {
+    async anchor(body) {
         const txHash = '0x' + crypto_1.default.randomBytes(32).toString('hex');
         const timestamp = new Date().toISOString();
+        await this.prisma.anchoredDocument
+            .create({
+            data: {
+                docHash: body.documentHash,
+                issuerAddress: body.issuerAddress.toLowerCase(),
+                txHash,
+            },
+        })
+            .catch(() => {
+        });
+        await this.audit.record({
+            action: 'DOCUMENT_ANCHORED',
+            actorAddress: body.issuerAddress,
+            targetRef: body.documentHash,
+            txHash,
+            detail: `Document type: ${body.documentType}`,
+        });
         const anchorRecord = {
             documentHash: body.documentHash,
             documentType: body.documentType,
@@ -174,6 +195,8 @@ let DocumentsService = class DocumentsService {
 exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [blockchain_service_1.BlockchainService])
+    __metadata("design:paramtypes", [blockchain_service_1.BlockchainService,
+        audit_service_1.AuditService,
+        prisma_service_1.PrismaService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

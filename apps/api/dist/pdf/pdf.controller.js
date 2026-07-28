@@ -25,8 +25,8 @@ let PdfController = class PdfController {
     constructor(pdfService) {
         this.pdfService = pdfService;
     }
-    upload(file) {
-        return this.pdfService.upload(file);
+    upload(file, storeOnIpfs) {
+        return this.pdfService.upload(file, storeOnIpfs === 'true');
     }
     hash(body) {
         return this.pdfService.hash(body.pdfContent, body.filename);
@@ -46,13 +46,14 @@ __decorate([
     (0, swagger_1.ApiBody)({ type: pdf_dto_1.PdfUploadDto, description: 'PDF file in the `file` field.' }),
     (0, swagger_1.ApiCreatedResponse)({ description: 'File accepted and hashed.', type: pdf_dto_1.PdfUploadResponseDto }),
     (0, swagger_1.ApiBadRequestResponse)({
-        description: 'No file supplied, wrong MIME type, or over the 50 MB limit.',
+        description: 'No file supplied, wrong MIME type, not actually a PDF, or over the 50 MB limit.',
         type: api_error_dto_1.ApiErrorDto,
     }),
-    openapi.ApiResponse({ status: 201 }),
+    openapi.ApiResponse({ status: 201, type: Object }),
     __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)('storeOnIpfs')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], PdfController.prototype, "upload", null);
 __decorate([

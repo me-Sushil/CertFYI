@@ -1,5 +1,6 @@
 export declare const REQUEST_STATUSES: readonly ["PENDING", "APPROVED", "REJECTED"];
 export declare const REQUEST_STATUS_FILTERS: readonly ["ALL", "PENDING", "APPROVED", "REJECTED"];
+export declare const ISSUER_STATUS_FILTERS: readonly ["ALL", "ACTIVE", "SUSPENDED"];
 export declare class ApproveUserDto {
     walletAddress: string;
     txHash: string;
@@ -8,8 +9,33 @@ export declare class RejectUserDto {
     walletAddress: string;
     reason?: string;
 }
+export declare class SuspendIssuerDto {
+    walletAddress: string;
+    txHash: string;
+}
+export declare class ReactivateIssuerDto {
+    walletAddress: string;
+    txHash: string;
+}
+export declare class SetIssuerMetadataDto {
+    txHash: string;
+}
 export declare class RequestsQueryDto {
     status?: string;
+}
+export declare class IssuersQueryDto {
+    status?: string;
+    search?: string;
+    cursor?: string;
+    limit?: string;
+}
+export declare class AuditLogQueryDto {
+    action?: string;
+    actor?: string;
+    from?: string;
+    to?: string;
+    cursor?: string;
+    limit?: string;
 }
 export declare class AccessRequestEntityDto {
     id: string;

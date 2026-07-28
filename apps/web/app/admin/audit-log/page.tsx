@@ -1,13 +1,36 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Search, Loader2, ShieldAlert } from 'lucide-react'
-import { useSession } from '@/lib/auth-context'
-import { adminApi } from '@/lib/api'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ChainBanner } from '@/components/admin/chain-banner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
+import { useAuditLog } from '@/queries/admin'
+import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
+import { formatDateTime, formatAddress } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { AuditLogEntry } from '@/lib/api-types'
+
+const ACTION_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'ISSUER_APPROVED', label: 'Approved' },
+  { value: 'ISSUER_REJECTED', label: 'Rejected' },
+  { value: 'ISSUER_SUSPENDED', label: 'Suspended' },
+  { value: 'ISSUER_REACTIVATED', label: 'Reactivated' },
+  { value: 'ISSUER_METADATA_SET', label: 'Metadata Set' },
+  { value: 'DOCUMENT_ANCHORED', label: 'Anchored' },
+  { value: 'IPFS_PIN_FAILED', label: 'IPFS Failed' },
+] as const
+
+const ACTION_DOT: Record<string, string> = {
+  ISSUER_APPROVED: 'bg-success',
+  ISSUER_REACTIVATED: 'bg-success',
+  DOCUMENT_ANCHORED: 'bg-success',
+  ISSUER_REJECTED: 'bg-destructive',
+  ISSUER_SUSPENDED: 'bg-destructive',
+  IPFS_PIN_FAILED: 'bg-destructive',
+}
 
 export default function AuditLogPage() {
   const router = useRouter()
@@ -144,8 +167,8 @@ export default function AuditLogPage() {
           <div className="text-center py-12">
             <p className="text-muted-foreground">No audit entries found matching your criteria.</p>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   )
 }

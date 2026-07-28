@@ -15,11 +15,6 @@ export interface VerifyResult {
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Verifies a SIWE message + signature against the round-tripped nonce, resolves
-   * the caller's role from admin config / access-request DB state, and mints a
-   * session JWT. Throws UnauthorizedException on signature failure.
-   */
   async verifySiwe(message: string, signature: string, nonce: string): Promise<VerifyResult> {
     let siweMessage: SiweMessage
     try {
@@ -28,8 +23,6 @@ export class AuthService {
       throw new UnauthorizedException('Malformed SIWE message')
     }
 
-    // siwe's verify() *rejects* (rather than resolving with success:false) when
-    // verification fails, so failure must be caught separately from real errors.
     let address: string
     try {
       const { data } = await siweMessage.verify({ signature, nonce })
@@ -44,14 +37,23 @@ export class AuthService {
     if (isAdminWallet(address)) {
       role = 'ADMIN'
     } else {
-      const accessRequest = await this.prisma.accessRequest.findUnique({
+      // Role is resolved from Issuer table (with active status), not AccessRequest
+      // This ensures a suspended issuer cannot get ISSUER role (FR-A4).
+      const issuer = await this.prisma.issuer.findUnique({
         where: { walletAddress: address },
       })
-      if (accessRequest?.status === 'APPROVED') {
+
+      if (issuer?.status === 'ACTIVE') {
         role = 'ISSUER'
       } else {
         role = 'UNAPPROVED'
+        const accessRequest = await this.prisma.accessRequest.findUnique({
+          where: { walletAddress: address },
+        })
         requestStatus = accessRequest?.status ?? 'NONE'
+        if (issuer?.status === 'SUSPENDED') {
+          requestStatus = 'SUSPENDED'
+        }
       }
     }
 

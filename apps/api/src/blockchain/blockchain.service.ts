@@ -1,23 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import crypto from 'crypto'
-import { createPublicClient, http, keccak256, parseEventLogs, stringToBytes, type Hex } from 'viem'
+import { createPublicClient, http, keccak256, parseEventLogs, stringToBytes, type Hex, getAddress } from 'viem'
 
-// Contract configuration (was apps/web/lib/contracts.ts). The blockchain service
-// owns all chain access and exposes clean methods to the rest of the API.
-export const CONTRACT_ADDRESS =
-  process.env.CONTRACT_ADDRESS ||
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE'
-
-export const CONTRACT_CHAIN_ID = parseInt(
-  process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || '11155111',
-) // Sepolia
-
-// Role identifiers, matching `keccak256("ADMIN_ROLE")` / `keccak256("ISSUER_ROLE")` on-chain
 export const ADMIN_ROLE = keccak256(stringToBytes('ADMIN_ROLE'))
 export const ISSUER_ROLE = keccak256(stringToBytes('ISSUER_ROLE'))
 
-// Minimal AccessControl event fragment, just enough to confirm the grant happened.
 const RoleGrantedEvent = {
   type: 'event',
   name: 'RoleGranted',
@@ -28,6 +15,29 @@ const RoleGrantedEvent = {
   ],
 } as const
 
+const RoleRevokedEvent = {
+  type: 'event',
+  name: 'RoleRevoked',
+  inputs: [
+    { indexed: true, name: 'role', type: 'bytes32' },
+    { indexed: true, name: 'account', type: 'address' },
+    { indexed: true, name: 'sender', type: 'address' },
+  ],
+} as const
+
+const ROLE_EVENTS = [RoleGrantedEvent, RoleRevokedEvent]
+
+const HasRoleFn = {
+  type: 'function',
+  name: 'hasRole',
+  stateMutability: 'view',
+  inputs: [
+    { name: 'role', type: 'bytes32' },
+    { name: 'account', type: 'address' },
+  ],
+  outputs: [{ type: 'bool' }],
+} as const
+
 export interface RoleGrantVerification {
   ok: boolean
   error?: string
@@ -35,24 +45,101 @@ export interface RoleGrantVerification {
 }
 
 @Injectable()
-export class BlockchainService {
-  /**
-   * Confirms an admin-submitted `grantRole(ISSUER_ROLE, walletAddress)` tx actually
-   * succeeded on-chain and granted the right role to the right account before the
-   * DB is trusted and marked APPROVED. The DB should never be marked APPROVED based
-   * solely on the client's word.
-   */
-  async verifyIssuerRoleGrant(walletAddress: string, txHash: Hex): Promise<RoleGrantVerification> {
-    const rpcUrl = process.env.RPC_URL
-    if (!rpcUrl) {
-      return { ok: false, error: 'Server RPC_URL is not configured', status: 500 }
+export class BlockchainService implements OnModuleInit {
+  private readonly logger = new Logger(BlockchainService.name)
+  private publicClient!: ReturnType<typeof createPublicClient>
+
+  readonly contractAddress: string
+  readonly contractChainId: number
+
+  constructor() {
+    // BUG-6: Fail-fast CONTRACT_ADDRESS validation. No fallback — a silent
+    // wrong address is worse than a startup crash.
+    const rawAddress =
+      process.env.CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ''
+    if (!rawAddress) {
+      throw new Error(
+        'CONTRACT_ADDRESS is not set. Set CONTRACT_ADDRESS (or NEXT_PUBLIC_CONTRACT_ADDRESS) ' +
+        'in the environment before starting the server.',
+      )
+    }
+    try {
+      this.contractAddress = getAddress(rawAddress)
+    } catch {
+      throw new Error(
+        `CONTRACT_ADDRESS "${rawAddress}" is not a valid EVM address. ` +
+        'Provide a 40-character hex address with 0x prefix.',
+      )
     }
 
-    const publicClient = createPublicClient({ transport: http(rpcUrl) })
+    const rawChainId = process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID
+    if (!rawChainId) {
+      throw new Error(
+        'CHAIN_ID is not set. Set CHAIN_ID (or NEXT_PUBLIC_CHAIN_ID) in the environment.',
+      )
+    }
+    this.contractChainId = parseInt(rawChainId, 10)
+    if (isNaN(this.contractChainId) || this.contractChainId <= 0) {
+      throw new Error(`CHAIN_ID "${rawChainId}" is not a valid chain ID.`)
+    }
+  }
 
+  async onModuleInit() {
+    const rpcUrl = process.env.RPC_URL
+    if (!rpcUrl) {
+      throw new Error('RPC_URL is not set. Provide an RPC endpoint for the configured chain.')
+    }
+
+    this.publicClient = createPublicClient({ transport: http(rpcUrl) })
+
+    // BUG-7: Assert the RPC endpoint matches the configured chain
+    try {
+      const actualChainId = await this.publicClient.getChainId()
+      if (actualChainId !== this.contractChainId) {
+        throw new Error(
+          `RPC_URL chain ID (${actualChainId}) does not match CHAIN_ID (${this.contractChainId}). ` +
+          'The RPC endpoint must point at the same chain the contract is deployed on.',
+        )
+      }
+      this.logger.log(
+        `BlockchainService initialised: chain=${this.contractChainId} contract=${this.contractAddress}`,
+      )
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('RPC_URL chain ID')) {
+        throw error
+      }
+      throw new Error(
+        `Failed to connect to RPC_URL: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+        'Check that RPC_URL is reachable and points to the configured chain.',
+      )
+    }
+  }
+
+  async verifyIssuerRoleGrant(
+    walletAddress: string,
+    txHash: Hex,
+    adminAddress: string,
+  ): Promise<RoleGrantVerification> {
+    return this.verifyRoleEvent(walletAddress, txHash, 'RoleGranted', adminAddress)
+  }
+
+  async verifyIssuerRoleRevoke(
+    walletAddress: string,
+    txHash: Hex,
+    adminAddress: string,
+  ): Promise<RoleGrantVerification> {
+    return this.verifyRoleEvent(walletAddress, txHash, 'RoleRevoked', adminAddress)
+  }
+
+  private async verifyRoleEvent(
+    walletAddress: string,
+    txHash: Hex,
+    eventName: 'RoleGranted' | 'RoleRevoked',
+    adminAddress: string,
+  ): Promise<RoleGrantVerification> {
     let receipt
     try {
-      receipt = await publicClient.getTransactionReceipt({ hash: txHash })
+      receipt = await this.publicClient.getTransactionReceipt({ hash: txHash })
     } catch {
       return { ok: false, error: 'Transaction not found', status: 400 }
     }
@@ -61,32 +148,65 @@ export class BlockchainService {
       return { ok: false, error: 'On-chain transaction did not succeed', status: 400 }
     }
 
-    if (receipt.to?.toLowerCase() !== CONTRACT_ADDRESS.toLowerCase()) {
+    if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
       return { ok: false, error: 'Transaction does not target the document contract', status: 400 }
     }
 
-    const grantedEvents = parseEventLogs({ abi: [RoleGrantedEvent], logs: receipt.logs })
-    const grantedIssuerRole = grantedEvents.some(
+    // The sender check applies regardless of which branch below succeeds.
+    if (receipt.from.toLowerCase() !== adminAddress.toLowerCase()) {
+      return {
+        ok: false,
+        error: `Transaction was sent by a different wallet than the current session. ` +
+          `Only the wallet that signed the transaction can record it.`,
+        status: 403,
+      }
+    }
+
+    const events = parseEventLogs({ abi: ROLE_EVENTS, logs: receipt.logs })
+    const matched = events.some(
       (event) =>
-        event.eventName === 'RoleGranted' &&
+        event.eventName === eventName &&
         event.args.role === ISSUER_ROLE &&
         event.args.account.toLowerCase() === walletAddress.toLowerCase(),
     )
 
-    if (!grantedIssuerRole) {
-      return { ok: false, error: 'Transaction did not grant ISSUER_ROLE to this wallet', status: 400 }
+    if (matched) {
+      return { ok: true }
     }
 
-    return { ok: true }
+    // OpenZeppelin's AccessControl only emits Role{Granted,Revoked} when the
+    // role actually changes - calling grantRole on an account that already
+    // holds it (or revokeRole on one that doesn't) succeeds silently with no
+    // event. Without this fallback, a retry after a grant whose *recording*
+    // failed (network blip, server restart) is permanently stuck: the
+    // transaction is genuinely valid and admin-signed, but can never satisfy
+    // an event-only check again. Read the live role state instead - it is a
+    // fact about the contract right now, independent of which transaction
+    // produced it.
+    const hasRole = await this.publicClient.readContract({
+      address: this.contractAddress as Hex,
+      abi: [HasRoleFn],
+      functionName: 'hasRole',
+      args: [ISSUER_ROLE, walletAddress as Hex],
+    })
+    const expectedState = eventName === 'RoleGranted'
+    if (hasRole === expectedState) {
+      return { ok: true }
+    }
+
+    return {
+      ok: false,
+      error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet, and the ` +
+        `wallet's current on-chain role state does not match either.`,
+      status: 400,
+    }
   }
 
-  /** SHA256 hash of document data, 0x-prefixed. */
   calculateDocumentHash(data: Buffer | string): string {
     const buffer = typeof data === 'string' ? Buffer.from(data) : data
     return '0x' + crypto.createHash('sha256').update(buffer).digest('hex')
   }
 
-  /** Merkle root from leaf hashes using SHA256 over concatenated 0x-hex leaves. */
   calculateMerkleRoot(leaves: Buffer[]): Buffer {
     if (leaves.length === 0) {
       throw new Error('Cannot calculate Merkle root from empty array')

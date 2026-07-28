@@ -10,11 +10,13 @@ exports.PdfModule = void 0;
 const common_1 = require("@nestjs/common");
 const pdf_controller_1 = require("./pdf.controller");
 const pdf_service_1 = require("./pdf.service");
+const ipfs_module_1 = require("../ipfs/ipfs.module");
 let PdfModule = class PdfModule {
 };
 exports.PdfModule = PdfModule;
 exports.PdfModule = PdfModule = __decorate([
     (0, common_1.Module)({
+        imports: [ipfs_module_1.IpfsModule],
         controllers: [pdf_controller_1.PdfController],
         providers: [pdf_service_1.PdfService],
     })

@@ -41,15 +41,21 @@ let AuthService = class AuthService {
             role = 'ADMIN';
         }
         else {
-            const accessRequest = await this.prisma.accessRequest.findUnique({
+            const issuer = await this.prisma.issuer.findUnique({
                 where: { walletAddress: address },
             });
-            if (accessRequest?.status === 'APPROVED') {
+            if (issuer?.status === 'ACTIVE') {
                 role = 'ISSUER';
             }
             else {
                 role = 'UNAPPROVED';
+                const accessRequest = await this.prisma.accessRequest.findUnique({
+                    where: { walletAddress: address },
+                });
                 requestStatus = accessRequest?.status ?? 'NONE';
+                if (issuer?.status === 'SUSPENDED') {
+                    requestStatus = 'SUSPENDED';
+                }
             }
         }
         const token = await (0, session_token_1.createSessionToken)({ address, role });

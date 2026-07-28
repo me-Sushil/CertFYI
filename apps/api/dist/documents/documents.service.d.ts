@@ -1,18 +1,22 @@
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { AuditService } from '../audit/audit.service';
 import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto';
+import { PrismaService } from '../prisma/prisma.service';
 export declare class DocumentsService {
     private readonly blockchain;
+    private readonly audit;
+    private readonly prisma;
     private readonly anchoredDocuments;
     private readonly anchoredBatches;
-    constructor(blockchain: BlockchainService);
-    anchor(body: AnchorDto): {
+    constructor(blockchain: BlockchainService, audit: AuditService, prisma: PrismaService);
+    anchor(body: AnchorDto): Promise<{
         success: boolean;
         txHash: string;
         documentHash: string;
         timestamp: string;
         status: string;
         message: string;
-    };
+    }>;
     getAnchor(hash?: string): {
         success: boolean;
         document: any;

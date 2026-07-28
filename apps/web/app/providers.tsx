@@ -9,7 +9,10 @@ import { mainnet, polygon, arbitrum, base, optimism, sepolia } from 'wagmi/chain
 import { authApi } from '@/lib/api'
 import { clearToken } from '@/lib/authClient'
 
-const queryClient = new QueryClient()
+const CHAIN_MAP = { 1: mainnet, 137: polygon, 42161: arbitrum, 8453: base, 10: optimism, 11155111: sepolia } as const
+
+const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111')
+const targetChain = (CHAIN_MAP as Record<number, (typeof CHAIN_MAP)[keyof typeof CHAIN_MAP]>)[chainId] ?? sepolia
 
 function createWagmiConfig() {
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
@@ -22,22 +25,8 @@ function createWagmiConfig() {
   }
 
   return createConfig({
-    chains: [
-      mainnet,
-      polygon,
-      arbitrum,
-      base,
-      optimism,
-      ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [sepolia] : []),
-    ],
-    transports: {
-      [mainnet.id]: http(),
-      [polygon.id]: http(),
-      [arbitrum.id]: http(),
-      [base.id]: http(),
-      [optimism.id]: http(),
-      [sepolia.id]: http(),
-    },
+    chains: [targetChain],
+    transports: { [targetChain.id]: http() } as Record<number, ReturnType<typeof http>>,
     ssr: true,
   })
 }
@@ -67,6 +56,23 @@ function SessionSync() {
 
 export function Providers({ children }: { children: ReactNode }) {
   const wagmiConfig = useMemo(() => createWagmiConfig(), [])
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            gcTime: 5 * 60_000,
+            retry: 2,
+            retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+            refetchOnWindowFocus: false,
+          },
+          mutations: {
+            retry: 0,
+          },
+        },
+      }),
+  )
 
   return (
     <ThemeProvider>
@@ -78,6 +84,7 @@ export function Providers({ children }: { children: ReactNode }) {
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>
+      <Toaster position="bottom-right" richColors />
     </ThemeProvider>
   )
 }

@@ -1,20 +1,23 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { Hex } from 'viem'
+import { Response } from 'express'
 import { PrismaService } from '../prisma/prisma.service'
 import { BlockchainService } from '../blockchain/blockchain.service'
-
-type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+import { AuditService } from '../audit/audit.service'
+import { IpfsService } from '../ipfs/ipfs.service'
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchain: BlockchainService,
+    private readonly audit: AuditService,
+    private readonly ipfs: IpfsService,
   ) {}
 
   async getRequests(statusParam?: string) {
     const where =
-      statusParam === 'ALL' ? {} : { status: (statusParam ?? 'PENDING') as RequestStatus }
+      statusParam === 'ALL' ? {} : { status: (statusParam ?? 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED' }
 
     const requests = await this.prisma.accessRequest.findMany({
       where,
@@ -24,14 +27,10 @@ export class AdminService {
     return { requests }
   }
 
-  /**
-   * Admin has already sent `grantRole(ISSUER_ROLE, walletAddress)` client-side.
-   * Confirm the tx actually succeeded and granted the right role before trusting
-   * it and updating the DB.
-   */
-  async approveUser(walletAddress: string, txHash: string) {
+  async approveUser(walletAddress: string, txHash: string, adminAddress: string) {
     const normalized = walletAddress.toLowerCase()
-    const verification = await this.blockchain.verifyIssuerRoleGrant(normalized, txHash as Hex)
+    // BUG-8: sender verification and replay protection
+    const verification = await this.blockchain.verifyIssuerRoleGrant(normalized, txHash as Hex, adminAddress)
     if (!verification.ok) {
       throw new HttpException(
         { error: verification.error },
@@ -39,16 +38,60 @@ export class AdminService {
       )
     }
 
-    const accessRequest = await this.prisma.accessRequest.upsert({
-      where: { walletAddress: normalized },
-      create: { walletAddress: normalized, status: 'APPROVED', decidedAt: new Date() },
-      update: { status: 'APPROVED', decidedAt: new Date(), rejectionReason: null },
+    const [accessRequest] = await this.prisma.$transaction(async (tx) => {
+      // BUG-8: Replay protection — registerTxHash is @unique
+      const existing = await tx.issuer.findUnique({ where: { walletAddress: normalized } })
+      if (existing?.registerTxHash === txHash) {
+        throw new HttpException({ error: 'This transaction has already been recorded' }, 409)
+      }
+
+      const request = await tx.accessRequest.upsert({
+        where: { walletAddress: normalized },
+        create: { walletAddress: normalized, status: 'APPROVED', decidedAt: new Date() },
+        update: { status: 'APPROVED', decidedAt: new Date(), rejectionReason: null },
+      })
+
+      const requestData = await tx.accessRequest.findUnique({ where: { walletAddress: normalized } })
+
+      await tx.issuer.upsert({
+        where: { walletAddress: normalized },
+        create: {
+          walletAddress: normalized,
+          name: requestData?.name ?? null,
+          email: requestData?.email ?? null,
+          organization: requestData?.organization ?? null,
+          website: requestData?.website ?? null,
+          status: 'ACTIVE',
+          registerTxHash: txHash,
+        },
+        update: {
+          name: requestData?.name ?? null,
+          email: requestData?.email ?? null,
+          organization: requestData?.organization ?? null,
+          website: requestData?.website ?? null,
+          status: 'ACTIVE',
+          registerTxHash: txHash,
+          suspendedAt: null,
+          suspendTxHash: null,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'ISSUER_APPROVED',
+          actorAddress: adminAddress.toLowerCase(),
+          targetRef: normalized,
+          txHash,
+        },
+      })
+
+      return [request]
     })
 
     return { accessRequest }
   }
 
-  async rejectUser(walletAddress: string, reason?: string) {
+  async rejectUser(walletAddress: string, reason: string | undefined, adminAddress: string) {
     const normalized = walletAddress.toLowerCase()
     const accessRequest = await this.prisma.accessRequest
       .update({
@@ -60,6 +103,13 @@ export class AdminService {
     if (!accessRequest) {
       throw new NotFoundException('Request not found')
     }
+
+    await this.audit.record({
+      action: 'ISSUER_REJECTED',
+      actorAddress: adminAddress,
+      targetRef: normalized,
+      detail: reason ?? undefined,
+    })
 
     return { accessRequest }
   }

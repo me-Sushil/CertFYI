@@ -1,8 +1,15 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Providers } from '@/app/providers'
 import './globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-plus-jakarta-sans',
+})
 
 export const metadata: Metadata = {
   title: 'CertFyi - Verify PDF Documents on the Blockchain',
@@ -36,8 +43,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#6172d0' },
-    { media: '(prefers-color-scheme: dark)', color: '#0c0f1d' },
+    { media: '(prefers-color-scheme: light)', color: '#f3f3f3' },
+    { media: '(prefers-color-scheme: dark)', color: '#111213' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -51,8 +58,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background scroll-smooth">
-      <body className="antialiased bg-background text-foreground">
+    <html
+      lang="en"
+      // data-scroll-behavior tells Next's router not to fight the CSS smooth
+      // scroll on route changes (see the framework warning it otherwise logs).
+      data-scroll-behavior="smooth"
+      className={`${plusJakartaSans.variable} scroll-smooth`}
+      style={{ backgroundColor: 'var(--surface-base)' }}
+    >
+      <body className="antialiased font-sans" style={{ fontFamily: 'var(--font-plus-jakarta-sans), Plus Jakarta Sans, sans-serif' }}>
         <Providers>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}

@@ -17,6 +17,7 @@ const EXAMPLE_WALLET = '0x1234567890abcdef1234567890abcdef12345678';
 const EXAMPLE_TX = '0x' + 'ab'.repeat(32);
 exports.REQUEST_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
 exports.REQUEST_STATUS_FILTERS = ['ALL', ...exports.REQUEST_STATUSES];
+exports.ISSUER_STATUS_FILTERS = ['ALL', 'ACTIVE', 'SUSPENDED'];
 class ApproveUserDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { walletAddress: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{40}$/" }, txHash: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{64}$/" } };
@@ -69,6 +70,74 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RejectUserDto.prototype, "reason", void 0);
+class SuspendIssuerDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { walletAddress: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{40}$/" }, txHash: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{64}$/" } };
+    }
+}
+exports.SuspendIssuerDto = SuspendIssuerDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Wallet of the issuer to suspend.',
+        example: EXAMPLE_WALLET,
+        pattern: '^0x[a-fA-F0-9]{40}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum wallet address' }),
+    __metadata("design:type", String)
+], SuspendIssuerDto.prototype, "walletAddress", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the `revokeRole(ISSUER_ROLE, walletAddress)` transaction the admin already sent.',
+        example: EXAMPLE_TX,
+        pattern: '^0x[a-fA-F0-9]{64}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{64}$/, { message: 'Invalid transaction hash' }),
+    __metadata("design:type", String)
+], SuspendIssuerDto.prototype, "txHash", void 0);
+class ReactivateIssuerDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { walletAddress: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{40}$/" }, txHash: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{64}$/" } };
+    }
+}
+exports.ReactivateIssuerDto = ReactivateIssuerDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Wallet of the issuer to reactivate.',
+        example: EXAMPLE_WALLET,
+        pattern: '^0x[a-fA-F0-9]{40}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum wallet address' }),
+    __metadata("design:type", String)
+], ReactivateIssuerDto.prototype, "walletAddress", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the `grantRole(ISSUER_ROLE, walletAddress)` transaction the admin already sent.',
+        example: EXAMPLE_TX,
+        pattern: '^0x[a-fA-F0-9]{64}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{64}$/, { message: 'Invalid transaction hash' }),
+    __metadata("design:type", String)
+], ReactivateIssuerDto.prototype, "txHash", void 0);
+class SetIssuerMetadataDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { txHash: { required: true, type: () => String, pattern: "/^0x[a-fA-F0-9]{64}$/" } };
+    }
+}
+exports.SetIssuerMetadataDto = SetIssuerMetadataDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the `setIssuerMetadata(wallet, metadataURI)` transaction the admin already sent.',
+        example: EXAMPLE_TX,
+        pattern: '^0x[a-fA-F0-9]{64}$',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^0x[a-fA-F0-9]{64}$/, { message: 'Invalid transaction hash' }),
+    __metadata("design:type", String)
+], SetIssuerMetadataDto.prototype, "txHash", void 0);
 class RequestsQueryDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { status: { required: false, type: () => String, enum: exports.REQUEST_STATUS_FILTERS } };
@@ -85,6 +154,108 @@ __decorate([
     (0, class_validator_1.IsIn)(exports.REQUEST_STATUS_FILTERS),
     __metadata("design:type", String)
 ], RequestsQueryDto.prototype, "status", void 0);
+class IssuersQueryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { status: { required: false, type: () => String, enum: exports.ISSUER_STATUS_FILTERS }, search: { required: false, type: () => String }, cursor: { required: false, type: () => String }, limit: { required: false, type: () => String } };
+    }
+}
+exports.IssuersQueryDto = IssuersQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Filter by issuer status. Defaults to `ALL`.',
+        enum: exports.ISSUER_STATUS_FILTERS,
+        default: 'ALL',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(exports.ISSUER_STATUS_FILTERS),
+    __metadata("design:type", String)
+], IssuersQueryDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Search term matching name, organization, or wallet.',
+        example: 'Stanford',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuersQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Cursor for cursor-based pagination.',
+        example: '0xabc...',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuersQueryDto.prototype, "cursor", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Page size (max 100).',
+        example: 20,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuersQueryDto.prototype, "limit", void 0);
+class AuditLogQueryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { action: { required: false, type: () => String }, actor: { required: false, type: () => String }, from: { required: false, type: () => String }, to: { required: false, type: () => String }, cursor: { required: false, type: () => String }, limit: { required: false, type: () => String } };
+    }
+}
+exports.AuditLogQueryDto = AuditLogQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Filter by action type.',
+        example: 'ALL',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "action", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Filter by actor wallet address.',
+        example: EXAMPLE_WALLET,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "actor", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Start date ISO string.',
+        example: '2026-01-01T00:00:00.000Z',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "from", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'End date ISO string.',
+        example: '2026-07-01T00:00:00.000Z',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "to", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Cursor for cursor-based pagination.',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "cursor", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Page size (max 100).',
+        example: 20,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AuditLogQueryDto.prototype, "limit", void 0);
 class AccessRequestEntityDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { id: { required: true, type: () => String }, walletAddress: { required: true, type: () => String }, name: { required: true, type: () => String, nullable: true }, email: { required: true, type: () => String, nullable: true }, organization: { required: true, type: () => String, nullable: true }, website: { required: true, type: () => String, nullable: true }, description: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => String }, createdAt: { required: true, type: () => Date }, decidedAt: { required: true, type: () => Date, nullable: true }, rejectionReason: { required: true, type: () => String, nullable: true } };
