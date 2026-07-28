@@ -54,7 +54,7 @@ export function CidBadge({ cid, className, compact = false }: CidBadgeProps) {
           type="button"
           onClick={copy}
           aria-label={copied ? 'CID copied' : 'Copy CID'}
-          className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="rounded-md p-1 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted hover:text-foreground"
         >
           {copied ? (
             <Check className="h-3 w-3 text-accent" aria-hidden />

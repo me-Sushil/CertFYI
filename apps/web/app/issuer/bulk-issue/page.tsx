@@ -2,61 +2,59 @@
 
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Upload, Download, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Upload, Download } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const STEPS = ['upload', 'preview', 'processing'] as const
+type Step = (typeof STEPS)[number]
+
+const PROGRESS_ITEMS = [
+  { label: 'Computing document hashes', done: true },
+  { label: 'Building Merkle tree', done: true, pulse: true },
+  { label: 'Awaiting blockchain confirmation', done: false },
+]
 
 export default function BulkIssuancePage() {
-  const [step, setStep] = useState<'upload' | 'preview' | 'processing'>('upload')
+  const [step, setStep] = useState<Step>('upload')
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [processing, setProcessing] = useState(false)
   const csvInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
 
-  const [previewData, setPreviewData] = useState({
-    totalRecords: 0,
-    templateFile: '',
-    csvFile: '',
-  })
+  const [previewData, setPreviewData] = useState({ totalRecords: 0, templateFile: '', csvFile: '' })
 
   const handleCsvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0]
-    if (file && file.type === 'text/csv') {
-      setCsvFile(file)
-    }
+    if (file && file.type === 'text/csv') setCsvFile(file)
   }
 
   const handlePdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0]
-    if (file && file.type === 'application/pdf') {
-      setPdfFile(file)
-    }
+    if (file && file.type === 'application/pdf') setPdfFile(file)
   }
 
   const handleContinue = () => {
     if (!csvFile || !pdfFile) {
-      alert('Please select both CSV and PDF files')
+      toast.error('Please select both CSV and PDF files')
       return
     }
-    // Mock: parse CSV to count records
-    setPreviewData({
-      totalRecords: 142,
-      templateFile: pdfFile.name,
-      csvFile: csvFile.name,
-    })
+    setPreviewData({ totalRecords: 142, templateFile: pdfFile.name, csvFile: csvFile.name })
     setStep('preview')
   }
 
   const handleProcess = async () => {
     setProcessing(true)
     setStep('processing')
-    // Simulate blockchain processing
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
     setProcessing(false)
   }
 
   const downloadTemplate = () => {
-    const csvContent = 'name,email,document_type\nJohn Doe,john@example.com,Certificate\nJane Smith,jane@example.com,Certificate'
+    const csvContent =
+      'name,email,document_type\nJohn Doe,john@example.com,Certificate\nJane Smith,jane@example.com,Certificate'
     const element = document.createElement('a')
     element.setAttribute('href', `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`)
     element.setAttribute('download', 'recipients-template.csv')
@@ -66,65 +64,89 @@ export default function BulkIssuancePage() {
     document.body.removeChild(element)
   }
 
+  const stepIndex = STEPS.indexOf(step)
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center">
-          <Link href="/issuer" className="flex items-center gap-2 hover:opacity-80 transition">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back</span>
+      <nav className="sticky top-0 z-40 border-b border-border/15 bg-card/80 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-2xl items-center px-6 py-5">
+          <Link
+            href="/issuer"
+            className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-80"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden />
+            <span className="font-extrabold">Back</span>
           </Link>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Steps Indicator */}
-        <div className="flex items-center justify-between mb-12">
-          {['upload', 'preview', 'processing'].map((s, idx) => (
+      <main className="mx-auto max-w-2xl px-6 py-12">
+        <div className="mb-12 flex items-center justify-between">
+          {STEPS.map((s, idx) => (
             <React.Fragment key={s}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition ${
-                step === s ? 'bg-primary text-primary-foreground' :
-                ['upload', 'preview', 'processing'].indexOf(step) > idx ? 'bg-accent text-accent-foreground' :
-                'bg-muted text-muted-foreground'
-              }`}>
+              <div
+                className={cn(
+                  'flex h-12 w-12 items-center justify-center rounded-full text-sm font-extrabold transition-all duration-300 ease-[var(--ease-premium)]',
+                  step === s
+                    ? 'scale-110 bg-primary text-primary-foreground shadow-button'
+                    : stepIndex > idx
+                      ? 'bg-success text-success-foreground'
+                      : 'bg-card text-muted-foreground shadow-soft',
+                )}
+              >
                 {idx + 1}
               </div>
-              {idx < 2 && <div className="flex-1 h-1 mx-2 bg-border" />}
+              {idx < 2 && (
+                <div
+                  className={cn(
+                    'mx-3 h-0.5 flex-1 transition-colors duration-300',
+                    stepIndex > idx ? 'bg-success' : 'bg-border/15',
+                  )}
+                />
+              )}
             </React.Fragment>
           ))}
         </div>
 
-        {/* Upload Step */}
         {step === 'upload' && (
-          <div className="space-y-8">
+          <div className="animate-fade-in space-y-8">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Bulk Issue Documents</h2>
-              <p className="text-muted-foreground">Upload a CSV file with recipient data and a PDF template to issue hundreds of documents at once.</p>
+              <h2 className="mb-2 text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
+                Bulk Issue Documents
+              </h2>
+              <p className="text-lg leading-[30.6px] text-muted-foreground">
+                Upload a CSV file with recipient data and a PDF template to issue hundreds of
+                documents at once.
+              </p>
             </div>
 
-            {/* CSV Template Section */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-3">1. Download CSV Template</label>
-                <div className="p-6 rounded-lg border border-border bg-muted/50">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Download the template CSV file and fill in your recipient information. Each row represents one document to be issued.
+                <label className="mb-3 block text-sm font-extrabold text-foreground">
+                  1. Download CSV Template
+                </label>
+                <div className="rounded-lg bg-card p-6 shadow-card">
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Download the template CSV file and fill in your recipient information.
                   </p>
                   <Button onClick={downloadTemplate} variant="outline" className="gap-2">
-                    <Download className="w-4 h-4" />
-                    Download Template (CSV)
+                    <Download className="h-4 w-4" aria-hidden /> Download Template (CSV)
                   </Button>
                 </div>
               </div>
 
-              {/* CSV Upload */}
               <div>
-                <label className="block text-sm font-semibold mb-3">2. Upload Your CSV File</label>
+                <label className="mb-3 block text-sm font-extrabold text-foreground">
+                  2. Upload Your CSV File
+                </label>
                 <div
                   onClick={() => csvInputRef.current?.click()}
-                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') csvInputRef.current?.click()
+                  }}
+                  className="cursor-pointer rounded-lg border-2 border-dashed border-border/15 bg-card p-10 text-center shadow-card transition-colors duration-150 ease-[var(--ease-premium)] hover:border-foreground/25"
                 >
                   <input
                     ref={csvInputRef}
@@ -133,31 +155,44 @@ export default function BulkIssuancePage() {
                     onChange={handleCsvSelect}
                     className="hidden"
                   />
-                  <Upload className="w-8 h-8 text-primary/70 mx-auto mb-2" />
+                  <Upload className="mx-auto mb-3 h-8 w-8 text-accent" aria-hidden />
                   {csvFile ? (
                     <div>
-                      <p className="font-semibold">{csvFile.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Ready to upload</p>
+                      <p className="font-extrabold text-foreground">{csvFile.name}</p>
+                      <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                        Ready to upload
+                      </p>
                     </div>
                   ) : (
                     <div>
-                      <p className="font-semibold">Drop CSV here or click to select</p>
-                      <p className="text-xs text-muted-foreground mt-1">Maximum 10 MB</p>
+                      <p className="font-extrabold text-foreground">
+                        Drop CSV here or click to select
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                        Maximum 10 MB
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* PDF Template Section */}
             <div>
-              <label className="block text-sm font-semibold mb-3">3. Upload PDF Template</label>
-              <p className="text-sm text-muted-foreground mb-3">
-                Upload a PDF template. Recipient information from the CSV will be merged with this template for each document.
+              <label className="mb-3 block text-sm font-extrabold text-foreground">
+                3. Upload PDF Template
+              </label>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Upload a PDF template. Recipient information from the CSV will be merged with
+                this template.
               </p>
               <div
                 onClick={() => pdfInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') pdfInputRef.current?.click()
+                }}
+                className="cursor-pointer rounded-lg border-2 border-dashed border-border/15 bg-card p-10 text-center shadow-card transition-colors duration-150 ease-[var(--ease-premium)] hover:border-foreground/25"
               >
                 <input
                   ref={pdfInputRef}
@@ -166,30 +201,35 @@ export default function BulkIssuancePage() {
                   onChange={handlePdfSelect}
                   className="hidden"
                 />
-                <Upload className="w-8 h-8 text-primary/70 mx-auto mb-2" />
+                <Upload className="mx-auto mb-3 h-8 w-8 text-accent" aria-hidden />
                 {pdfFile ? (
                   <div>
-                    <p className="font-semibold">{pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="font-extrabold text-foreground">{pdfFile.name}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
                       {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <p className="font-semibold">Drop PDF here or click to select</p>
-                    <p className="text-xs text-muted-foreground mt-1">Maximum 50 MB</p>
+                    <p className="font-extrabold text-foreground">
+                      Drop PDF here or click to select
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                      Maximum 50 MB
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-4 pt-6">
               <Link href="/issuer" className="flex-1">
-                <Button variant="outline" className="w-full">Cancel</Button>
+                <Button variant="outline" className="h-12 w-full">
+                  Cancel
+                </Button>
               </Link>
-              <Button 
-                className="flex-1" 
+              <Button
+                className="h-12 flex-1"
                 onClick={handleContinue}
                 disabled={!csvFile || !pdfFile}
               >
@@ -199,104 +239,129 @@ export default function BulkIssuancePage() {
           </div>
         )}
 
-        {/* Preview Step */}
         {step === 'preview' && (
-          <div className="space-y-8">
+          <div className="animate-fade-in space-y-8">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Review Bulk Issuance</h2>
-              <p className="text-muted-foreground">Verify the details before proceeding with blockchain submission.</p>
+              <h2 className="mb-2 text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
+                Review Bulk Issuance
+              </h2>
+              <p className="text-lg leading-[30.6px] text-muted-foreground">
+                Verify the details before proceeding with blockchain submission.
+              </p>
             </div>
 
-            <div className="space-y-4 p-6 rounded-lg border border-border bg-card">
-              <h3 className="font-semibold text-lg mb-4">Issuance Summary</h3>
-              
+            <div className="space-y-6 rounded-lg bg-card p-6 shadow-card sm:p-8">
+              <h3 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+                Issuance Summary
+              </h3>
               <div className="space-y-3">
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Total Documents:</span>
-                  <span className="font-bold text-lg text-accent">{previewData.totalRecords}</span>
+                  <span className="text-[22px] font-extrabold text-success">
+                    {previewData.totalRecords}
+                  </span>
                 </div>
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">CSV File:</p>
+                <div className="border-t border-border/15 pt-3">
+                  <p className="mb-2 text-sm font-semibold text-muted-foreground">CSV File:</p>
                   <p className="font-mono text-sm break-all text-foreground">{previewData.csvFile}</p>
                 </div>
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">PDF Template:</p>
-                  <p className="font-mono text-sm break-all text-foreground">{previewData.templateFile}</p>
+                <div className="border-t border-border/15 pt-3">
+                  <p className="mb-2 text-sm font-semibold text-muted-foreground">PDF Template:</p>
+                  <p className="font-mono text-sm break-all text-foreground">
+                    {previewData.templateFile}
+                  </p>
                 </div>
               </div>
 
-              <div className="border-t border-border pt-4 space-y-2 text-sm">
-                <h4 className="font-semibold">Transaction Details</h4>
-                <div className="flex justify-between">
+              <div className="space-y-2 border-t border-border/15 pt-6 text-sm">
+                <h4 className="font-extrabold text-foreground">Transaction Details</h4>
+                <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Network:</span>
-                  <span>Ethereum Mainnet</span>
+                  <span className="font-semibold text-foreground">Ethereum Mainnet</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Gas (Merkle Batch):</span>
-                  <span>~0.15 ETH</span>
+                  <span className="font-semibold text-foreground">~0.15 ETH</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Cost per Document:</span>
-                  <span className="text-accent font-semibold">~0.001 ETH</span>
+                  <span className="font-semibold text-success">~0.001 ETH</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="flex gap-3 rounded-lg bg-accent/5 p-5 shadow-card">
               <div className="text-sm">
-                <p className="font-semibold mb-1">Merkle Tree Batching</p>
-                <p className="text-muted-foreground">All {previewData.totalRecords} documents will be anchored in a single transaction using Merkle tree optimization for maximum gas efficiency.</p>
+                <p className="mb-1 font-extrabold text-accent">Merkle Tree Batching</p>
+                <p className="text-muted-foreground">
+                  All {previewData.totalRecords} documents will be anchored in a single
+                  transaction using Merkle tree optimization.
+                </p>
               </div>
             </div>
 
             <div className="flex gap-4">
-              <Button variant="outline" className="flex-1" onClick={() => setStep('upload')}>
+              <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('upload')}>
                 Back
               </Button>
-              <Button className="flex-1" onClick={handleProcess} disabled={processing}>
+              <Button className="h-12 flex-1" onClick={handleProcess} disabled={processing}>
                 {processing ? 'Processing...' : 'Submit to Blockchain'}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Processing Step */}
         {step === 'processing' && (
-          <div className="space-y-8 py-12">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 border-4 border-border border-t-primary rounded-full animate-spin mx-auto" />
-              <h2 className="text-2xl font-bold">Processing Bulk Issuance</h2>
-              <p className="text-muted-foreground">
-                Your {previewData.totalRecords} documents are being anchored on the blockchain. This may take a few minutes.
+          <div className="animate-fade-in space-y-8 py-12">
+            <div className="space-y-5 text-center">
+              <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-border/15 border-t-accent" />
+              <h2 className="text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
+                Processing Bulk Issuance
+              </h2>
+              <p className="text-lg leading-[30.6px] text-muted-foreground">
+                Your {previewData.totalRecords} documents are being anchored on the blockchain.
               </p>
             </div>
 
             <div className="space-y-2">
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-2/3 rounded-full animate-pulse" />
+              <div className="h-2 overflow-hidden rounded-full bg-border/15">
+                <div className="h-full w-2/3 animate-pulse rounded-full bg-accent" />
               </div>
-              <p className="text-xs text-muted-foreground text-center">Merkle root being computed...</p>
+              <p className="text-center text-xs font-semibold text-muted-foreground">
+                Merkle root being computed...
+              </p>
             </div>
 
-            <div className="bg-muted p-6 rounded-lg text-sm text-center">
-              <p className="text-muted-foreground mb-2">Do not close this page. You can track progress below.</p>
-              <p className="font-mono text-xs text-primary">Pending transaction confirmation...</p>
+            <div className="rounded-lg bg-card p-6 text-center text-sm shadow-card">
+              <p className="mb-2 font-semibold text-muted-foreground">
+                Do not close this page. You can track progress below.
+              </p>
+              <p className="font-mono text-xs text-accent">Pending transaction confirmation...</p>
             </div>
 
-            <div className="space-y-3 max-w-sm mx-auto">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                <div className="w-2 h-2 bg-accent rounded-full" />
-                <p className="text-sm">Computing document hashes</p>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                <p className="text-sm">Building Merkle tree</p>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="w-2 h-2 bg-border rounded-full" />
-                <p className="text-sm text-muted-foreground">Awaiting blockchain confirmation</p>
-              </div>
+            <div className="mx-auto max-w-sm space-y-3">
+              {PROGRESS_ITEMS.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-full bg-card p-3 shadow-card"
+                >
+                  <div
+                    className={cn(
+                      'h-2 w-2 rounded-full',
+                      item.done ? 'bg-success' : 'bg-border/15',
+                      item.pulse && 'animate-pulse',
+                    )}
+                  />
+                  <p
+                    className={cn(
+                      'text-sm font-semibold',
+                      item.done ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {item.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}

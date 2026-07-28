@@ -12,7 +12,7 @@ export function HeaderWrapper() {
 
   // Return null on server-side to prevent hydration mismatch
   if (!mounted) {
-    return <div className="h-16 border-b border-border" />
+    return <div style={{ height: '92px' }} />
   }
 
   return <Header />

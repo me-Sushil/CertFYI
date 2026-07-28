@@ -11,13 +11,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="rounded-lg">
-          {resolvedTheme === 'dark' ? (
+      <DropdownMenuTrigger>
+        <Button variant="outline" size="icon">
+          {theme === 'dark' ? (
             <Moon className="h-[1.2rem] w-[1.2rem]" />
           ) : (
             <Sun className="h-[1.2rem] w-[1.2rem]" />
@@ -33,13 +33,6 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme('dark')}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          <div className="mr-2 h-4 w-4">
-            <Sun className="h-3 w-3 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-3 w-3 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </div>
-          <span>System</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
