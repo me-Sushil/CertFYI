@@ -1,12 +1,9 @@
+import { IpfsService } from '../ipfs/ipfs.service';
 export declare class PdfService {
-    upload(file?: Express.Multer.File): {
-        success: boolean;
-        filename: string;
-        fileSize: number;
-        documentHash: string;
-        timestamp: string;
-        message: string;
-    };
+    private readonly ipfs;
+    private readonly logger;
+    constructor(ipfs: IpfsService);
+    upload(file?: Express.Multer.File, storeOnIpfs?: boolean): Promise<Record<string, unknown>>;
     hash(pdfContent: string, filename: string): {
         success: boolean;
         filename: string;

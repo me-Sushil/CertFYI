@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/lib/auth-context'
-import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/hooks/use-issuer-queries'
+import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/queries/issuer'
 import { Loader2, AlertCircle, Wallet, Clock, ShieldCheck } from 'lucide-react'
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -29,6 +29,9 @@ export default function RequestAccessPage() {
   const queryClient = useQueryClient()
 
   const requestQuery = useIssuerRequestStatus(role === 'UNAPPROVED')
+  // Must stay above the early returns below - hooks cannot be called
+  // conditionally.
+  const submitRequest = useSubmitIssuerRequest()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -151,8 +154,6 @@ export default function RequestAccessPage() {
       </Shell>
     )
   }
-
-  const submitRequest = useSubmitIssuerRequest()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

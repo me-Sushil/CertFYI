@@ -5,18 +5,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var BlockchainService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BlockchainService = exports.ISSUER_ROLE = exports.ADMIN_ROLE = exports.CONTRACT_CHAIN_ID = exports.CONTRACT_ADDRESS = void 0;
+exports.BlockchainService = exports.ISSUER_ROLE = exports.ADMIN_ROLE = void 0;
 const common_1 = require("@nestjs/common");
 const crypto_1 = __importDefault(require("crypto"));
 const viem_1 = require("viem");
-exports.CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS ||
-    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-    '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE';
-exports.CONTRACT_CHAIN_ID = parseInt(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || '11155111');
 exports.ADMIN_ROLE = (0, viem_1.keccak256)((0, viem_1.stringToBytes)('ADMIN_ROLE'));
 exports.ISSUER_ROLE = (0, viem_1.keccak256)((0, viem_1.stringToBytes)('ISSUER_ROLE'));
 const RoleGrantedEvent = {
@@ -28,16 +28,72 @@ const RoleGrantedEvent = {
         { indexed: true, name: 'sender', type: 'address' },
     ],
 };
-let BlockchainService = class BlockchainService {
-    async verifyIssuerRoleGrant(walletAddress, txHash) {
+const RoleRevokedEvent = {
+    type: 'event',
+    name: 'RoleRevoked',
+    inputs: [
+        { indexed: true, name: 'role', type: 'bytes32' },
+        { indexed: true, name: 'account', type: 'address' },
+        { indexed: true, name: 'sender', type: 'address' },
+    ],
+};
+const ROLE_EVENTS = [RoleGrantedEvent, RoleRevokedEvent];
+let BlockchainService = BlockchainService_1 = class BlockchainService {
+    constructor() {
+        this.logger = new common_1.Logger(BlockchainService_1.name);
+        const rawAddress = process.env.CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
+        if (!rawAddress) {
+            throw new Error('CONTRACT_ADDRESS is not set. Set CONTRACT_ADDRESS (or NEXT_PUBLIC_CONTRACT_ADDRESS) ' +
+                'in the environment before starting the server.');
+        }
+        try {
+            this.contractAddress = (0, viem_1.getAddress)(rawAddress);
+        }
+        catch {
+            throw new Error(`CONTRACT_ADDRESS "${rawAddress}" is not a valid EVM address. ` +
+                'Provide a 40-character hex address with 0x prefix.');
+        }
+        const rawChainId = process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID;
+        if (!rawChainId) {
+            throw new Error('CHAIN_ID is not set. Set CHAIN_ID (or NEXT_PUBLIC_CHAIN_ID) in the environment.');
+        }
+        this.contractChainId = parseInt(rawChainId, 10);
+        if (isNaN(this.contractChainId) || this.contractChainId <= 0) {
+            throw new Error(`CHAIN_ID "${rawChainId}" is not a valid chain ID.`);
+        }
+    }
+    async onModuleInit() {
         const rpcUrl = process.env.RPC_URL;
         if (!rpcUrl) {
-            return { ok: false, error: 'Server RPC_URL is not configured', status: 500 };
+            throw new Error('RPC_URL is not set. Provide an RPC endpoint for the configured chain.');
         }
-        const publicClient = (0, viem_1.createPublicClient)({ transport: (0, viem_1.http)(rpcUrl) });
+        this.publicClient = (0, viem_1.createPublicClient)({ transport: (0, viem_1.http)(rpcUrl) });
+        try {
+            const actualChainId = await this.publicClient.getChainId();
+            if (actualChainId !== this.contractChainId) {
+                throw new Error(`RPC_URL chain ID (${actualChainId}) does not match CHAIN_ID (${this.contractChainId}). ` +
+                    'The RPC endpoint must point at the same chain the contract is deployed on.');
+            }
+            this.logger.log(`BlockchainService initialised: chain=${this.contractChainId} contract=${this.contractAddress}`);
+        }
+        catch (error) {
+            if (error instanceof Error && error.message.includes('RPC_URL chain ID')) {
+                throw error;
+            }
+            throw new Error(`Failed to connect to RPC_URL: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+                'Check that RPC_URL is reachable and points to the configured chain.');
+        }
+    }
+    async verifyIssuerRoleGrant(walletAddress, txHash, adminAddress) {
+        return this.verifyRoleEvent(walletAddress, txHash, 'RoleGranted', adminAddress);
+    }
+    async verifyIssuerRoleRevoke(walletAddress, txHash, adminAddress) {
+        return this.verifyRoleEvent(walletAddress, txHash, 'RoleRevoked', adminAddress);
+    }
+    async verifyRoleEvent(walletAddress, txHash, eventName, adminAddress) {
         let receipt;
         try {
-            receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+            receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
         }
         catch {
             return { ok: false, error: 'Transaction not found', status: 400 };
@@ -45,15 +101,28 @@ let BlockchainService = class BlockchainService {
         if (receipt.status !== 'success') {
             return { ok: false, error: 'On-chain transaction did not succeed', status: 400 };
         }
-        if (receipt.to?.toLowerCase() !== exports.CONTRACT_ADDRESS.toLowerCase()) {
+        if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
             return { ok: false, error: 'Transaction does not target the document contract', status: 400 };
         }
-        const grantedEvents = (0, viem_1.parseEventLogs)({ abi: [RoleGrantedEvent], logs: receipt.logs });
-        const grantedIssuerRole = grantedEvents.some((event) => event.eventName === 'RoleGranted' &&
+        const events = (0, viem_1.parseEventLogs)({ abi: ROLE_EVENTS, logs: receipt.logs });
+        const matched = events.filter((event) => event.eventName === eventName &&
             event.args.role === exports.ISSUER_ROLE &&
             event.args.account.toLowerCase() === walletAddress.toLowerCase());
-        if (!grantedIssuerRole) {
-            return { ok: false, error: 'Transaction did not grant ISSUER_ROLE to this wallet', status: 400 };
+        if (matched.length === 0) {
+            return {
+                ok: false,
+                error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet`,
+                status: 400,
+            };
+        }
+        const senderMatch = matched.some((event) => event.args.sender?.toLowerCase() === adminAddress.toLowerCase());
+        if (!senderMatch) {
+            return {
+                ok: false,
+                error: `Transaction was sent by a different wallet than the current session. ` +
+                    `Only the wallet that signed the transaction can record it.`,
+                status: 403,
+            };
         }
         return { ok: true };
     }
@@ -83,7 +152,8 @@ let BlockchainService = class BlockchainService {
     }
 };
 exports.BlockchainService = BlockchainService;
-exports.BlockchainService = BlockchainService = __decorate([
-    (0, common_1.Injectable)()
+exports.BlockchainService = BlockchainService = BlockchainService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
 ], BlockchainService);
 //# sourceMappingURL=blockchain.service.js.map

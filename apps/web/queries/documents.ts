@@ -1,33 +1,37 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { documentsApi, pdfApi } from '@/lib/api'
+import { keys } from './keys'
 
-export function useDocumentAnchor(hash: string, enabled: boolean) {
+const ANCHOR_STALE_MS = 60_000
+
+export function useDocumentAnchorQuery(hash: string, enabled: boolean) {
   return useQuery({
-    queryKey: ['document-anchor', hash],
+    queryKey: keys.document.anchor.detail(hash),
     queryFn: () => documentsApi.getAnchor(hash),
+    staleTime: ANCHOR_STALE_MS,
     enabled,
   })
 }
 
-export function useAnchorDocument() {
+export function useAnchorDocumentMutation() {
   return useMutation({
     mutationFn: documentsApi.anchor,
   })
 }
 
-export function useAnchorBatch() {
+export function useAnchorBatchMutation() {
   return useMutation({
     mutationFn: documentsApi.anchorBatch,
   })
 }
 
-export function useVerifyDocument() {
+export function useVerifyDocumentMutation() {
   return useMutation({
     mutationFn: documentsApi.verify,
   })
 }
 
-export function useUploadPdf() {
+export function useUploadPdfMutation() {
   return useMutation({
     mutationFn: pdfApi.upload,
   })

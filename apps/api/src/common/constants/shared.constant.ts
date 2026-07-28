@@ -68,6 +68,9 @@ export const API_ENDPOINTS = {
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 100
 
+// File upload
+export const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50MB
+
 // Validation Rules
 export const VALIDATION = {
   MIN_NAME_LENGTH: 2,
