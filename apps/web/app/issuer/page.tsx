@@ -1,35 +1,80 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useDisconnect } from 'wagmi'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAccount } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import {
+  FileText, Upload, History, Wallet,
+  Plus, Loader2, ShieldAlert, CheckCircle, Clock, Activity,
+  ArrowUpRight, Menu, X, ChevronRight, LayoutDashboard,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, LogOut, Plus, Upload, FileText, CheckCircle, Loader2, BarChart3 } from 'lucide-react'
+import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+import { Sidebar } from '@/components/issuer-sidebar'
 import { useSession } from '@/lib/auth-context'
+import { useIssuerStats, useIssuerDocuments, useIssuerActivity } from '@/queries/issuer'
+import { cn } from '@/lib/utils'
+import { formatAddress, formatRelativeTime } from '@/lib/format'
 
-const STATS = [
-  { label: 'Total Issued', value: '1,247', icon: FileText, tone: 'text-accent' },
-  { label: 'Active Documents', value: '1,198', icon: CheckCircle, tone: 'text-success' },
-  { label: 'Revoked', value: '49', icon: BarChart3, tone: 'text-accent' },
-]
+function StatCard({ label, value, icon: IconComponent, tone }: { label: string; value: string | number; icon: typeof FileText; tone: 'accent' | 'success' | 'default' }) {
+  return (
+    <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-6">
+      <div className={cn(
+        'mb-4 flex h-10 w-10 items-center justify-center rounded-xl',
+        tone === 'accent' ? 'bg-accent/10' : tone === 'success' ? 'bg-success/10' : 'bg-muted',
+      )}>
+        <IconComponent className={cn(
+          'h-5 w-5',
+          tone === 'accent' ? 'text-accent' : tone === 'success' ? 'text-success' : 'text-muted-foreground',
+        )} aria-hidden />
+      </div>
+      <p className="mb-1 text-sm font-semibold text-muted-foreground">{label}</p>
+      <p className="text-3xl font-extrabold tabular-nums text-foreground sm:text-4xl">{value}</p>
+    </div>
+  )
+}
 
-const RECENT_DOCUMENTS = [
-  { id: 1, name: 'Stanford Certificate 2026', issued: '2 hours ago', count: 142, status: 'Completed' },
-  { id: 2, name: 'MIT Diploma June 2026', issued: '1 day ago', count: 87, status: 'Completed' },
-  { id: 3, name: 'Yale Certificate Batch', issued: '3 days ago', count: 256, status: 'Completed' },
-]
+function ActivityItem({ action, detail, createdAt, txHash }: { action: string; detail?: string; createdAt: string; txHash?: string }) {
+  const IconComp = action === 'DOCUMENT_ANCHORED' || action === 'BATCH_ANCHORED' ? CheckCircle : Activity
+  return (
+    <div className="flex items-start gap-3 rounded-[20px] bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button sm:gap-4 sm:p-5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+        <IconComp className="h-4 w-4 text-accent" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{action.replace(/_/g, ' ')}</p>
+        {detail && <p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p>}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-xs font-medium text-muted-foreground">{formatRelativeTime(createdAt)}</span>
+          {txHash && (
+            <span className="font-mono text-xs text-accent">{formatAddress(txHash, 4)}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function IssuerDashboard() {
+  const pathname = usePathname()
   const router = useRouter()
-  const { role, isLoading: sessionLoading } = useSession()
-  const { disconnect } = useDisconnect()
+  const { isConnected } = useAccount()
+  const { role, isLoading: sessionLoading, address } = useSession()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  const isDashboard = pathname === '/issuer'
+
+  const { data: stats, isLoading: statsLoading } = useIssuerStats(isDashboard && role === 'ISSUER' && isConnected)
+  const { data: docsData, isLoading: docsLoading } = useIssuerDocuments(role === 'ISSUER' && isConnected)
+  const { data: activityData, isLoading: activityLoading } = useIssuerActivity(isDashboard && role === 'ISSUER' && isConnected)
 
   useEffect(() => {
     if (!sessionLoading && role !== 'ISSUER') router.replace('/request-access')
   }, [sessionLoading, role, router])
 
-  if (sessionLoading || role !== 'ISSUER') {
+  if (sessionLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-foreground" aria-hidden />
@@ -37,125 +82,235 @@ export default function IssuerDashboard() {
     )
   }
 
+  const documents = docsData?.documents ?? []
+  const activity = activityData?.entries ?? []
+
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-40 border-b border-border/15 bg-card/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 sm:px-8 lg:px-10">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-80"
-          >
-            <ArrowLeft className="h-5 w-5" aria-hidden />
-            <span className="font-extrabold">Back</span>
-          </Link>
-          <h1 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-            Issuer Dashboard
-          </h1>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => disconnect()}>
-            <LogOut className="h-4 w-4" aria-hidden />
-            Disconnect
-          </Button>
+    <div className="flex min-h-screen bg-background">
+      {/* Desktop sidebar */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex min-h-0 flex-1 flex-col border-r border-border/10">
+          <Sidebar pathname={pathname} onNavigate={() => {}} />
         </div>
-      </nav>
+      </div>
 
-      <main className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-10">
-        <div className="animate-fade-in space-y-8">
-          <div className="rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 p-8 shadow-card">
-            <h2 className="mb-2 text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
-              Welcome back!
-            </h2>
-            <p className="text-lg leading-[30.6px] text-muted-foreground">
-              You have successfully issued 1,247 verified documents on the blockchain.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {STATS.map((stat) => {
-              const Icon = stat.icon
-              return (
-                <div
-                  key={stat.label}
-                  className="rounded-lg bg-card p-6 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
-                >
-                  <div className="mb-5 flex items-start justify-between">
-                    <Icon className={`h-6 w-6 ${stat.tone}`} aria-hidden />
-                  </div>
-                  <p className="mb-2 text-sm font-semibold text-muted-foreground">{stat.label}</p>
-                  <p className="text-4xl font-extrabold tabular-nums text-foreground">{stat.value}</p>
-                </div>
-              )
-            })}
-          </div>
-
-          <div>
-            <h3 className="mb-5 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Link href="/issuer/issue">
-                <Button className="h-14 w-full gap-2 text-base">
-                  <Plus className="h-5 w-5" aria-hidden />
-                  Issue Single Document
-                </Button>
-              </Link>
-              <Link href="/issuer/bulk-issue">
-                <Button variant="outline" className="h-14 w-full gap-2 text-base">
-                  <Upload className="h-5 w-5" aria-hidden />
-                  Bulk Issue Documents
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-                Recent Issuances
-              </h3>
-              <Link
-                href="/issuer/history"
-                className="text-sm font-semibold text-accent transition-opacity hover:opacity-80"
+      {/* Main area */}
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
+        {/* Global header — always visible, wallet top-right */}
+        <header className="sticky top-0 z-30 border-b border-border/10 bg-card/95 backdrop-blur-md">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+            {/* Left: mobile hamburger */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground hover:bg-muted/50"
+                aria-label="Open menu"
               >
-                View All
-              </Link>
+                <Menu className="h-5 w-5" />
+              </button>
+              <span className="text-sm font-extrabold text-foreground">CertFyi</span>
             </div>
-            <div className="overflow-hidden rounded-lg bg-card shadow-card">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/15">
-                      <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">
-                        Document Name
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Count</th>
-                      <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Issued</th>
-                      <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {RECENT_DOCUMENTS.map((doc) => (
-                      <tr
-                        key={doc.id}
-                        className="border-b border-border/15 transition-colors duration-150 ease-[var(--ease-premium)] last:border-b-0 hover:bg-muted/30"
-                      >
-                        <td className="px-6 py-4 text-sm font-semibold text-foreground">{doc.name}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{doc.count}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{doc.issued}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-4 py-1.5 text-xs font-semibold text-success">
-                            <CheckCircle className="h-3 w-3" aria-hidden />
-                            {doc.status}
-                          </span>
-                        </td>
-                      </tr>
+
+            {/* Center: page title (desktop) */}
+            <div className="hidden lg:flex lg:items-center lg:gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                <LayoutDashboard className="h-4 w-4 text-accent" aria-hidden />
+              </div>
+              <h1 className="text-base font-extrabold text-foreground">Dashboard</h1>
+            </div>
+
+            {/* Spacer on mobile so ConnectButton stays right */}
+            <div className="flex-1 lg:hidden" />
+
+            {/* Right: blockchain standard — wallet + theme */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggleInline />
+              <ConnectButton />
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl animate-fade-in space-y-8 sm:space-y-10">
+            {/* Welcome banner */}
+            <div className="rounded-[20px] bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-6 shadow-card ring-1 ring-accent/5 sm:p-8">
+              <h2 className="mb-2 text-2xl font-extrabold tracking-[-0.8px] text-foreground sm:text-[30px] sm:leading-[36px]">
+                Welcome back
+              </h2>
+              <p className="text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-[30.6px]">
+                {isConnected && stats
+                  ? `You have issued ${stats.totalIssued.toLocaleString()} verified documents on the blockchain.`
+                  : 'Connect your wallet to manage your issuer dashboard.'}
+              </p>
+            </div>
+
+            {/* Stats grid */}
+            {isConnected && (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <StatCard label="Total Issued" value={statsLoading ? '...' : (stats?.totalIssued ?? 0).toLocaleString()} icon={FileText} tone="accent" />
+                <StatCard label="Active" value={statsLoading ? '...' : (stats?.activeDocuments ?? 0).toLocaleString()} icon={CheckCircle} tone="success" />
+                <StatCard label="Revoked" value={statsLoading ? '...' : (stats?.revokedCount ?? 0).toLocaleString()} icon={ShieldAlert} tone="default" />
+                <StatCard label="Activities" value={statsLoading ? '...' : (stats?.recentActivityCount ?? 0).toLocaleString()} icon={Activity} tone="accent" />
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div>
+              <h3 className="mb-4 text-lg font-extrabold tracking-[-0.5px] text-foreground sm:text-[22px] sm:leading-[28.6px]">
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <Link href="/issuer/issue">
+                  <Button className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                    <Plus className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
+                    Issue Single
+                  </Button>
+                </Link>
+                <Link href="/issuer/bulk-issue">
+                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                    <Upload className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
+                    Bulk Issue
+                  </Button>
+                </Link>
+                <Link href="/issuer/history">
+                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                    <History className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
+                    History
+                  </Button>
+                </Link>
+                <Link href="/verify">
+                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                    <ArrowUpRight className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
+                    Verify
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Recent Documents + Activity */}
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+              {/* Recent Documents */}
+              <div>
+                <div className="mb-4 flex items-center justify-between sm:mb-5">
+                  <h3 className="text-lg font-extrabold tracking-[-0.5px] text-foreground sm:text-[22px] sm:leading-[28.6px]">
+                    Recent Documents
+                  </h3>
+                  <Link href="/issuer/history" className="flex items-center gap-1 text-sm font-semibold text-accent transition-opacity hover:opacity-80">
+                    View All <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                {!isConnected ? (
+                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                    <Wallet className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
+                    <p className="text-sm font-semibold text-muted-foreground">Connect wallet to see documents</p>
+                  </div>
+                ) : docsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-[72px] animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                ) : documents.length === 0 ? (
+                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                    <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
+                    <p className="text-sm font-semibold text-muted-foreground">No documents issued yet</p>
+                    <Link href="/issuer/issue" className="mt-3 inline-block text-sm font-semibold text-accent hover:opacity-80">
+                      Issue your first document &rarr;
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {documents.slice(0, 5).map((doc) => (
+                      <div key={doc.docHash} className="flex items-center justify-between rounded-[20px] bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button">
+                        <div className="min-w-0 flex-1 pr-3">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {doc.recipientName || doc.documentType || 'Document'}
+                          </p>
+                          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                            {formatAddress(doc.docHash, 4)}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {formatRelativeTime(doc.anchoredAt)}
+                          </p>
+                        </div>
+                        <span className={cn(
+                          'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+                          doc.status === 'active' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
+                        )}>
+                          <span className={cn('h-1.5 w-1.5 rounded-full', doc.status === 'active' ? 'bg-success' : 'bg-destructive')} />
+                          {doc.status === 'active' ? 'Active' : 'Revoked'}
+                        </span>
+                      </div>
+                    ))}
+                    {documents.length > 5 && (
+                      <Link href="/issuer/history" className="flex items-center justify-center gap-1 rounded-[20px] bg-card/50 py-3 text-sm font-semibold text-muted-foreground shadow-soft ring-1 ring-border/5 transition-all hover:bg-card hover:text-foreground hover:shadow-button">
+                        View all {documents.length} documents <ChevronRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Activity */}
+              <div>
+                <div className="mb-4 flex items-center justify-between sm:mb-5">
+                  <h3 className="text-lg font-extrabold tracking-[-0.5px] text-foreground sm:text-[22px] sm:leading-[28.6px]">
+                    Recent Activity
+                  </h3>
+                  {activity.length > 0 && (
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {activity.length} {activity.length === 1 ? 'entry' : 'entries'}
+                    </span>
+                  )}
+                </div>
+                {!isConnected ? (
+                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                    <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
+                    <p className="text-sm font-semibold text-muted-foreground">Connect wallet to see activity</p>
+                  </div>
+                ) : activityLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-[72px] animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+                    ))}
+                  </div>
+                ) : activity.length === 0 ? (
+                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                    <Activity className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
+                    <p className="text-sm font-semibold text-muted-foreground">No activity yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activity.slice(0, 5).map((entry, idx) => (
+                      <ActivityItem key={`${entry.createdAt}-${idx}`} {...entry} />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </main>
+      </div>
+
+      {/* Mobile drawer overlay */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+          <div className="relative w-72 max-w-[80vw] animate-fade-in shadow-large">
+            <div className="absolute top-3 right-3 z-10">
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card text-foreground shadow-button hover:bg-muted/50"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <Sidebar pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
+          </div>
         </div>
-      </main>
+      )}
     </div>
   )
 }

@@ -10,11 +10,14 @@ exports.IssuerModule = void 0;
 const common_1 = require("@nestjs/common");
 const issuer_controller_1 = require("./issuer.controller");
 const issuer_service_1 = require("./issuer.service");
+const prisma_module_1 = require("../prisma/prisma.module");
+const audit_module_1 = require("../audit/audit.module");
 let IssuerModule = class IssuerModule {
 };
 exports.IssuerModule = IssuerModule;
 exports.IssuerModule = IssuerModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, audit_module_1.AuditModule],
         controllers: [issuer_controller_1.IssuerController],
         providers: [issuer_service_1.IssuerService],
     })

@@ -13,6 +13,9 @@ import type {
   IssuerDetailResponse,
   IssuerListResponse,
   IssuerRequestStatusResponse,
+  IssuerStatsResponse,
+  IssuerDocumentsResponse,
+  IssuerActivityResponse,
   LogoutResponse,
   NonceResponse,
   PdfHashRequest,
@@ -124,6 +127,10 @@ export const issuerApi = {
   getRequestStatus: () => request<IssuerRequestStatusResponse>('/issuer/request'),
   submitRequest: (body: IssuerAccessRequestBody) =>
     request('/issuer/request', { method: 'POST', body: JSON.stringify(body) }),
+  getStats: () => request<IssuerStatsResponse>('/issuer/stats'),
+  getDocuments: (cursor?: string) =>
+    request<IssuerDocumentsResponse>(`/issuer/documents${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+  getActivity: () => request<IssuerActivityResponse>('/issuer/activity'),
 }
 
 /** Documents */
