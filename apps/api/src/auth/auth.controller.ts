@@ -96,7 +96,7 @@ export class AuthController {
       )
       res.cookie(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS)
       res.clearCookie(NONCE_COOKIE, { path: '/' })
-      return { address, role, requestStatus }
+      return { address, role, requestStatus, token }
     } catch (error) {
       // Clear the consumed nonce on failure, mirroring the original handler.
       res.clearCookie(NONCE_COOKIE, { path: '/' })

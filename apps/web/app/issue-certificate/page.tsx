@@ -75,6 +75,7 @@ function IssuerRequestFormView() {
   const { signIn } = useSiweSignIn()
   const queryClient = useQueryClient()
   const sessionData = useSession()
+  const router = useRouter()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -90,7 +91,17 @@ function IssuerRequestFormView() {
       // Lazy SIWE: only prompt for wallet signature on form submit
       if (!sessionData.role) {
         setStatus('signing')
-        await signIn()
+        const user = await signIn()
+
+        // 🔑 Admin/issuer wallet detected — redirect immediately, no form submission needed
+        if (user.role === 'ADMIN') {
+          router.replace('/admin')
+          return
+        }
+        if (user.role === 'ISSUER') {
+          router.replace('/issuer')
+          return
+        }
       }
 
       setStatus('submitting')

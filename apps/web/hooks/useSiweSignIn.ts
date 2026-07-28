@@ -68,7 +68,10 @@ export function useSiweSignIn() {
 
     const data = await verifyRes.json()
 
-    // Step 5: Store role + address in localStorage for quick UI checks
+    // Step 5: Store JWT token + role + address in localStorage
+    if (data.token) {
+      saveToken(data.token)
+    }
     try {
       localStorage.setItem('certfyi_role', data.role)
       localStorage.setItem('certfyi_address', data.address)

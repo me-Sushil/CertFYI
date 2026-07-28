@@ -12,11 +12,11 @@ export function Header() {
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/certFYI-logo.png" alt="CertFyi" width={32} height={32} priority />
-          {/* <div className="flex flex-col leading-tight">
+          <Image src="/certFYI-logo.png" alt="CertFyi" width={32} height={32} style={{ width: 'auto', height: '32px' }} priority />
+          <div className="flex flex-col leading-tight">
             <span className="font-semibold">CertFyi</span>
             <span className="text-xs text-muted-foreground">Web3 Verified</span>
-          </div> */}
+          </div>
         </Link>
 
         {/* Navigation Links */}
@@ -53,4 +53,3 @@ export function Header() {
     </header>
   )
 }
-

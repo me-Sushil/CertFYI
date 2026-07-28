@@ -45,7 +45,7 @@ let AuthController = class AuthController {
             const { address, role, requestStatus, token } = await this.authService.verifySiwe(body.message, body.signature, nonce);
             res.cookie(roles_constant_1.SESSION_COOKIE, token, roles_constant_1.SESSION_COOKIE_OPTIONS);
             res.clearCookie(roles_constant_1.NONCE_COOKIE, { path: '/' });
-            return { address, role, requestStatus };
+            return { address, role, requestStatus, token };
         }
         catch (error) {
             res.clearCookie(roles_constant_1.NONCE_COOKIE, { path: '/' });

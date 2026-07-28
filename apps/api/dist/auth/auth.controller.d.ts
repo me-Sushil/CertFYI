@@ -13,6 +13,7 @@ export declare class AuthController {
         address: string;
         role: "ADMIN" | "ISSUER" | "UNAPPROVED";
         requestStatus: string | undefined;
+        token: string;
     }>;
     session(req: Request): Promise<{
         address: null;
