@@ -32,6 +32,15 @@ let IssuerController = class IssuerController {
     getStatus(user) {
         return this.issuerService.getStatus(user.address);
     }
+    getStats(user) {
+        return this.issuerService.getStats(user.address);
+    }
+    getDocuments(user, cursor) {
+        return this.issuerService.getDocuments(user.address, cursor);
+    }
+    getActivity(user) {
+        return this.issuerService.getActivity(user.address);
+    }
 };
 exports.IssuerController = IssuerController;
 __decorate([
@@ -68,6 +77,47 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], IssuerController.prototype, "getStatus", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get issuer dashboard statistics',
+        description: 'Returns total issued, active, revoked counts and recent activity count.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Issuer stats.', type: issuer_dto_1.IssuerStatsResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], IssuerController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('documents'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'List documents issued by the current issuer',
+        description: 'Paginated list of anchored documents with cursor-based pagination.',
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'cursor', required: false, description: 'Pagination cursor (docHash).' }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Documents list.', type: issuer_dto_1.IssuerDocumentsResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Query)('cursor')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], IssuerController.prototype, "getDocuments", null);
+__decorate([
+    (0, common_1.Get)('activity'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get recent activity for the current issuer',
+        description: 'Returns recent audit log entries for this issuer.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Activity entries.', type: issuer_dto_1.IssuerActivityResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], IssuerController.prototype, "getActivity", null);
 exports.IssuerController = IssuerController = __decorate([
     (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.ISSUER),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),

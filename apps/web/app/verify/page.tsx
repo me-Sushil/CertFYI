@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { HeaderWrapper } from '@/components/header-wrapper'
@@ -15,9 +15,7 @@ import {
   Shield,
   FileText,
 } from 'lucide-react'
-import * as PDFJS from 'pdfjs-dist'
-
-PDFJS.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`
+import { cn } from '@/lib/utils'
 
 interface VerificationResult {
   status: 'verified' | 'revoked' | 'not_found' | 'error'
@@ -51,12 +49,6 @@ export default function VerifierPortal() {
   const [result, setResult] = useState<VerificationResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  /**
-   * SHA-256 of the file, computed in the browser via the Web Crypto API. Uses
-   * the global `crypto`, not a Node import - importing `crypto` shadows the
-   * global with a browser shim that has no `.subtle`. The file never leaves
-   * the browser: only the resulting hash is sent.
-   */
   const calculateFileHash = async (file: File): Promise<string> => {
     if (!globalThis.crypto?.subtle) {
       throw new Error(
@@ -177,8 +169,8 @@ export default function VerifierPortal() {
   return (
     <div className="min-h-screen bg-background">
       <HeaderWrapper />
-      <main className="mx-auto max-w-4xl px-6 py-16 sm:px-8 sm:py-20 lg:px-10">
-        {!file && !result ? (
+      <main className="mx-auto max-w-4xl px-6 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20 lg:px-10">
+        {!file && !result && (
           <div className="animate-fade-in space-y-8">
             <div className="mb-10 text-center">
               <h1 className="mb-4 text-3xl leading-tight font-extrabold tracking-[-1px] text-foreground sm:text-4xl md:text-5xl lg:text-[60px] lg:leading-[1.12]">
@@ -204,11 +196,12 @@ export default function VerifierPortal() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
               }}
-              className={`cursor-pointer rounded-lg border-2 border-dashed p-10 text-center shadow-card transition-all duration-300 ease-[var(--ease-premium)] sm:p-16 md:p-20 ${
+              className={cn(
+                'cursor-pointer rounded-[20px] border-2 border-dashed bg-card/50 p-10 text-center shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] sm:p-16 md:p-20',
                 isDragging
                   ? 'border-foreground/40 bg-card'
-                  : 'border-border/15 bg-card/50 hover:border-foreground/25 hover:bg-card/80'
-              }`}
+                  : 'border-border/15 hover:-translate-y-0.5 hover:border-foreground/25 hover:bg-card/80 hover:shadow-button',
+              )}
             >
               <input
                 ref={fileInputRef}
@@ -219,11 +212,12 @@ export default function VerifierPortal() {
               />
               <div className="flex flex-col items-center gap-5">
                 <div
-                  className={`flex h-16 w-16 items-center justify-center rounded-lg shadow-button transition-all duration-300 ease-[var(--ease-premium)] ${
+                  className={cn(
+                    'flex h-16 w-16 items-center justify-center rounded-xl transition-all duration-300 ease-[var(--ease-premium)]',
                     isDragging
                       ? 'scale-110 bg-primary text-primary-foreground'
-                      : 'bg-card text-foreground'
-                  }`}
+                      : 'bg-card text-foreground shadow-button',
+                  )}
                 >
                   <Upload className="h-7 w-7" aria-hidden />
                 </div>
@@ -247,9 +241,9 @@ export default function VerifierPortal() {
                 return (
                   <div
                     key={info.title}
-                    className="rounded-lg bg-card p-5 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+                    className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
                   >
-                    <Icon className={`mb-3 h-5 w-5 ${info.tone}`} aria-hidden />
+                    <Icon className={cn('mb-3 h-5 w-5', info.tone)} aria-hidden />
                     <p className="mb-1 text-sm font-extrabold text-foreground">{info.title}</p>
                     <p className="text-xs font-semibold text-muted-foreground">{info.desc}</p>
                   </div>
@@ -257,7 +251,7 @@ export default function VerifierPortal() {
               })}
             </div>
           </div>
-        ) : null}
+        )}
 
         {loading && (
           <div className="animate-fade-in space-y-8 py-16">
@@ -271,7 +265,7 @@ export default function VerifierPortal() {
               </p>
             </div>
             {file && (
-              <div className="flex items-center gap-2 rounded-lg bg-card p-5 shadow-card">
+              <div className="flex items-center gap-2 rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <p className="truncate text-sm font-semibold text-muted-foreground">{file.name}</p>
               </div>
@@ -295,7 +289,7 @@ export default function VerifierPortal() {
             </div>
 
             {file && (
-              <div className="rounded-lg bg-card p-5 shadow-card">
+              <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                 <p className="mb-1 text-sm font-extrabold text-foreground">File</p>
                 <p className="text-sm text-muted-foreground">{file.name}</p>
                 <p className="mt-2 font-mono text-xs font-semibold text-muted-foreground">
@@ -304,18 +298,26 @@ export default function VerifierPortal() {
               </div>
             )}
 
-            <div className="rounded-lg bg-card p-8 shadow-card">
+            <div
+              className={cn(
+                'rounded-[20px] bg-card p-8 shadow-card ring-1 ring-border/5',
+                result.status === 'verified' && 'animate-scale-in',
+              )}
+            >
               <div className="flex items-start gap-5">
                 <div className="mt-1 shrink-0">
                   {result.status === 'verified' ? (
                     <CheckCircle className="h-8 w-8 text-success" aria-hidden />
                   ) : (
-                    <AlertCircle className={`h-8 w-8 ${STATUS_TONE[result.status]}`} aria-hidden />
+                    <AlertCircle className={cn('h-8 w-8', STATUS_TONE[result.status])} aria-hidden />
                   )}
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`mb-2 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] ${STATUS_TONE[result.status]}`}
+                    className={cn(
+                      'mb-2 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px]',
+                      STATUS_TONE[result.status],
+                    )}
                   >
                     {result.status === 'verified' && 'Document Verified'}
                     {result.status === 'revoked' && 'Document Revoked'}
@@ -339,7 +341,7 @@ export default function VerifierPortal() {
 
             {result.status !== 'error' && (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div className="rounded-lg bg-card p-5 shadow-card">
+                <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                   <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                     Issuer
                   </label>
@@ -348,7 +350,7 @@ export default function VerifierPortal() {
                     {result.issuerAddress}
                   </p>
                 </div>
-                <div className="rounded-lg bg-card p-5 shadow-card">
+                <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                   <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                     Issued On
                   </label>
@@ -360,7 +362,7 @@ export default function VerifierPortal() {
                   </p>
                 </div>
                 {result.transactionHash && (
-                  <div className="rounded-lg bg-card p-5 shadow-card sm:col-span-2">
+                  <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 sm:col-span-2">
                     <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                       Transaction Hash
                     </label>

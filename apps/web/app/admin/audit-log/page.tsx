@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { ChainBanner } from '@/components/admin/chain-banner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
@@ -52,29 +51,24 @@ export default function AuditLogPage() {
   const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/audit-log/export${filterAction !== 'ALL' ? `?action=${filterAction}` : ''}${searchTerm ? `${filterAction !== 'ALL' ? '&' : '?'}actor=${encodeURIComponent(searchTerm)}` : ''}`
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <ChainBanner />
 
-      <div className="mb-8">
-        <h1 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-          Audit Log
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Complete audit trail of all platform activity
-        </p>
-      </div>
-
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {ACTION_FILTERS.map((action) => (
-            <Button
+            <button
               key={action.value}
-              variant={filterAction === action.value ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setFilterAction(action.value)}
+              className={cn(
+                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+                filterAction === action.value
+                  ? 'bg-primary text-primary-foreground shadow-button'
+                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
+              )}
             >
               {action.label}
-            </Button>
+            </button>
           ))}
         </div>
         <a href={exportUrl} target="_blank" rel="noopener noreferrer">
@@ -84,35 +78,33 @@ export default function AuditLogPage() {
         </a>
       </div>
 
-      <div className="relative mb-8">
-        <Search
-          className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
+      <div className="relative mb-6">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <input
           type="text"
           placeholder="Filter by actor address..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="h-12 w-full rounded-full border border-border/15 bg-card pr-5 pl-10 text-sm text-foreground outline-none transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/15"
+          className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
         />
       </div>
 
       {isLoading ? (
-        <div className="overflow-hidden rounded-lg bg-card shadow-card">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="space-y-2 border-b border-border/15 p-5 last:border-b-0">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-4 w-64" />
-              <Skeleton className="h-4 w-80" />
-            </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
           ))}
         </div>
       ) : entries.length === 0 ? (
-        <EmptyState icon={FileText} title="No entries found" description="No audit entries match your current filters." />
+        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+          <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+          <p className="text-sm font-semibold text-muted-foreground">
+            {searchTerm || filterAction !== 'ALL' ? 'No entries match your filters' : 'No audit entries yet'}
+          </p>
+        </div>
       ) : (
         <>
-          <div className="overflow-hidden rounded-lg bg-card shadow-card">
+          <div className="overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5">
             {entries.map((entry, idx) => (
               <AuditLogEntryRow key={entry.id} entry={entry} isLast={idx === entries.length - 1} />
             ))}
@@ -139,8 +131,8 @@ function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boo
   return (
     <div
       className={cn(
-        'p-5 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/30 sm:p-6',
-        !isLast && 'border-b border-border/15',
+        'p-5 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/20 sm:p-6',
+        !isLast && 'border-b border-border/10',
       )}
     >
       <div className="flex items-start gap-4">

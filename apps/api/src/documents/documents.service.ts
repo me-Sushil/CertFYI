@@ -32,6 +32,10 @@ export class DocumentsService {
         data: {
           docHash: body.documentHash,
           issuerAddress: body.issuerAddress.toLowerCase(),
+          issuerName: body.issuerName ?? null,
+          documentType: body.documentType ?? null,
+          recipientName: body.recipientName ?? null,
+          recipientEmail: body.recipientEmail ?? null,
           txHash,
         },
       })

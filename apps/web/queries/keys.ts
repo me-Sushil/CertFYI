@@ -27,6 +27,16 @@ export const keys = {
     requestStatus: {
       all: ['issuer-request-status'] as const,
     },
+    stats: {
+      all: ['issuer', 'stats'] as const,
+    },
+    documents: {
+      all: ['issuer', 'documents'] as const,
+      list: (cursor?: string) => ['issuer', 'documents', cursor ?? ''] as const,
+    },
+    activity: {
+      all: ['issuer', 'activity'] as const,
+    },
   },
   document: {
     anchor: {
