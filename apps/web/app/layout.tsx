@@ -51,8 +51,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background scroll-smooth">
+    <html lang="en" className="bg-background scroll-smooth" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground">
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                var theme = localStorage.getItem('certfyi-theme');
+                if (!theme) theme = 'dark';
+                document.documentElement.classList.add(theme);
+              } catch(e) {}
+            })();
+          `
+        }} />
         <Providers>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}
