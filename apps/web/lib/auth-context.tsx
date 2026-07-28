@@ -3,15 +3,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from './api'
 import type { SessionRole } from './api-types'
+import { keys } from '@/queries/keys'
 
 export type { SessionRole }
 
-/** Reads the caller's SIWE session from apps/api (httpOnly cookie, verified server-side). */
 export function useSession() {
   const query = useQuery({
-    queryKey: ['session'],
+    queryKey: keys.session.all,
     queryFn: authApi.getSession,
     staleTime: 30_000,
+    retry: false,
   })
 
   return {

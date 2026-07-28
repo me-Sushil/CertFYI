@@ -10,5 +10,6 @@ exports.API_TAGS = {
     ADMIN: 'Admin',
     DOCUMENTS: 'Documents',
     PDF: 'PDF',
+    IPFS: 'IPFS',
 };
 //# sourceMappingURL=swagger.constants.js.map

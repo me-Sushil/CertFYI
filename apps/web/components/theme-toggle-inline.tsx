@@ -2,8 +2,6 @@
 
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/lib/theme-context'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 export function ThemeToggleInline() {
   const { theme, setTheme, mounted } = useTheme()

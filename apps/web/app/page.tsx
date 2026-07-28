@@ -23,10 +23,17 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <HeaderWrapper />
 
-      {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 lg:px-8 py-24 sm:py-32 overflow-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full blur-3xl" />
+      {/* Hero */}
+      <section className="relative overflow-hidden px-6 pt-[200px] pb-[120px] sm:px-8 lg:px-10">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="absolute -top-1/2 -right-1/4 h-[800px] w-[800px] rounded-full opacity-[0.08]"
+            style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
+          />
+          <div
+            className="absolute -bottom-1/2 -left-1/4 h-[600px] w-[600px] rounded-full opacity-[0.05]"
+            style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
+          />
         </div>
 
         <div className="mx-auto max-w-4xl text-center">
@@ -37,11 +44,12 @@ export default function HomePage() {
             </span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-            Verify Any PDF
-            <span className="block bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-              on the Blockchain
-            </span>
+          <h1 className="stagger-2 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
+            The productivity app{' '}
+            <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
+              you&apos;ll actually
+            </span>{' '}
+            enjoy using
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -210,7 +218,6 @@ export default function HomePage() {
             })}
           </div>
         </div>
-      </section>
 
       {/* How It Works Section */}
       <section
@@ -277,8 +284,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-24 sm:py-32 border-t border-border">
+      {/* Final CTA */}
+      <section className="px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-6">
             Ready to Verify?
@@ -287,27 +294,24 @@ export default function HomePage() {
             Start verifying documents instantly with CertFyi. No signup
             required.
           </p>
-          <Link href="/verify">
-            <Button size="lg" className="gap-2 text-base h-12">
-              <Zap className="w-5 h-5" />
-              Verify Your First PDF
-            </Button>
+          <Link href="/verify" className={`${heroCta} w-full justify-center sm:w-auto`}>
+            <Zap className="h-5 w-5" />
+            Verify Your First PDF
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted/50 px-4 sm:px-6 lg:px-8 py-12">
+      <footer className="border-t border-border/15 px-6 py-14 sm:px-8 lg:px-10">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-primary-foreground" />
+          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-card shadow-button">
+                <Shield className="h-5 w-5 text-foreground" aria-hidden />
               </div>
-              <span className="font-semibold">CertFyi</span>
+              <span className="text-lg font-bold text-foreground">CertFyi</span>
             </div>
-            <p className="text-sm text-muted-foreground text-center sm:text-left">
-              © 2026 CertFyi. Blockchain-powered PDF verification platform.
+            <p className="text-center text-sm font-semibold text-muted-foreground">
+              &copy; 2026 CertFyi. Blockchain-powered PDF verification platform.
             </p>
             <div className="flex gap-6 text-sm">
               <Link

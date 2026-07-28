@@ -1,8 +1,15 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Providers } from '@/app/providers'
 import './globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-plus-jakarta-sans',
+})
 
 export const metadata: Metadata = {
   title: 'CertFyi - Verify PDF Documents on the Blockchain',
@@ -36,8 +43,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#6172d0' },
-    { media: '(prefers-color-scheme: dark)', color: '#0c0f1d' },
+    { media: '(prefers-color-scheme: light)', color: '#f3f3f3' },
+    { media: '(prefers-color-scheme: dark)', color: '#111213' },
   ],
   width: 'device-width',
   initialScale: 1,

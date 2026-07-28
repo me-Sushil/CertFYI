@@ -3,14 +3,14 @@ import { AnchorDto, BatchAnchorDto, VerifyDocumentDto } from '../common/dto/docu
 export declare class DocumentsController {
     private readonly documentsService;
     constructor(documentsService: DocumentsService);
-    anchor(body: AnchorDto): {
+    anchor(body: AnchorDto): Promise<{
         success: boolean;
         txHash: string;
         documentHash: string;
         timestamp: string;
         status: string;
         message: string;
-    };
+    }>;
     getAnchor(hash?: string): {
         success: boolean;
         document: any;

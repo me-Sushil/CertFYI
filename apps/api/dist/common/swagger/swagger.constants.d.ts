@@ -7,4 +7,5 @@ export declare const API_TAGS: {
     readonly ADMIN: "Admin";
     readonly DOCUMENTS: "Documents";
     readonly PDF: "PDF";
+    readonly IPFS: "IPFS";
 };
