@@ -4,7 +4,6 @@ import {
   HttpCode,
   Patch,
   Post,
-  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common'
@@ -16,7 +15,6 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger'
 import { PdfService } from './pdf.service'
@@ -40,18 +38,18 @@ export class PdfController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: PdfUploadDto, description: 'PDF file in the `file` field.' })
-  @ApiQuery({
-    name: 'storeOnIpfs',
-    required: false,
-    description: 'When true, the PDF is also uploaded to IPFS via Storacha.',
-    type: Boolean,
-  })
   @ApiCreatedResponse({ description: 'File accepted and hashed.', type: PdfUploadResponseDto })
   @ApiBadRequestResponse({
-    description: 'No file supplied, wrong MIME type, or over the 50 MB limit.',
+    description:
+      'No file supplied, wrong MIME type, not actually a PDF, or over the 50 MB limit.',
     type: ApiErrorDto,
   })
-  upload(@UploadedFile() file?: Express.Multer.File, @Query('storeOnIpfs') storeOnIpfs?: string) {
+  upload(
+    @UploadedFile() file?: Express.Multer.File,
+    @Body('storeOnIpfs') storeOnIpfs?: string,
+  ) {
+    // Multipart values arrive as strings, so compare explicitly rather than
+    // relying on truthiness - the string "false" is truthy.
     return this.pdfService.upload(file, storeOnIpfs === 'true')
   }
 

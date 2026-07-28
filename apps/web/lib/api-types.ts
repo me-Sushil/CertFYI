@@ -101,6 +101,33 @@ export interface VerifyDocumentRequest {
   pdfContent?: string
 }
 
+export interface PdfUploadResponse {
+  success: boolean
+  filename: string
+  fileSize: number
+  documentHash: string
+  /** IPFS CID, or null when storage was not requested or the pin failed. */
+  cid: string | null
+  gatewayUrl: string | null
+  pinned: boolean
+  /** Present only when pinning failed. The document is still valid. */
+  pinError?: string
+  timestamp: string
+  message: string
+}
+
+export interface IpfsPinStatusResponse {
+  cid: string
+  pinned: boolean
+  gatewayUrl: string
+}
+
+export interface IpfsHealthResponse {
+  provider: string
+  configured: boolean
+  gateway: string
+}
+
 export interface PdfHashRequest {
   pdfContent: string
   filename: string

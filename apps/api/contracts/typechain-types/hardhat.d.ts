@@ -37,6 +37,10 @@ declare module "hardhat/types/runtime" {
       name: "DocumentAnchor",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.DocumentAnchor__factory>;
+    getContractFactory(
+      name: "DocumentAnchor",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.DocumentAnchor__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -68,6 +72,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.DocumentAnchor>;
+    getContractAt(
+      name: "DocumentAnchor",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.DocumentAnchor>;
 
     deployContract(
       name: "AccessControl",
@@ -89,6 +98,10 @@ declare module "hardhat/types/runtime" {
       name: "ReentrancyGuard",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
+      name: "DocumentAnchor",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DocumentAnchor>;
     deployContract(
       name: "DocumentAnchor",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -119,6 +132,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
+      name: "DocumentAnchor",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DocumentAnchor>;
     deployContract(
       name: "DocumentAnchor",
       args: any[],

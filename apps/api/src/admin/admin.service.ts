@@ -1,4 +1,4 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { Hex } from 'viem'
 import { Response } from 'express'
 import { PrismaService } from '../prisma/prisma.service'
@@ -292,7 +292,14 @@ export class AdminService {
       registeredAt: issuer.registeredAt.toISOString(),
     }
 
-    const result = await this.ipfs.uploadJson(profile, `issuer-${normalized}`)
+    const result = await this.ipfs.pinJson(profile, `issuer-${normalized}`)
+    if (!result.pinned) {
+      // Unlike document pinning, this one has no on-chain fallback: the caller
+      // asked for a metadataUri and there is nothing meaningful to return.
+      throw new ServiceUnavailableException(
+        `Could not pin issuer metadata to IPFS: ${result.error}`,
+      )
+    }
     const metadataUri = `ipfs://${result.cid}`
 
     await this.prisma.issuer.update({
