@@ -40,11 +40,17 @@ export class PdfController {
   @ApiBody({ type: PdfUploadDto, description: 'PDF file in the `file` field.' })
   @ApiCreatedResponse({ description: 'File accepted and hashed.', type: PdfUploadResponseDto })
   @ApiBadRequestResponse({
-    description: 'No file supplied, wrong MIME type, or over the 50 MB limit.',
+    description:
+      'No file supplied, wrong MIME type, not actually a PDF, or over the 50 MB limit.',
     type: ApiErrorDto,
   })
-  upload(@UploadedFile() file?: Express.Multer.File) {
-    return this.pdfService.upload(file)
+  upload(
+    @UploadedFile() file?: Express.Multer.File,
+    @Body('storeOnIpfs') storeOnIpfs?: string,
+  ) {
+    // Multipart values arrive as strings, so compare explicitly rather than
+    // relying on truthiness - the string "false" is truthy.
+    return this.pdfService.upload(file, storeOnIpfs === 'true')
   }
 
   @Patch('upload')

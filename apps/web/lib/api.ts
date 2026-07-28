@@ -1,19 +1,29 @@
 import type {
   AccessRequestStatus,
   AdminRequestsResponse,
+  AdminStatsResponse,
   AnchorDocumentRequest,
   ApiErrorBody,
   ApproveUserRequest,
-  AuditLogEntry,
+  AuditLogResponse,
   BatchAnchorRequest,
+  IpfsHealthResponse,
+  IpfsPinStatusResponse,
   IssuerAccessRequestBody,
+  IssuerDetailResponse,
+  IssuerListResponse,
   IssuerRequestStatusResponse,
-  IssuerRow,
+  IssuerStatsResponse,
+  IssuerDocumentsResponse,
+  IssuerActivityResponse,
   LogoutResponse,
   NonceResponse,
   PdfHashRequest,
+  PdfUploadResponse,
+  ReactivateIssuerRequest,
   RejectUserRequest,
   SessionResponse,
+  SuspendIssuerRequest,
   VerifyDocumentRequest,
   VerifyRequest,
   VerifyResponse,
@@ -26,9 +36,22 @@ export class ApiError extends Error {
   body?: ApiErrorBody
 
   constructor(status: number, body?: ApiErrorBody) {
-    super((body && (body.error || body.message)) ? String(body.error || body.message) : `Request failed with status ${status}`)
+    super(ApiError.describe(status, body))
     this.status = status
     this.body = body
+  }
+
+  /**
+   * Nest puts the useful detail in `message` (an array, for validation errors)
+   * and a generic label like "Bad Request" in `error`. Prefer `message`, or
+   * every validation failure surfaces as the same unhelpful string.
+   */
+  private static describe(status: number, body?: ApiErrorBody): string {
+    const message = body?.message
+    if (Array.isArray(message) && message.length > 0) return message.join('; ')
+    if (typeof message === 'string' && message.length > 0) return message
+    if (body?.error) return body.error
+    return `Request failed with status ${status}`
   }
 }
 
@@ -71,12 +94,32 @@ export const adminApi = {
     request('/admin/approve-user', { method: 'POST', body: JSON.stringify(body) }),
   rejectUser: (body: RejectUserRequest) =>
     request('/admin/reject-user', { method: 'POST', body: JSON.stringify(body) }),
-  getIssuers: () =>
-    request<{ issuers: IssuerRow[] }>('/admin/issuers'),
-  suspendIssuer: (body: { walletAddress: string }) =>
-    request('/admin/issuers/suspend', { method: 'POST', body: JSON.stringify(body) }),
-  getAuditLog: () =>
-    request<{ entries: AuditLogEntry[] }>('/admin/audit-log'),
+  getStats: () => request<AdminStatsResponse>('/admin/stats'),
+  getIssuers: (params?: { status?: string; search?: string; cursor?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.cursor) searchParams.set('cursor', params.cursor)
+    if (params?.limit) searchParams.set('limit', String(params.limit))
+    const qs = searchParams.toString()
+    return request<IssuerListResponse>(`/admin/issuers${qs ? `?${qs}` : ''}`)
+  },
+  getIssuer: (address: string) => request<IssuerDetailResponse>(`/admin/issuers/${encodeURIComponent(address)}`),
+  suspendIssuer: (body: SuspendIssuerRequest) =>
+    request('/admin/suspend-issuer', { method: 'POST', body: JSON.stringify(body) }),
+  reactivateIssuer: (body: ReactivateIssuerRequest) =>
+    request('/admin/reactivate-issuer', { method: 'POST', body: JSON.stringify(body) }),
+  getAuditLog: (params?: { action?: string; actor?: string; from?: string; to?: string; cursor?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.action) searchParams.set('action', params.action)
+    if (params?.actor) searchParams.set('actor', params.actor)
+    if (params?.from) searchParams.set('from', params.from)
+    if (params?.to) searchParams.set('to', params.to)
+    if (params?.cursor) searchParams.set('cursor', params.cursor)
+    if (params?.limit) searchParams.set('limit', String(params.limit))
+    const qs = searchParams.toString()
+    return request<AuditLogResponse>(`/admin/audit-log${qs ? `?${qs}` : ''}`)
+  },
 }
 
 /** Issuer */
@@ -84,6 +127,10 @@ export const issuerApi = {
   getRequestStatus: () => request<IssuerRequestStatusResponse>('/issuer/request'),
   submitRequest: (body: IssuerAccessRequestBody) =>
     request('/issuer/request', { method: 'POST', body: JSON.stringify(body) }),
+  getStats: () => request<IssuerStatsResponse>('/issuer/stats'),
+  getDocuments: (cursor?: string) =>
+    request<IssuerDocumentsResponse>(`/issuer/documents${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+  getActivity: () => request<IssuerActivityResponse>('/issuer/activity'),
 }
 
 /** Documents */
@@ -102,11 +149,30 @@ export const documentsApi = {
 
 /** PDF */
 export const pdfApi = {
-  upload: (file: File) => {
+  /**
+   * Hashes a PDF, and pins it to IPFS only when `storeOnIpfs` is true.
+   *
+   * Defaults to false: a CID is a permanent public handle, so publishing a
+   * document that names its recipient has to be a deliberate choice.
+   */
+  upload: (file: File, storeOnIpfs = false) => {
     const formData = new FormData()
     formData.append('file', file)
-    return request('/pdf/upload', { method: 'POST', body: formData as unknown as BodyInit })
+    formData.append('storeOnIpfs', String(storeOnIpfs))
+    return request<PdfUploadResponse>('/pdf/upload', {
+      method: 'POST',
+      body: formData as unknown as BodyInit,
+    })
   },
   hash: (body: PdfHashRequest) =>
     request('/pdf/upload', { method: 'PATCH', body: JSON.stringify(body) }),
+}
+
+/** IPFS */
+export const ipfsApi = {
+  health: () => request<IpfsHealthResponse>('/ipfs/health'),
+  status: (cid: string) =>
+    request<IpfsPinStatusResponse>(`/ipfs/${encodeURIComponent(cid)}/status`),
+  /** Direct URL for streaming content through the API rather than the gateway. */
+  contentUrl: (cid: string) => `${API_URL}/ipfs/${encodeURIComponent(cid)}`,
 }

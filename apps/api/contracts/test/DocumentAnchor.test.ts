@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
-import { DocumentAnchor } from '../typechain-types'
+import type { DocumentAnchor } from '../typechain-types'
 
 describe('DocumentAnchor', () => {
   async function deploy() {
@@ -40,7 +40,7 @@ describe('DocumentAnchor', () => {
     const { contract, outsider } = await deploy()
     const docHash = ethers.keccak256(ethers.toUtf8Bytes('doc-2'))
     await expect(
-      contract.connect(outsider).anchorDocument(docHash, 'diploma')
+      contract.connect(outsider).anchorDocument(docHash, 'diploma'),
     ).to.be.revertedWithCustomError(contract, 'AccessControlUnauthorizedAccount')
   })
 
@@ -50,8 +50,7 @@ describe('DocumentAnchor', () => {
     const ISSUER_ROLE = await contract.ISSUER_ROLE()
 
     await contract.connect(deployer).grantRole(ADMIN_ROLE, admin2.address)
-    await expect(contract.connect(admin2).grantRole(ISSUER_ROLE, issuer.address)).to.not.be
-      .reverted
+    await expect(contract.connect(admin2).grantRole(ISSUER_ROLE, issuer.address)).to.not.be.reverted
     expect(await contract.isIssuerApproved(issuer.address)).to.equal(true)
   })
 
@@ -64,7 +63,48 @@ describe('DocumentAnchor', () => {
     expect(await contract.isIssuerApproved(issuer.address)).to.equal(false)
     const docHash = ethers.keccak256(ethers.toUtf8Bytes('doc-3'))
     await expect(
-      contract.connect(issuer).anchorDocument(docHash, 'diploma')
+      contract.connect(issuer).anchorDocument(docHash, 'diploma'),
     ).to.be.revertedWithCustomError(contract, 'AccessControlUnauthorizedAccount')
+  })
+
+  it('documents anchored before revocation stay valid (FR-A4)', async () => {
+    const { contract, deployer, issuer } = await deploy()
+    const ISSUER_ROLE = await contract.ISSUER_ROLE()
+    await contract.connect(deployer).grantRole(ISSUER_ROLE, issuer.address)
+
+    const docHash = ethers.keccak256(ethers.toUtf8Bytes('doc-pre-revoke'))
+    await contract.connect(issuer).anchorDocument(docHash, 'diploma')
+
+    await contract.connect(deployer).revokeRole(ISSUER_ROLE, issuer.address)
+
+    expect(await contract.isIssuerApproved(issuer.address)).to.equal(false)
+    expect(await contract.verifyDocument(docHash)).to.equal(true)
+  })
+
+  it('setIssuerMetadata reverts for a non-issuer', async () => {
+    const { contract, deployer, outsider } = await deploy()
+    await expect(
+      contract.connect(deployer).setIssuerMetadata(outsider.address, 'ipfs://test'),
+    ).to.be.revertedWith('Not an issuer')
+  })
+
+  it('setIssuerMetadata reverts for a non-admin caller', async () => {
+    const { contract, deployer, issuer } = await deploy()
+    const ISSUER_ROLE = await contract.ISSUER_ROLE()
+    await contract.connect(deployer).grantRole(ISSUER_ROLE, issuer.address)
+
+    await expect(
+      contract.connect(issuer).setIssuerMetadata(issuer.address, 'ipfs://test'),
+    ).to.be.revertedWithCustomError(contract, 'AccessControlUnauthorizedAccount')
+  })
+
+  it('setIssuerMetadata emits IssuerMetadataSet for a valid issuer', async () => {
+    const { contract, deployer, issuer } = await deploy()
+    const ISSUER_ROLE = await contract.ISSUER_ROLE()
+    await contract.connect(deployer).grantRole(ISSUER_ROLE, issuer.address)
+
+    await expect(contract.connect(deployer).setIssuerMetadata(issuer.address, 'ipfs://profile'))
+      .to.emit(contract, 'IssuerMetadataSet')
+      .withArgs(issuer.address, 'ipfs://profile', anyValue)
   })
 })

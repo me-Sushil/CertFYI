@@ -22,4 +22,5 @@ export const API_TAGS = {
   ADMIN: 'Admin',
   DOCUMENTS: 'Documents',
   PDF: 'PDF',
+  IPFS: 'IPFS',
 } as const

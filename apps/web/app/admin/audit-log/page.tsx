@@ -1,151 +1,181 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Search, Loader2, ShieldAlert } from 'lucide-react'
-import { useSession } from '@/lib/auth-context'
-import { adminApi } from '@/lib/api'
+import { ChainBanner } from '@/components/admin/chain-banner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
+import { useAuditLog } from '@/queries/admin'
+import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
+import { formatDateTime, formatAddress } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { AuditLogEntry } from '@/lib/api-types'
 
+const ACTION_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'ISSUER_APPROVED', label: 'Approved' },
+  { value: 'ISSUER_REJECTED', label: 'Rejected' },
+  { value: 'ISSUER_SUSPENDED', label: 'Suspended' },
+  { value: 'ISSUER_REACTIVATED', label: 'Reactivated' },
+  { value: 'ISSUER_METADATA_SET', label: 'Metadata Set' },
+  { value: 'DOCUMENT_ANCHORED', label: 'Anchored' },
+  { value: 'IPFS_PIN_FAILED', label: 'IPFS Failed' },
+] as const
+
+const ACTION_DOT: Record<string, string> = {
+  ISSUER_APPROVED: 'bg-success',
+  ISSUER_REACTIVATED: 'bg-success',
+  DOCUMENT_ANCHORED: 'bg-success',
+  ISSUER_REJECTED: 'bg-destructive',
+  ISSUER_SUSPENDED: 'bg-destructive',
+  IPFS_PIN_FAILED: 'bg-destructive',
+}
+
 export default function AuditLogPage() {
-  const router = useRouter()
-  const { role, isLoading: sessionLoading } = useSession()
-  const [entries, setEntries] = useState<AuditLogEntry[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [filterAction, setFilterAction] = useState('ALL')
 
-  useEffect(() => {
-    if (!sessionLoading && role !== 'ADMIN') {
-      router.replace('/')
-      return
-    }
-    if (role === 'ADMIN') {
-      adminApi.getAuditLog()
-        .then((data) => { setEntries(data.entries); setLoading(false) })
-        .catch(() => { setError('Failed to load audit log'); setLoading(false) })
-    }
-  }, [sessionLoading, role, router])
-
-  const filteredEntries = entries.filter((entry) => {
-    const q = searchTerm.toLowerCase()
-    return (
-      entry.action.toLowerCase().includes(q) ||
-      (entry.actor ?? '').toLowerCase().includes(q) ||
-      (entry.target ?? '').toLowerCase().includes(q) ||
-      (entry.details ?? '').toLowerCase().includes(q)
-    )
+  const {
+    data: pagesData,
+    fetchNextPage,
+    hasNextPage,
+    isLoading,
+    isFetchingNextPage,
+  } = useAuditLog(true, {
+    action: filterAction !== 'ALL' ? filterAction : undefined,
+    actor: searchTerm || undefined,
   })
 
-  if (sessionLoading || role !== 'ADMIN') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    )
-  }
+  const entries = pagesData?.pages.flatMap((p) => p.entries) ?? []
+
+  const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/audit-log/export${filterAction !== 'ALL' ? `?action=${filterAction}` : ''}${searchTerm ? `${filterAction !== 'ALL' ? '&' : '?'}actor=${encodeURIComponent(searchTerm)}` : ''}`
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2 hover:opacity-80 transition">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back</span>
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold">Audit Log</h1>
+    <div>
+      <ChainBanner />
+
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {ACTION_FILTERS.map((action) => (
+            <button
+              key={action.value}
+              onClick={() => setFilterAction(action.value)}
+              className={cn(
+                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+                filterAction === action.value
+                  ? 'bg-primary text-primary-foreground shadow-button'
+                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
+              )}
+            >
+              {action.label}
+            </button>
+          ))}
         </div>
-      </nav>
+        <a href={exportUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="h-4 w-4" aria-hidden /> Export CSV
+          </Button>
+        </a>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <p className="text-muted-foreground">Platform-wide activity feed from access request decisions</p>
+      <div className="relative mb-6">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <input
+          type="text"
+          placeholder="Filter by actor address..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+          ))}
         </div>
-
-        {error && (
-          <div className="flex gap-2 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
-            <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* Search */}
-        <div className="space-y-4 mb-8">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search entries by action, actor, or details..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-            />
-          </div>
-        </div>
-
-        {/* Results Count */}
-        {!loading && (
-          <p className="text-sm text-muted-foreground mb-4">
-            Showing {filteredEntries.length} of {entries.length} entries
+      ) : entries.length === 0 ? (
+        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+          <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+          <p className="text-sm font-semibold text-muted-foreground">
+            {searchTerm || filterAction !== 'ALL' ? 'No entries match your filters' : 'No audit entries yet'}
           </p>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-5 w-5 animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-0 border border-border rounded-lg overflow-hidden">
-            {filteredEntries.map((entry, idx) => (
-              <div
-                key={entry.id}
-                className={`p-4 sm:p-6 border-b border-border hover:bg-muted/30 transition ${
-                  idx === filteredEntries.length - 1 ? 'border-b-0' : ''
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="mt-1 flex-shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2 flex-col sm:flex-row">
-                      <div>
-                        <p className="font-semibold">{entry.action}</p>
-                        <p className="text-sm text-muted-foreground">{entry.target ?? '—'}</p>
-                      </div>
-                      <time className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(entry.timestamp).toLocaleString()}
-                      </time>
-                    </div>
-
-                    <div className="space-y-1 text-sm">
-                      <p className="text-muted-foreground">
-                        <span className="font-medium">Actor:</span>{' '}
-                        <span className="font-mono text-xs">{entry.actor}</span>
-                      </p>
-                      {entry.details && (
-                        <p className="text-muted-foreground">
-                          <span className="font-medium">Details:</span> {entry.details}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5">
+            {entries.map((entry, idx) => (
+              <AuditLogEntryRow key={entry.id} entry={entry} isLast={idx === entries.length - 1} />
             ))}
           </div>
-        )}
 
-        {!loading && filteredEntries.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No audit entries found matching your criteria.</p>
+          {hasNextPage && (
+            <div className="py-6 text-center">
+              <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                Load More
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boolean }) {
+  const explorerUrl = entry.txHash ? getExplorerUrl(entry.txHash, CONTRACT_CHAIN_ID) : null
+  const dotTone = ACTION_DOT[entry.action] ?? 'bg-accent'
+
+  return (
+    <div
+      className={cn(
+        'p-5 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/20 sm:p-6',
+        !isLast && 'border-b border-border/10',
+      )}
+    >
+      <div className="flex items-start gap-4">
+        <div className="mt-1.5 shrink-0">
+          <div className={cn('h-2.5 w-2.5 rounded-full', dotTone)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-col items-start justify-between gap-4 sm:flex-row">
+            <p className="text-sm font-extrabold text-foreground">{entry.action.replace(/_/g, ' ')}</p>
+            <time className="text-xs font-semibold whitespace-nowrap text-muted-foreground">
+              {formatDateTime(entry.createdAt)}
+            </time>
           </div>
-        )}
-      </main>
+
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p>
+              <span className="font-semibold">Actor:</span> {entry.actorName}
+            </p>
+            <p>
+              <span className="font-semibold">Target:</span> {formatAddress(entry.targetRef)}
+            </p>
+            {entry.detail && (
+              <p className="break-words">
+                <span className="font-semibold">Details:</span> {entry.detail}
+              </p>
+            )}
+            {explorerUrl && (
+              <p>
+                <span className="font-semibold">Tx:</span>{' '}
+                <a
+                  href={explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-mono text-xs text-accent transition-opacity duration-150 hover:opacity-80"
+                >
+                  {formatAddress(entry.txHash!, 8)}
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

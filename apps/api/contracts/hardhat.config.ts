@@ -1,5 +1,8 @@
 import { HardhatUserConfig } from 'hardhat/config'
 import '@nomicfoundation/hardhat-toolbox'
+// hardhat-toolbox does not read .env, so without this the values below are
+// always empty and `--network sepolia` fails with "network doesn't exist".
+import 'dotenv/config'
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || ''
 const PRIVATE_KEY = process.env.PRIVATE_KEY || ''

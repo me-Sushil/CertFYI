@@ -13,8 +13,25 @@ enum RequestStatus {
   REJECTED
 }
 
-// Tracks issuer access requests. Absence of a row for a wallet means
-// its request status is "NONE" (never applied) - not persisted.
+enum IssuerStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AuditAction {
+  ISSUER_APPROVED
+  ISSUER_REJECTED
+  ISSUER_SUSPENDED
+  ISSUER_REACTIVATED
+  ISSUER_METADATA_SET
+  DOCUMENT_ANCHORED
+  BATCH_ANCHORED
+  DOCUMENT_REVOKED
+  IPFS_PIN_FAILED
+}
+
+/// Tracks issuer access requests. Absence of a row for a wallet means
+/// its request status is "NONE" (never applied) - not persisted.
 model AccessRequest {
   id              String         @id @default(cuid())
   walletAddress   String         @unique
@@ -29,4 +46,56 @@ model AccessRequest {
   rejectionReason String?
 
   @@index([status])
+}
+
+/// Off-chain index of the on-chain ISSUER_ROLE holders (SRS §8.3 `issuers`).
+/// Rebuildable at any time from chain events — never the source of truth.
+model Issuer {
+  walletAddress   String        @id
+  name            String?
+  email           String?
+  organization    String?
+  website         String?
+  metadataUri     String?        @map("metadata_uri")
+  status          IssuerStatus  @default(ACTIVE)
+  registeredAt    DateTime      @default(now()) @map("registered_at")
+  registerTxHash  String        @unique @map("register_tx_hash")
+  suspendedAt     DateTime?     @map("suspended_at")
+  suspendTxHash   String?       @unique @map("suspend_tx_hash")
+  documentCount   Int           @default(0) @map("document_count")
+
+  @@index([status])
+  @@map("issuers")
+}
+
+model AuditLog {
+  id           String       @id @default(cuid())
+  action       AuditAction
+  actorAddress String       @map("actor_address")
+  targetRef    String       @map("target_ref")
+  txHash       String?      @map("tx_hash")
+  detail       String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([actorAddress])
+  @@map("audit_logs")
+}
+
+model AnchoredDocument {
+  docHash         String    @id @map("doc_hash")
+  issuerAddress   String    @map("issuer_address")
+  issuerName      String?   @map("issuer_name")
+  documentType    String?   @map("document_type")
+  recipientName   String?   @map("recipient_name")
+  recipientEmail  String?   @map("recipient_email")
+  cid             String?
+  metadataCid     String?   @map("metadata_cid")
+  txHash          String    @map("tx_hash")
+  anchoredAt      DateTime  @default(now()) @map("anchored_at")
+  revokedAt       DateTime? @map("revoked_at")
+
+  @@index([issuerAddress])
+  @@map("anchored_documents")
 }
