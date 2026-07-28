@@ -4,12 +4,17 @@ export declare class PdfHashDto {
 }
 export declare class PdfUploadDto {
     file: Express.Multer.File;
+    storeOnIpfs?: string;
 }
 export declare class PdfUploadResponseDto {
     success: boolean;
     filename: string;
     fileSize: number;
     documentHash: string;
+    cid: string | null;
+    gatewayUrl: string | null;
+    pinned: boolean;
+    pinError?: string;
     timestamp: string;
     message: string;
 }

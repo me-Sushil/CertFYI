@@ -11,12 +11,14 @@ const common_1 = require("@nestjs/common");
 const admin_controller_1 = require("./admin.controller");
 const admin_service_1 = require("./admin.service");
 const blockchain_module_1 = require("../blockchain/blockchain.module");
+const audit_module_1 = require("../audit/audit.module");
+const ipfs_module_1 = require("../ipfs/ipfs.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
-        imports: [blockchain_module_1.BlockchainModule],
+        imports: [blockchain_module_1.BlockchainModule, audit_module_1.AuditModule, ipfs_module_1.IpfsModule],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],
     })

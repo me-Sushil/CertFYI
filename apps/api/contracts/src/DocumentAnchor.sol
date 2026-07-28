@@ -61,6 +61,12 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
         string batchId
     );
 
+    event IssuerMetadataSet(
+        address indexed issuer,
+        string metadataURI,
+        uint256 timestamp
+    );
+
     /**
      * @dev Deployer receives root ADMIN_ROLE (and DEFAULT_ADMIN_ROLE so it can
      * manage ADMIN_ROLE membership itself). ADMIN_ROLE is set as the admin of
@@ -184,6 +190,17 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
      */
     function isIssuerApproved(address _issuer) external view returns (bool) {
         return hasRole(ISSUER_ROLE, _issuer);
+    }
+
+    /**
+     * @dev Set off-chain issuer profile metadata URI. ADMIN_ROLE only.
+     */
+    function setIssuerMetadata(
+        address _issuer,
+        string calldata _metadataURI
+    ) external onlyRole(ADMIN_ROLE) {
+        require(hasRole(ISSUER_ROLE, _issuer), "Not an issuer");
+        emit IssuerMetadataSet(_issuer, _metadataURI, block.timestamp);
     }
 
     /**

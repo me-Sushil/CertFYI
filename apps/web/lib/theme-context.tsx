@@ -13,13 +13,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark')
+  const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
-  // Initialize theme from localStorage on mount only
   useEffect(() => {
     const stored = localStorage.getItem('certfyi-theme') as Theme | null
-    const initialTheme = (stored && (stored === 'light' || stored === 'dark')) ? stored : 'dark'
+    const initialTheme = (stored && (stored === 'light' || stored === 'dark')) ? stored : 'light'
 
     setThemeState(initialTheme)
 
@@ -30,7 +29,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true)
   }, [])
 
-  // Apply theme changes to document
   useEffect(() => {
     if (!mounted) return
 

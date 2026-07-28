@@ -1,18 +1,13 @@
-/**
- * Smart contract configuration and utilities for CertFyi
- */
 import { keccak256, stringToBytes } from 'viem'
 
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
   '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE'
 
-export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111') // Sepolia
+export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111')
 
-// Role identifiers, matching `keccak256("ADMIN_ROLE")` / `keccak256("ISSUER_ROLE")` on-chain
 export const ADMIN_ROLE = keccak256(stringToBytes('ADMIN_ROLE'))
 export const ISSUER_ROLE = keccak256(stringToBytes('ISSUER_ROLE'))
 
-// Contract ABI (DocumentAnchor)
 export const CONTRACT_ABI = [
   {
     inputs: [
@@ -136,6 +131,16 @@ export const CONTRACT_ABI = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'address', name: '_issuer', type: 'address' },
+      { internalType: 'string', name: '_metadataURI', type: 'string' },
+    ],
+    name: 'setIssuerMetadata',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     anonymous: false,
     inputs: [
       { indexed: true, internalType: 'bytes32', name: 'documentHash', type: 'bytes32' },
@@ -156,9 +161,18 @@ export const CONTRACT_ABI = [
     name: 'DocumentRevoked',
     type: 'event',
   },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'issuer', type: 'address' },
+      { indexed: false, internalType: 'string', name: 'metadataURI', type: 'string' },
+      { indexed: false, internalType: 'uint256', name: 'timestamp', type: 'uint256' },
+    ],
+    name: 'IssuerMetadataSet',
+    type: 'event',
+  },
 ] as const
 
-// Utility function to calculate document hash
 export function calculateDocumentHash(data: string | Buffer): string {
   const crypto = require('crypto')
   if (typeof data === 'string') {
@@ -167,7 +181,6 @@ export function calculateDocumentHash(data: string | Buffer): string {
   return '0x' + crypto.createHash('sha256').update(data).digest('hex')
 }
 
-// Utility function to calculate Merkle root from leaf hashes
 export function calculateMerkleRoot(leafHashes: string[]): string {
   if (leafHashes.length === 0) {
     throw new Error('Cannot calculate Merkle root from empty array')
@@ -193,39 +206,23 @@ export function calculateMerkleRoot(leafHashes: string[]): string {
   return tree[0]
 }
 
-// Chain configuration
 export const CHAIN_CONFIG = {
-  11155111: {
-    name: 'Sepolia',
-    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
-    explorerUrl: 'https://sepolia.etherscan.io',
-  },
-  1: {
-    name: 'Ethereum Mainnet',
-    rpcUrl: 'https://mainnet.infura.io/v3/YOUR_INFURA_KEY',
-    explorerUrl: 'https://etherscan.io',
-  },
-  137: {
-    name: 'Polygon',
-    rpcUrl: 'https://polygon-rpc.com',
-    explorerUrl: 'https://polygonscan.com',
-  },
+  11155111: { name: 'Sepolia', explorerUrl: 'https://sepolia.etherscan.io' },
+  1: { name: 'Ethereum Mainnet', explorerUrl: 'https://etherscan.io' },
+  137: { name: 'Polygon', explorerUrl: 'https://polygonscan.com' },
+  42161: { name: 'Arbitrum', explorerUrl: 'https://arbiscan.io' },
+  8453: { name: 'Base', explorerUrl: 'https://basescan.org' },
+  10: { name: 'Optimism', explorerUrl: 'https://optimistic.etherscan.io' },
 }
 
-// Get explorer URL for transaction
-export function getExplorerUrl(txHash: string, chainId: number = CONTRACT_CHAIN_ID): string {
-  const config = CHAIN_CONFIG[chainId as keyof typeof CHAIN_CONFIG]
-  if (!config) {
-    return ''
-  }
+export function getExplorerUrl(txHash: string, chainId: number = CONTRACT_CHAIN_ID): string | null {
+  const config = (CHAIN_CONFIG as Record<number, { name: string; explorerUrl: string }>)[chainId]
+  if (!config) return null
   return `${config.explorerUrl}/tx/${txHash}`
 }
 
-// Get explorer URL for address
-export function getExplorerAddressUrl(address: string, chainId: number = CONTRACT_CHAIN_ID): string {
-  const config = CHAIN_CONFIG[chainId as keyof typeof CHAIN_CONFIG]
-  if (!config) {
-    return ''
-  }
+export function getExplorerAddressUrl(address: string, chainId: number = CONTRACT_CHAIN_ID): string | null {
+  const config = (CHAIN_CONFIG as Record<number, { name: string; explorerUrl: string }>)[chainId]
+  if (!config) return null
   return `${config.explorerUrl}/address/${address}`
 }

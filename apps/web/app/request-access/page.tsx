@@ -8,16 +8,31 @@ import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/lib/auth-context'
-import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/hooks/use-issuer-queries'
-import { Loader2, AlertCircle, Wallet, Clock, ShieldCheck } from 'lucide-react'
+import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/queries/issuer'
+import { Loader2, Wallet, Clock, Shield } from 'lucide-react'
+
+const HOW_IT_WORKS = [
+  { num: '1', title: 'Submit Request', desc: 'Tell us about your organization' },
+  { num: '2', title: 'Admin Review', desc: 'An admin verifies your request' },
+  { num: '3', title: 'On-Chain Approval', desc: 'ISSUER_ROLE is granted to your wallet on-chain' },
+]
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <HeaderWrapper />
-      <div className="mx-auto max-w-7xl px-4 py-16">{children}</div>
+      <div className="mx-auto max-w-7xl px-6 py-16">{children}</div>
+    </div>
+  )
+}
+
+function ErrorBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4">
+      <p className="text-sm font-semibold text-destructive">{children}</p>
     </div>
   )
 }
@@ -27,8 +42,8 @@ export default function RequestAccessPage() {
   const { isConnected } = useAccount()
   const { address, role, isLoading: sessionLoading } = useSession()
   const queryClient = useQueryClient()
-
   const requestQuery = useIssuerRequestStatus(role === 'UNAPPROVED')
+  const submitRequest = useSubmitIssuerRequest()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -48,10 +63,10 @@ export default function RequestAccessPage() {
   if (!isConnected) {
     return (
       <Shell>
-        <Card className="mx-auto max-w-md">
+        <Card className="mx-auto max-w-md animate-fade-in-up">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
+              <Wallet className="h-5 w-5 text-accent" aria-hidden />
               Wallet Connection Required
             </CardTitle>
             <CardDescription>Connect your wallet to request issuer access</CardDescription>
@@ -69,10 +84,10 @@ export default function RequestAccessPage() {
   if (sessionLoading || role === 'ADMIN' || role === 'ISSUER') {
     return (
       <Shell>
-        <Card className="mx-auto max-w-md">
+        <Card className="mx-auto max-w-md animate-fade-in-up">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-foreground" aria-hidden />
               Loading
             </CardTitle>
           </CardHeader>
@@ -84,10 +99,10 @@ export default function RequestAccessPage() {
   if (!address) {
     return (
       <Shell>
-        <Card className="mx-auto max-w-md">
+        <Card className="mx-auto max-w-md animate-fade-in-up">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
+              <Shield className="h-5 w-5 text-accent" aria-hidden />
               Sign-In Required
             </CardTitle>
             <CardDescription>Verify wallet ownership to continue</CardDescription>
@@ -106,10 +121,10 @@ export default function RequestAccessPage() {
   if (requestQuery.isLoading) {
     return (
       <Shell>
-        <Card className="mx-auto max-w-md">
+        <Card className="mx-auto max-w-md animate-fade-in-up">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-foreground" aria-hidden />
               Checking Status
             </CardTitle>
           </CardHeader>
@@ -123,20 +138,20 @@ export default function RequestAccessPage() {
   if (requestStatus === 'PENDING') {
     return (
       <Shell>
-        <Card className="mx-auto max-w-md border-primary/50 bg-primary/5">
+        <Card className="mx-auto max-w-md animate-fade-in-up shadow-glow">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-primary">
-              <Clock className="h-6 w-6" />
+            <CardTitle className="flex items-center gap-2 text-accent">
+              <Clock className="h-6 w-6" aria-hidden />
               Awaiting Admin Approval
             </CardTitle>
             <CardDescription>Your application is under review</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm">
+            <p className="text-sm text-foreground">
               Your issuer access request is being reviewed by an admin. This page will
               automatically unlock your dashboard once approved.
             </p>
-            <div className="bg-background/50 p-3 rounded-lg text-xs">
+            <div className="rounded-lg bg-muted/40 p-4 text-xs">
               <p className="font-mono break-all text-muted-foreground">{address}</p>
             </div>
             <Button
@@ -152,13 +167,10 @@ export default function RequestAccessPage() {
     )
   }
 
-  const submitRequest = useSubmitIssuerRequest()
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
-
     try {
       await submitRequest.mutateAsync(formData)
       queryClient.invalidateQueries({ queryKey: ['issuer-request-status'] })
@@ -172,11 +184,13 @@ export default function RequestAccessPage() {
 
   return (
     <Shell>
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid animate-fade-in-up gap-8 md:grid-cols-3">
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Request Issuer Access</CardTitle>
+              <CardTitle className="text-[22px] leading-[28.6px] tracking-[-0.5px]">
+                Request Issuer Access
+              </CardTitle>
               <CardDescription>
                 {requestStatus === 'REJECTED'
                   ? 'Your previous request was rejected. You may re-apply below.'
@@ -185,29 +199,22 @@ export default function RequestAccessPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
-                  <p className="text-sm text-muted-foreground mb-1">Connected Wallet Address</p>
+                <div className="rounded-lg bg-muted/40 p-5">
+                  <p className="mb-1 text-sm font-semibold text-muted-foreground">
+                    Connected Wallet Address
+                  </p>
                   <p className="font-mono text-sm break-all text-foreground">{address}</p>
                 </div>
 
                 {requestStatus === 'REJECTED' && (
-                  <div className="flex gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
-                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                    <p className="text-sm">Your previous request was rejected.</p>
-                  </div>
+                  <ErrorBanner>Your previous request was rejected.</ErrorBanner>
                 )}
-
-                {error && (
-                  <div className="flex gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
-                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                    <p className="text-sm">{error}</p>
-                  </div>
-                )}
+                {error && <ErrorBanner>{error}</ErrorBanner>}
 
                 <div>
-                  <label htmlFor="name" className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="name" className="mb-2 block">
                     Full Name
-                  </label>
+                  </Label>
                   <Input
                     id="name"
                     placeholder="John Doe"
@@ -215,11 +222,10 @@ export default function RequestAccessPage() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="email" className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="email" className="mb-2 block">
                     Email Address
-                  </label>
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -228,11 +234,10 @@ export default function RequestAccessPage() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="organization" className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="organization" className="mb-2 block">
                     Organization Name
-                  </label>
+                  </Label>
                   <Input
                     id="organization"
                     placeholder="Acme Corp"
@@ -240,11 +245,10 @@ export default function RequestAccessPage() {
                     onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="website" className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="website" className="mb-2 block">
                     Website
-                  </label>
+                  </Label>
                   <Input
                     id="website"
                     type="url"
@@ -253,11 +257,10 @@ export default function RequestAccessPage() {
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="description" className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="description" className="mb-2 block">
                     Organization Description
-                  </label>
+                  </Label>
                   <Textarea
                     id="description"
                     placeholder="Describe your organization and why you want to issue certificates..."
@@ -267,8 +270,8 @@ export default function RequestAccessPage() {
                   />
                 </div>
 
-                <Button type="submit" disabled={submitting} className="w-full">
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={submitting} className="h-12 w-full">
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
                   {submitting ? 'Submitting...' : 'Submit Request'}
                 </Button>
               </form>
@@ -281,36 +284,18 @@ export default function RequestAccessPage() {
             <CardHeader>
               <CardTitle className="text-base">How It Works</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                  1
-                </span>
-                <div>
-                  <p className="font-medium">Submit Request</p>
-                  <p className="text-muted-foreground text-xs">Tell us about your organization</p>
+            <CardContent className="space-y-5 text-sm">
+              {HOW_IT_WORKS.map((item) => (
+                <div key={item.num} className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-extrabold text-primary-foreground">
+                    {item.num}
+                  </span>
+                  <div>
+                    <p className="font-extrabold text-foreground">{item.title}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{item.desc}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                  2
-                </span>
-                <div>
-                  <p className="font-medium">Admin Review</p>
-                  <p className="text-muted-foreground text-xs">An admin verifies your request</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                  3
-                </span>
-                <div>
-                  <p className="font-medium">On-Chain Approval</p>
-                  <p className="text-muted-foreground text-xs">
-                    ISSUER_ROLE is granted to your wallet on-chain
-                  </p>
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
