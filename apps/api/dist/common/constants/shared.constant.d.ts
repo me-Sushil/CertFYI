@@ -44,6 +44,7 @@ export declare const API_ENDPOINTS: {
 };
 export declare const DEFAULT_PAGE_SIZE = 20;
 export declare const MAX_PAGE_SIZE = 100;
+export declare const MAX_PDF_SIZE: number;
 export declare const VALIDATION: {
     readonly MIN_NAME_LENGTH: 2;
     readonly MIN_EMAIL_LENGTH: 5;

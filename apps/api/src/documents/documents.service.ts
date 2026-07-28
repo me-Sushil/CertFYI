@@ -1,24 +1,51 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import crypto from 'crypto'
 import { BlockchainService } from '../blockchain/blockchain.service'
+import { AuditService } from '../audit/audit.service'
 import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto'
+import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
 export class DocumentsService {
   // Mock stores for demo purposes (matches the original route handlers).
+  // The issuance/verification workstream will replace these.
   private readonly anchoredDocuments = new Map<string, any>()
   private readonly anchoredBatches = new Map<string, any>()
 
-  constructor(private readonly blockchain: BlockchainService) {}
+  constructor(
+    private readonly blockchain: BlockchainService,
+    private readonly audit: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Anchor a single document hash on the blockchain.
-   * In a real implementation this would call the smart contract, persist
-   * metadata, and email the recipient.
    */
-  anchor(body: AnchorDto) {
+  async anchor(body: AnchorDto) {
     const txHash = '0x' + crypto.randomBytes(32).toString('hex')
     const timestamp = new Date().toISOString()
+
+    // Persist to the database for reporting and document counting.
+    // The issuance workstream will replace the mock txHash with a real one.
+    await this.prisma.anchoredDocument
+      .create({
+        data: {
+          docHash: body.documentHash,
+          issuerAddress: body.issuerAddress.toLowerCase(),
+          txHash,
+        },
+      })
+      .catch(() => {
+        // Hash already anchored — this is fine, the on-chain tx will revert
+      })
+
+    await this.audit.record({
+      action: 'DOCUMENT_ANCHORED',
+      actorAddress: body.issuerAddress,
+      targetRef: body.documentHash,
+      txHash,
+      detail: `Document type: ${body.documentType}`,
+    })
 
     const anchorRecord = {
       documentHash: body.documentHash,
@@ -133,7 +160,6 @@ export class DocumentsService {
       }
     }
 
-    // Mock verification response (80% valid for demo).
     const mockIsValid = Math.random() > 0.2
 
     if (mockIsValid) {

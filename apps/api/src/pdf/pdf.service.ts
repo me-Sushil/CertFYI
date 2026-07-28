@@ -1,35 +1,55 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import crypto from 'crypto'
+import { MAX_PDF_SIZE } from '../common/constants/shared.constant'
+import { IpfsService } from '../ipfs/ipfs.service'
 
-const MAX_SIZE = 50 * 1024 * 1024 // 50MB
+const PDF_MAGIC_BYTES = Buffer.from('%PDF-')
 
 @Injectable()
 export class PdfService {
-  /**
-   * Validate and hash an uploaded PDF.
-   * In a real implementation the file would be stored (e.g. Vercel Blob) and a
-   * DB record created; here we only compute and return the SHA256 hash.
-   */
-  upload(file?: Express.Multer.File) {
+  private readonly logger = new Logger(PdfService.name)
+
+  constructor(private readonly ipfs: IpfsService) {}
+
+  async upload(file?: Express.Multer.File, storeOnIpfs = false) {
     if (!file) {
       throw new BadRequestException('No file provided')
     }
     if (file.mimetype !== 'application/pdf') {
       throw new BadRequestException('File must be a PDF')
     }
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_PDF_SIZE) {
       throw new BadRequestException('File size exceeds 50MB limit')
+    }
+
+    // Magic-byte check - mimetype is client-supplied and trivially spoofed (SRS §10.4)
+    if (!file.buffer || file.buffer.length < 5 || !file.buffer.slice(0, 5).equals(PDF_MAGIC_BYTES)) {
+      throw new BadRequestException('File does not appear to be a valid PDF')
     }
 
     const documentHash = '0x' + crypto.createHash('sha256').update(file.buffer).digest('hex')
 
-    console.log('[API] PDF uploaded:', {
+    let cid: string | null = null
+    let metadataCid: string | null = null
+
+    if (storeOnIpfs) {
+      try {
+        const uploadResult = await this.ipfs.uploadFile(file.buffer, file.originalname, 'application/pdf')
+        cid = uploadResult.cid
+      } catch (error) {
+        // Pin failure must never block anchoring (SRS Availability NFR)
+        this.logger.error(`IPFS upload failed for ${documentHash}, continuing with null CID`, error)
+      }
+    }
+
+    this.logger.log('[API] PDF uploaded:', {
       filename: file.originalname,
       size: file.size,
       documentHash,
+      cid,
     })
 
-    return {
+    const response: Record<string, unknown> = {
       success: true,
       filename: file.originalname,
       fileSize: file.size,
@@ -37,9 +57,15 @@ export class PdfService {
       timestamp: new Date().toISOString(),
       message: 'PDF uploaded and hashed successfully',
     }
+
+    if (cid) {
+      response.cid = cid
+      response.gatewayUrl = `${process.env.IPFS_GATEWAY_URL || 'https://w3s.link/ipfs'}/${cid}`
+    }
+
+    return response
   }
 
-  /** Calculate the hash of a base64-encoded PDF already in the system. */
   hash(pdfContent: string, filename: string) {
     const buffer = Buffer.from(pdfContent, 'base64')
     const documentHash = '0x' + crypto.createHash('sha256').update(buffer).digest('hex')

@@ -1,17 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import type { Hex } from 'viem'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { useSession } from '@/lib/auth-context'
-import { CONTRACT_ADDRESS, CONTRACT_ABI, ISSUER_ROLE } from '@/lib/contracts/document-anchor'
-import { useAdminRequests, useApproveUser, useRejectUser } from '@/hooks/use-admin-queries'
-import type { AccessRequestRow } from '@/lib/api-types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { OnChainButton } from '@/components/admin/on-chain-button'
+import { StatCard } from '@/components/admin/stat-card'
+import { ChainBanner } from '@/components/admin/chain-banner'
+import { Users, FileText, AlertCircle, CheckCircle, Loader2, Inbox } from 'lucide-react'
+import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
+import {
+  useAdminRequests,
+  useApproveUser,
+  useRejectUser,
+  useAdminStats,
+  useAuditLog,
+} from '@/queries/admin'
+import { keys } from '@/queries/keys'
+import { formatRelativeTime, formatAddress } from '@/lib/format'
+import type { AccessRequestRow, AuditLogEntry } from '@/lib/api-types'
 
 function PendingRequestCard({
   request,
@@ -21,62 +32,21 @@ function PendingRequestCard({
   onSettled: () => void
 }) {
   const [rejecting, setRejecting] = useState(false)
-  const [approvalError, setApprovalError] = useState<string | null>(null)
-  const [confirming, setConfirming] = useState(false)
-
-  const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract()
-  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
   const approveUser = useApproveUser()
   const rejectUser = useRejectUser()
-
-  useEffect(() => {
-    if (!isTxConfirmed || !txHash) return
-
-    let cancelled = false
-    setConfirming(true)
-    approveUser
-      .mutateAsync({ walletAddress: request.walletAddress, txHash })
-      .then(() => {
-        if (cancelled) return
-        onSettled()
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return
-        setApprovalError(error instanceof Error ? error.message : 'Approval failed to record')
-      })
-      .finally(() => {
-        if (!cancelled) setConfirming(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTxConfirmed, txHash])
-
-  const handleApprove = () => {
-    setApprovalError(null)
-    writeContract({
-      address: CONTRACT_ADDRESS as Hex,
-      abi: CONTRACT_ABI,
-      functionName: 'grantRole',
-      args: [ISSUER_ROLE, request.walletAddress as Hex],
-    })
-  }
 
   const handleReject = async () => {
     setRejecting(true)
     try {
       await rejectUser.mutateAsync({ walletAddress: request.walletAddress })
+      toast.success('Request rejected')
       onSettled()
-    } catch {
-      // surfaced via rejectUser.error if needed
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to reject')
     } finally {
       setRejecting(false)
     }
   }
-
-  const busy = isWritePending || confirming || rejecting
 
   return (
     <div className="p-6 rounded-lg border border-border bg-card">
@@ -85,22 +55,27 @@ function PendingRequestCard({
       </h3>
       <p className="text-sm text-muted-foreground mb-2">{request.email || 'No email provided'}</p>
       <p className="font-mono text-xs text-muted-foreground mb-4 break-all">
-        {request.walletAddress}
+        {formatAddress(request.walletAddress, 8)}
       </p>
       <p className="text-xs text-muted-foreground mb-4">
-        Applied {new Date(request.createdAt).toLocaleString()}
+        Applied {formatRelativeTime(request.createdAt)}
       </p>
-      {(writeError || approvalError) && (
-        <p className="text-xs text-destructive mb-3">
-          {approvalError || 'Transaction failed or was rejected'}
-        </p>
-      )}
       <div className="flex gap-2">
-        <Button size="sm" className="flex-1" onClick={handleApprove} disabled={busy}>
-          {(isWritePending || confirming) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <OnChainButton
+          functionName="grantRole"
+          args={[ISSUER_ROLE, request.walletAddress as Hex]}
+          onConfirmed={async (txHash) => {
+            await approveUser.mutateAsync({ walletAddress: request.walletAddress, txHash })
+            onSettled()
+          }}
+          successMessage="Issuer approved"
+          errorMessage="Approval failed to record"
+          className="flex-1"
+        >
           Approve On-Chain
-        </Button>
-        <Button size="sm" variant="outline" className="flex-1" onClick={handleReject} disabled={busy}>
+        </OnChainButton>
+        <Button size="sm" variant="outline" className="flex-1" onClick={handleReject} disabled={rejecting}>
+          {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Reject
         </Button>
       </div>
@@ -109,148 +84,114 @@ function PendingRequestCard({
 }
 
 export default function AdminDashboard() {
-  const router = useRouter()
-  const { role, isLoading: sessionLoading } = useSession()
   const queryClient = useQueryClient()
-
-  useEffect(() => {
-    if (!sessionLoading && role !== 'ADMIN') {
-      router.replace('/')
-    }
-  }, [sessionLoading, role, router])
-
-  const requestsQuery = useAdminRequests(role === 'ADMIN')
+  const requestsQuery = useAdminRequests(true)
+  const statsQuery = useAdminStats(true)
+  const { data: auditPages } = useAuditLog(true)
 
   const pendingApplications = requestsQuery.data ?? []
+  const recentActivity = (auditPages?.pages?.[0]?.entries ?? []).slice(0, 5)
+  const stats = statsQuery.data
+  const statsLoading = statsQuery.isLoading
 
-  const stats = [
-    { label: 'Total Issuers', value: '42', icon: Users, color: 'text-primary' },
-    {
-      label: 'Pending Approvals',
-      value: String(pendingApplications.length),
-      icon: AlertCircle,
-      color: 'text-destructive',
-    },
-    { label: 'Documents Anchored', value: '52,481', icon: FileText, color: 'text-accent' },
-    { label: 'Active Users', value: '1,283', icon: CheckCircle, color: 'text-secondary' },
+  const statTiles = [
+    { label: 'Total Issuers', value: stats?.totalIssuers, icon: Users, color: 'text-primary', loading: statsLoading },
+    { label: 'Pending Approvals', value: String(pendingApplications.length), icon: AlertCircle, color: 'text-destructive', loading: requestsQuery.isLoading },
+    { label: 'Documents Anchored', value: stats?.documentsAnchored?.toLocaleString(), icon: FileText, color: 'text-accent', loading: statsLoading },
+    { label: 'Suspended Issuers', value: stats?.suspendedIssuers, icon: CheckCircle, color: 'text-secondary', loading: statsLoading },
   ]
-
-  const recentActivity = [
-    { action: 'Document Issued', actor: 'Stanford', target: 'Certificate Batch', time: '5 min ago' },
-    { action: 'Issuer Approved', actor: 'Admin', target: 'MIT', time: '1 hour ago' },
-    { action: 'Document Revoked', actor: 'Harvard', target: 'Diploma #4521', time: '2 hours ago' },
-    { action: 'Issuer Suspended', actor: 'Admin', target: 'TestOrg Inc', time: '1 day ago' },
-  ]
-
-  if (sessionLoading || role !== 'ADMIN') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    )
-  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back</span>
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold">Admin Dashboard</h1>
-          <div className="w-20" />
-        </div>
-      </nav>
+    <>
+      <ChainBanner />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {stats.map((stat, idx) => {
-            const Icon = stat.icon
-            return (
-              <div key={idx} className="p-6 rounded-lg border border-border bg-card hover:shadow-lg transition">
-                <div className="flex items-start justify-between mb-4">
-                  <Icon className={`w-6 h-6 ${stat.color}`} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {statTiles.map((stat, idx) => (
+          <StatCard key={idx} {...stat} />
+        ))}
+      </div>
+
+      <div className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Pending Applications</h2>
+          <span className="text-sm font-semibold px-3 py-1 rounded-full bg-destructive/10 text-destructive">
+            {pendingApplications.length} pending
+          </span>
+        </div>
+
+        {requestsQuery.isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="p-6 rounded-lg border border-border bg-card space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-full" />
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="h-8 flex-1" />
+                  <Skeleton className="h-8 flex-1" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">{stat.label}</p>
-                <p className="text-3xl font-bold">{stat.value}</p>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Pending Applications */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Pending Issuer Applications</h2>
-            <span className="text-sm font-semibold px-3 py-1 rounded-full bg-destructive/10 text-destructive">
-              {pendingApplications.length} pending
-            </span>
-          </div>
-
-          {requestsQuery.isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : pendingApplications.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              No pending issuer applications.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {pendingApplications.map((request) => (
-                <PendingRequestCard
-                  key={request.id}
-                  request={request}
-                  onSettled={() => queryClient.invalidateQueries({ queryKey: ['admin-requests'] })}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Management Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <Link href="/admin/issuers">
-            <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
-              <Users className="w-8 h-8 text-primary mb-3" />
-              <h3 className="font-semibold text-lg mb-1">Issuer Management</h3>
-              <p className="text-sm text-muted-foreground">View, approve, and manage all registered issuers</p>
-            </div>
-          </Link>
-          <Link href="/admin/audit-log">
-            <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
-              <FileText className="w-8 h-8 text-primary mb-3" />
-              <h3 className="font-semibold text-lg mb-1">Audit Log</h3>
-              <p className="text-sm text-muted-foreground">View platform-wide activity and transactions</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Recent Activity */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Recent Platform Activity</h2>
-          <div className="space-y-3">
-            {recentActivity.map((activity, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.actor} • {activity.target}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground whitespace-nowrap ml-4">{activity.time}</p>
               </div>
             ))}
           </div>
-        </div>
-      </main>
-    </div>
+        ) : pendingApplications.length === 0 ? (
+          <EmptyState icon={Inbox} title="No pending applications" description="New issuer requests will appear here." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {pendingApplications.map((request) => (
+              <PendingRequestCard
+                key={request.id}
+                request={request}
+                onSettled={() => queryClient.invalidateQueries({ queryKey: keys.admin.requests.all })}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <Link href="/admin/issuers">
+          <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
+            <Users className="w-8 h-8 text-primary mb-3" />
+            <h3 className="font-semibold text-lg mb-1">Issuer Management</h3>
+            <p className="text-sm text-muted-foreground">View, approve, and manage all registered issuers</p>
+          </div>
+        </Link>
+        <Link href="/admin/audit-log">
+          <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
+            <FileText className="w-8 h-8 text-primary mb-3" />
+            <h3 className="font-semibold text-lg mb-1">Audit Log</h3>
+            <p className="text-sm text-muted-foreground">View platform-wide activity and transactions</p>
+          </div>
+        </Link>
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
+        {recentActivity.length === 0 ? (
+          <EmptyState icon={FileText} title="No recent activity" description="Platform activity will appear here." />
+        ) : (
+          <div className="space-y-3">
+            {recentActivity.map((activity: AuditLogEntry) => (
+              <div key={activity.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="w-2 h-2 bg-primary rounded-full shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{activity.action.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {activity.actorName} &middot; {formatAddress(activity.targetRef)}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0 ml-4">
+                  {formatRelativeTime(activity.createdAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   )
 }
+
+// Make OnChainButton accept className prop via Button's native support

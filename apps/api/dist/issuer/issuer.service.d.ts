@@ -4,9 +4,9 @@ export declare class IssuerService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     submitRequest(address: string, data: AccessRequestDto): Promise<{
-        requestStatus: any;
+        requestStatus: import("@prisma/client").$Enums.RequestStatus;
     }>;
     getStatus(address: string): Promise<{
-        requestStatus: any;
+        requestStatus: string;
     }>;
 }
