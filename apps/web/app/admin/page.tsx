@@ -22,6 +22,7 @@ import {
 } from '@/queries/admin'
 import { keys } from '@/queries/keys'
 import { formatRelativeTime, formatAddress } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { AccessRequestRow, AuditLogEntry } from '@/lib/api-types'
 
 function PendingRequestCard({
@@ -49,7 +50,7 @@ function PendingRequestCard({
   }
 
   return (
-    <div className="rounded-lg bg-card p-6 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button">
+    <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
       <h3 className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
         {request.organization || request.name || 'Unnamed Applicant'}
       </h3>
@@ -98,8 +99,8 @@ function QuickLinkCard({
 }) {
   return (
     <Link href={href}>
-      <div className="cursor-pointer rounded-lg bg-card p-6 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button">
-        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-accent/10">
+      <div className="cursor-pointer rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
+        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10">
           <Icon className="h-5 w-5 text-accent" aria-hidden />
         </div>
         <h3 className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
@@ -130,17 +131,17 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="animate-fade-in">
+    <div className="space-y-8 sm:space-y-10">
       <ChainBanner />
 
-      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
         {statTiles.map((stat, idx) => (
           <StatCard key={idx} {...stat} />
         ))}
       </div>
 
-      <div className="mb-12">
-        <div className="mb-6 flex items-center justify-between">
+      <div>
+        <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
             Pending Applications
           </h2>
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
         {requestsQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-3 rounded-lg bg-card p-6 shadow-card">
+              <div key={i} className="space-y-3 rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-4 w-full" />
@@ -164,7 +165,10 @@ export default function AdminDashboard() {
             ))}
           </div>
         ) : pendingApplications.length === 0 ? (
-          <EmptyState icon={Inbox} title="No pending applications" description="New issuer requests will appear here." />
+          <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+            <Inbox className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+            <p className="text-sm font-semibold text-muted-foreground">No pending applications</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {pendingApplications.map((request) => (
@@ -178,7 +182,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <QuickLinkCard
           href="/admin/issuers"
           icon={Users}
@@ -194,17 +198,20 @@ export default function AdminDashboard() {
       </div>
 
       <div>
-        <h2 className="mb-6 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+        <h2 className="mb-5 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
           Recent Activity
         </h2>
         {recentActivity.length === 0 ? (
-          <EmptyState icon={FileText} title="No recent activity" description="Platform activity will appear here." />
+          <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+            <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+            <p className="text-sm font-semibold text-muted-foreground">No recent activity</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {recentActivity.map((activity: AuditLogEntry) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between rounded-lg bg-card p-5 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+                className="flex items-center justify-between rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />

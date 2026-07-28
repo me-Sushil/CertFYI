@@ -84,13 +84,17 @@ model AuditLog {
 }
 
 model AnchoredDocument {
-  docHash       String    @id @map("doc_hash")
-  issuerAddress String   @map("issuer_address")
-  cid           String?
-  metadataCid   String?   @map("metadata_cid")
-  txHash        String    @map("tx_hash")
-  anchoredAt    DateTime  @default(now()) @map("anchored_at")
-  revokedAt     DateTime? @map("revoked_at")
+  docHash         String    @id @map("doc_hash")
+  issuerAddress   String    @map("issuer_address")
+  issuerName      String?   @map("issuer_name")
+  documentType    String?   @map("document_type")
+  recipientName   String?   @map("recipient_name")
+  recipientEmail  String?   @map("recipient_email")
+  cid             String?
+  metadataCid     String?   @map("metadata_cid")
+  txHash          String    @map("tx_hash")
+  anchoredAt      DateTime  @default(now()) @map("anchored_at")
+  revokedAt       DateTime? @map("revoked_at")
 
   @@index([issuerAddress])
   @@map("anchored_documents")

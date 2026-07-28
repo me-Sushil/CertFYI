@@ -19,7 +19,7 @@ export function ChainBanner() {
   }
 
   return (
-    <div className="mb-8 flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 p-4 shadow-card animate-fade-in-up">
+    <div className="mb-6 flex items-center gap-3 rounded-[20px] border border-accent/20 bg-accent/5 p-4 shadow-card ring-1 ring-accent/5 animate-fade-in-up">
       <AlertTriangle className="h-5 w-5 shrink-0 text-accent" aria-hidden />
       <p className="flex-1 text-sm text-foreground">
         Wrong network. Please switch to{' '}

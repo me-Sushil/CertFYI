@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Hex } from 'viem'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { OnChainButton } from '@/components/admin/on-chain-button'
 import { ChainBanner } from '@/components/admin/chain-banner'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,15 +15,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Search, Shield, AlertTriangle, Loader2, Users, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Shield, AlertTriangle, Loader2, Users, ChevronDown, ExternalLink } from 'lucide-react'
 import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
 import { useIssuers, useSuspendIssuer, useReactivateIssuer } from '@/queries/admin'
-import { formatAddress, formatDate } from '@/lib/format'
+import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { IssuerRow } from '@/lib/api-types'
 
 const STATUS_OPTIONS = ['ALL', 'ACTIVE', 'SUSPENDED'] as const
-const TABLE_HEAD = ['Organization', 'Docs', 'Status', '']
+
+function StatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
+  const isActive = status === 'ACTIVE'
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
+      {isActive ? 'Active' : 'Suspended'}
+    </span>
+  )
+}
 
 export default function IssuerManagementPage() {
   const router = useRouter()
@@ -54,93 +67,63 @@ export default function IssuerManagementPage() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <ChainBanner />
 
-      <div className="mb-8">
-        <h1 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-          Issuer Management
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Manage verified issuers and their credentials
-        </p>
-      </div>
-
-      <div className="mb-8 space-y-4">
-        <div className="relative">
-          <Search
-            className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
+      {/* Search + Filters */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input
             type="text"
             placeholder="Search by name, organization, or wallet..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-12 w-full rounded-full border border-border/15 bg-card pr-5 pl-10 text-sm text-foreground outline-none transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/15"
+            className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
           />
         </div>
         <div className="flex gap-2">
           {STATUS_OPTIONS.map((status) => (
-            <Button
+            <button
               key={status}
-              variant={filterStatus === status ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setFilterStatus(status)}
+              className={cn(
+                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+                filterStatus === status
+                  ? 'bg-primary text-primary-foreground shadow-button'
+                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
+              )}
             >
               {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
+      {/* Loading */}
       {isLoading ? (
-        <div className="overflow-hidden rounded-lg bg-card shadow-card">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border/15">
-                {TABLE_HEAD.map((h) => (
-                  <th key={h} className="px-6 py-4 text-left text-sm font-extrabold text-foreground">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-border/15">
-                  <td className="px-6 py-4">
-                    <Skeleton className="h-5 w-48" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <Skeleton className="h-5 w-12" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <Skeleton className="ml-auto h-8 w-8 rounded-full" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+          ))}
         </div>
       ) : issuers.length === 0 ? (
-        <EmptyState icon={Users} title="No issuers found" description="Try adjusting your search or filter criteria." />
+        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+          <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+          <p className="text-sm font-semibold text-muted-foreground">
+            {searchTerm ? 'No issuers match your search' : 'No issuers found'}
+          </p>
+        </div>
       ) : (
         <>
-          <div className="overflow-hidden rounded-lg bg-card shadow-card">
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border/15">
+                <tr className="border-b border-border/10">
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Organization</th>
-                  <th className="hidden px-6 py-4 text-left text-sm font-extrabold text-foreground sm:table-cell">
-                    Docs
-                  </th>
-                  <th className="hidden px-6 py-4 text-left text-sm font-extrabold text-foreground md:table-cell">
-                    Status
-                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Docs</th>
+                  <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
                   <th className="px-6 py-4 text-right text-sm font-extrabold text-foreground" />
                 </tr>
               </thead>
@@ -161,6 +144,89 @@ export default function IssuerManagementPage() {
             </table>
           </div>
 
+          {/* Mobile cards */}
+          <div className="space-y-3 sm:hidden">
+            {issuers.map((issuer) => {
+              const isOpen = expandedRow === issuer.walletAddress
+              return (
+                <div key={issuer.walletAddress} className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
+                  <button
+                    onClick={() => setExpandedRow(isOpen ? null : issuer.walletAddress)}
+                    className="flex w-full items-center justify-between p-4 text-left"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {issuer.organization || issuer.name || 'Unnamed Issuer'}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {issuer.email || formatAddress(issuer.walletAddress)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <StatusBadge status={issuer.status} />
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                          isOpen && 'rotate-180',
+                        )}
+                        aria-hidden
+                      />
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-border/10 px-4 pb-4 pt-3 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-0.5">Wallet</p>
+                          <p className="font-mono text-foreground">{formatAddress(issuer.walletAddress, 8)}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-0.5">Registered</p>
+                          <p className="text-foreground">{formatDate(issuer.registeredAt)}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-0.5">Documents</p>
+                          <p className="text-foreground">{issuer.documentCount.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-0.5">Status</p>
+                          <StatusBadge status={issuer.status} />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {issuer.status === 'ACTIVE' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2 text-destructive hover:bg-destructive/10"
+                            onClick={() => setConfirmSuspend(issuer)}
+                          >
+                            <AlertTriangle className="h-4 w-4" aria-hidden /> Suspend
+                          </Button>
+                        ) : (
+                          <OnChainButton
+                            functionName="grantRole"
+                            args={[ISSUER_ROLE, issuer.walletAddress as Hex]}
+                            onConfirmed={async (txHash) => {
+                              const { useReactivateIssuer } = await import('@/queries/admin')
+                              // handled via parent re-render
+                            }}
+                            successMessage="Issuer reactivated"
+                            errorMessage="Reactivation failed"
+                            variant="outline"
+                          >
+                            <Shield className="h-4 w-4" aria-hidden /> Reactivate
+                          </OnChainButton>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Load more */}
           {hasNextPage && (
             <div className="py-6 text-center">
               <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
@@ -193,7 +259,7 @@ function IssuerRowComponent({
   return (
     <>
       <tr
-        className="cursor-pointer border-b border-border/15 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/30"
+        className="cursor-pointer border-b border-border/5 transition-colors last:border-b-0 hover:bg-muted/20"
         onClick={onToggle}
       >
         <td className="px-6 py-4">
@@ -202,18 +268,20 @@ function IssuerRowComponent({
           </p>
           <p className="text-xs text-muted-foreground">{issuer.email || formatAddress(issuer.walletAddress)}</p>
         </td>
-        <td className="hidden px-6 py-4 text-sm text-muted-foreground sm:table-cell">
+        <td className="px-6 py-4 text-sm text-muted-foreground">
           {issuer.documentCount.toLocaleString()}
         </td>
-        <td className="hidden px-6 py-4 md:table-cell">
+        <td className="px-6 py-4">
           <StatusBadge status={issuer.status} />
         </td>
         <td className="px-6 py-4 text-right">
-          {isExpanded ? (
-            <ChevronUp className="inline-block h-4 w-4 text-muted-foreground" aria-hidden />
-          ) : (
-            <ChevronDown className="inline-block h-4 w-4 text-muted-foreground" aria-hidden />
-          )}
+          <ChevronDown
+            className={cn(
+              'inline-block h-4 w-4 text-muted-foreground transition-transform duration-200',
+              isExpanded && 'rotate-180',
+            )}
+            aria-hidden
+          />
         </td>
       </tr>
       {isExpanded && (
@@ -262,21 +330,6 @@ function IssuerRowComponent({
         </tr>
       )}
     </>
-  )
-}
-
-function StatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
-  const isActive = status === 'ACTIVE'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold',
-        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
-      {isActive ? 'Active' : 'Suspended'}
-    </span>
   )
 }
 

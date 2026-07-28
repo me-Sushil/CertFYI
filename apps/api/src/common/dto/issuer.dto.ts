@@ -79,3 +79,72 @@ export class RequestStatusResponseDto {
   })
   requestStatus!: string
 }
+
+// --- Issuer dashboard types ---
+
+export class IssuerStatsResponseDto {
+  @ApiProperty({ description: 'Total documents issued by this issuer.', example: 142 })
+  totalIssued!: number
+
+  @ApiProperty({ description: 'Currently active (non-revoked) documents.', example: 138 })
+  activeDocuments!: number
+
+  @ApiProperty({ description: 'Number of revoked documents.', example: 4 })
+  revokedCount!: number
+
+  @ApiProperty({ description: 'Recent activity entries count.', example: 12 })
+  recentActivityCount!: number
+}
+
+export class IssuerDocumentDto {
+  @ApiProperty({ example: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' })
+  docHash!: string
+
+  @ApiPropertyOptional({ example: 'Certificate of Completion' })
+  documentType?: string
+
+  @ApiPropertyOptional({ example: 'Ada Lovelace' })
+  recipientName?: string
+
+  @ApiPropertyOptional({ example: 'ada@example.com' })
+  recipientEmail?: string
+
+  @ApiProperty({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' })
+  txHash!: string
+
+  @ApiProperty({ example: '2026-07-28T12:00:00.000Z' })
+  anchoredAt!: string
+
+  @ApiProperty({ example: null, nullable: true })
+  revokedAt!: string | null
+
+  @ApiProperty({ enum: ['active', 'revoked'], example: 'active' })
+  status!: 'active' | 'revoked'
+}
+
+export class IssuerDocumentsResponseDto {
+  @ApiProperty({ type: [IssuerDocumentDto] })
+  documents!: IssuerDocumentDto[]
+
+  @ApiProperty({ example: null, nullable: true })
+  nextCursor!: string | null
+}
+
+export class IssuerActivityEntryDto {
+  @ApiProperty({ example: 'DOCUMENT_ANCHORED' })
+  action!: string
+
+  @ApiPropertyOptional({ example: 'Document type: Certificate' })
+  detail?: string
+
+  @ApiProperty({ example: '2026-07-28T12:00:00.000Z' })
+  createdAt!: string
+
+  @ApiPropertyOptional({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' })
+  txHash?: string
+}
+
+export class IssuerActivityResponseDto {
+  @ApiProperty({ type: [IssuerActivityEntryDto] })
+  entries!: IssuerActivityEntryDto[]
+}

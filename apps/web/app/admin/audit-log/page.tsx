@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { ChainBanner } from '@/components/admin/chain-banner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'

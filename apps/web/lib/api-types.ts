@@ -66,6 +66,40 @@ export interface IssuerRequestStatusResponse {
   requestStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED'
 }
 
+export interface IssuerStatsResponse {
+  totalIssued: number
+  activeDocuments: number
+  revokedCount: number
+  recentActivityCount: number
+}
+
+export interface IssuerDocumentRow {
+  docHash: string
+  documentType?: string
+  recipientName?: string
+  recipientEmail?: string
+  txHash: string
+  anchoredAt: string
+  revokedAt: string | null
+  status: 'active' | 'revoked'
+}
+
+export interface IssuerDocumentsResponse {
+  documents: IssuerDocumentRow[]
+  nextCursor: string | null
+}
+
+export interface IssuerActivityEntry {
+  action: string
+  detail?: string
+  createdAt: string
+  txHash?: string
+}
+
+export interface IssuerActivityResponse {
+  entries: IssuerActivityEntry[]
+}
+
 export interface IssuerAccessRequestBody {
   name?: string
   email?: string

@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
+exports.IssuerActivityResponseDto = exports.IssuerActivityEntryDto = exports.IssuerDocumentsResponseDto = exports.IssuerDocumentDto = exports.IssuerStatsResponseDto = exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -86,4 +86,110 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], RequestStatusResponseDto.prototype, "requestStatus", void 0);
+class IssuerStatsResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { totalIssued: { required: true, type: () => Number }, activeDocuments: { required: true, type: () => Number }, revokedCount: { required: true, type: () => Number }, recentActivityCount: { required: true, type: () => Number } };
+    }
+}
+exports.IssuerStatsResponseDto = IssuerStatsResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Total documents issued by this issuer.', example: 142 }),
+    __metadata("design:type", Number)
+], IssuerStatsResponseDto.prototype, "totalIssued", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Currently active (non-revoked) documents.', example: 138 }),
+    __metadata("design:type", Number)
+], IssuerStatsResponseDto.prototype, "activeDocuments", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Number of revoked documents.', example: 4 }),
+    __metadata("design:type", Number)
+], IssuerStatsResponseDto.prototype, "revokedCount", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Recent activity entries count.', example: 12 }),
+    __metadata("design:type", Number)
+], IssuerStatsResponseDto.prototype, "recentActivityCount", void 0);
+class IssuerDocumentDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => Object } };
+    }
+}
+exports.IssuerDocumentDto = IssuerDocumentDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "docHash", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Certificate of Completion' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "documentType", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Ada Lovelace' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "recipientName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'ada@example.com' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "recipientEmail", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "txHash", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '2026-07-28T12:00:00.000Z' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "anchoredAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: null, nullable: true }),
+    __metadata("design:type", Object)
+], IssuerDocumentDto.prototype, "revokedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: ['active', 'revoked'], example: 'active' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "status", void 0);
+class IssuerDocumentsResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { documents: { required: true, type: () => [require("./issuer.dto").IssuerDocumentDto] }, nextCursor: { required: true, type: () => String, nullable: true } };
+    }
+}
+exports.IssuerDocumentsResponseDto = IssuerDocumentsResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: [IssuerDocumentDto] }),
+    __metadata("design:type", Array)
+], IssuerDocumentsResponseDto.prototype, "documents", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: null, nullable: true }),
+    __metadata("design:type", Object)
+], IssuerDocumentsResponseDto.prototype, "nextCursor", void 0);
+class IssuerActivityEntryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { action: { required: true, type: () => String }, detail: { required: false, type: () => String }, createdAt: { required: true, type: () => String }, txHash: { required: false, type: () => String } };
+    }
+}
+exports.IssuerActivityEntryDto = IssuerActivityEntryDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'DOCUMENT_ANCHORED' }),
+    __metadata("design:type", String)
+], IssuerActivityEntryDto.prototype, "action", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Document type: Certificate' }),
+    __metadata("design:type", String)
+], IssuerActivityEntryDto.prototype, "detail", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '2026-07-28T12:00:00.000Z' }),
+    __metadata("design:type", String)
+], IssuerActivityEntryDto.prototype, "createdAt", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' }),
+    __metadata("design:type", String)
+], IssuerActivityEntryDto.prototype, "txHash", void 0);
+class IssuerActivityResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { entries: { required: true, type: () => [require("./issuer.dto").IssuerActivityEntryDto] } };
+    }
+}
+exports.IssuerActivityResponseDto = IssuerActivityResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: [IssuerActivityEntryDto] }),
+    __metadata("design:type", Array)
+], IssuerActivityResponseDto.prototype, "entries", void 0);
 //# sourceMappingURL=issuer.dto.js.map
