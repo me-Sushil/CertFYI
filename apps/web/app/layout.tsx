@@ -58,15 +58,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      // data-scroll-behavior tells Next's router not to fight the CSS smooth
-      // scroll on route changes (see the framework warning it otherwise logs).
-      data-scroll-behavior="smooth"
-      className={`${plusJakartaSans.variable} scroll-smooth`}
-      style={{ backgroundColor: 'var(--surface-base)' }}
-    >
-      <body className="antialiased font-sans" style={{ fontFamily: 'var(--font-plus-jakarta-sans), Plus Jakarta Sans, sans-serif' }}>
+    <html lang="en" className="bg-background scroll-smooth" suppressHydrationWarning>
+      <body className="antialiased bg-background text-foreground">
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                var theme = localStorage.getItem('certfyi-theme');
+                if (!theme) theme = 'dark';
+                document.documentElement.classList.add(theme);
+              } catch(e) {}
+            })();
+          `
+        }} />
         <Providers>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}
