@@ -49,15 +49,17 @@ function PendingRequestCard({
   }
 
   return (
-    <div className="p-6 rounded-lg border border-border bg-card">
-      <h3 className="font-semibold text-lg mb-1">
+    <div className="rounded-lg bg-card p-6 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button">
+      <h3 className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
         {request.organization || request.name || 'Unnamed Applicant'}
       </h3>
-      <p className="text-sm text-muted-foreground mb-2">{request.email || 'No email provided'}</p>
-      <p className="font-mono text-xs text-muted-foreground mb-4 break-all">
+      <p className="mb-2 text-sm font-semibold text-muted-foreground">
+        {request.email || 'No email provided'}
+      </p>
+      <p className="mb-4 font-mono text-xs break-all text-muted-foreground">
         {formatAddress(request.walletAddress, 8)}
       </p>
-      <p className="text-xs text-muted-foreground mb-4">
+      <p className="mb-5 text-xs font-semibold text-muted-foreground">
         Applied {formatRelativeTime(request.createdAt)}
       </p>
       <div className="flex gap-2">
@@ -75,11 +77,37 @@ function PendingRequestCard({
           Approve On-Chain
         </OnChainButton>
         <Button size="sm" variant="outline" className="flex-1" onClick={handleReject} disabled={rejecting}>
-          {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           Reject
         </Button>
       </div>
     </div>
+  )
+}
+
+function QuickLinkCard({
+  href,
+  icon: Icon,
+  title,
+  description,
+}: {
+  href: string
+  icon: typeof Users
+  title: string
+  description: string
+}) {
+  return (
+    <Link href={href}>
+      <div className="cursor-pointer rounded-lg bg-card p-6 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button">
+        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-accent/10">
+          <Icon className="h-5 w-5 text-accent" aria-hidden />
+        </div>
+        <h3 className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+          {title}
+        </h3>
+        <p className="text-muted-foreground">{description}</p>
+      </div>
+    </Link>
   )
 }
 
@@ -95,40 +123,42 @@ export default function AdminDashboard() {
   const statsLoading = statsQuery.isLoading
 
   const statTiles = [
-    { label: 'Total Issuers', value: stats?.totalIssuers, icon: Users, color: 'text-primary', loading: statsLoading },
-    { label: 'Pending Approvals', value: String(pendingApplications.length), icon: AlertCircle, color: 'text-destructive', loading: requestsQuery.isLoading },
-    { label: 'Documents Anchored', value: stats?.documentsAnchored?.toLocaleString(), icon: FileText, color: 'text-accent', loading: statsLoading },
-    { label: 'Suspended Issuers', value: stats?.suspendedIssuers, icon: CheckCircle, color: 'text-secondary', loading: statsLoading },
+    { label: 'Total Issuers', value: stats?.totalIssuers, icon: Users, tone: 'default' as const, loading: statsLoading },
+    { label: 'Pending Approvals', value: String(pendingApplications.length), icon: AlertCircle, tone: 'accent' as const, loading: requestsQuery.isLoading },
+    { label: 'Documents Anchored', value: stats?.documentsAnchored?.toLocaleString(), icon: FileText, tone: 'success' as const, loading: statsLoading },
+    { label: 'Suspended Issuers', value: stats?.suspendedIssuers, icon: CheckCircle, tone: 'accent' as const, loading: statsLoading },
   ]
 
   return (
-    <>
+    <div className="animate-fade-in">
       <ChainBanner />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statTiles.map((stat, idx) => (
           <StatCard key={idx} {...stat} />
         ))}
       </div>
 
       <div className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Pending Applications</h2>
-          <span className="text-sm font-semibold px-3 py-1 rounded-full bg-destructive/10 text-destructive">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+            Pending Applications
+          </h2>
+          <span className="rounded-full bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent">
             {pendingApplications.length} pending
           </span>
         </div>
 
         {requestsQuery.isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="p-6 rounded-lg border border-border bg-card space-y-3">
+              <div key={i} className="space-y-3 rounded-lg bg-card p-6 shadow-card">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-4 w-full" />
                 <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-8 flex-1" />
-                  <Skeleton className="h-8 flex-1" />
+                  <Skeleton className="h-8 flex-1 rounded-full" />
+                  <Skeleton className="h-8 flex-1 rounded-full" />
                 </div>
               </div>
             ))}
@@ -136,7 +166,7 @@ export default function AdminDashboard() {
         ) : pendingApplications.length === 0 ? (
           <EmptyState icon={Inbox} title="No pending applications" description="New issuer requests will appear here." />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {pendingApplications.map((request) => (
               <PendingRequestCard
                 key={request.id}
@@ -148,41 +178,46 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        <Link href="/admin/issuers">
-          <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
-            <Users className="w-8 h-8 text-primary mb-3" />
-            <h3 className="font-semibold text-lg mb-1">Issuer Management</h3>
-            <p className="text-sm text-muted-foreground">View, approve, and manage all registered issuers</p>
-          </div>
-        </Link>
-        <Link href="/admin/audit-log">
-          <div className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-lg transition cursor-pointer">
-            <FileText className="w-8 h-8 text-primary mb-3" />
-            <h3 className="font-semibold text-lg mb-1">Audit Log</h3>
-            <p className="text-sm text-muted-foreground">View platform-wide activity and transactions</p>
-          </div>
-        </Link>
+      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <QuickLinkCard
+          href="/admin/issuers"
+          icon={Users}
+          title="Issuer Management"
+          description="View, approve, and manage all registered issuers"
+        />
+        <QuickLinkCard
+          href="/admin/audit-log"
+          icon={FileText}
+          title="Audit Log"
+          description="View platform-wide activity and transactions"
+        />
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
+        <h2 className="mb-6 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+          Recent Activity
+        </h2>
         {recentActivity.length === 0 ? (
           <EmptyState icon={FileText} title="No recent activity" description="Platform activity will appear here." />
         ) : (
           <div className="space-y-3">
             {recentActivity.map((activity: AuditLogEntry) => (
-              <div key={activity.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-2 h-2 bg-primary rounded-full shrink-0" />
+              <div
+                key={activity.id}
+                className="flex items-center justify-between rounded-lg bg-card p-5 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
                   <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{activity.action.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="truncate text-sm font-extrabold text-foreground">
+                      {activity.action.replace(/_/g, ' ')}
+                    </p>
+                    <p className="truncate text-xs font-semibold text-muted-foreground">
                       {activity.actorName} &middot; {formatAddress(activity.targetRef)}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0 ml-4">
+                <span className="ml-4 shrink-0 text-xs font-semibold text-muted-foreground">
                   {formatRelativeTime(activity.createdAt)}
                 </span>
               </div>
@@ -190,8 +225,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }
-
-// Make OnChainButton accept className prop via Button's native support

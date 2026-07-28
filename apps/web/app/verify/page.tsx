@@ -1,13 +1,22 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
-import { Upload, X, CheckCircle, AlertCircle, Clock, User, ExternalLink, ArrowLeft } from 'lucide-react'
+import {
+  Upload,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  ExternalLink,
+  Shield,
+  FileText,
+} from 'lucide-react'
 import * as PDFJS from 'pdfjs-dist'
 
-// Set up PDF.js worker
 PDFJS.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`
 
 interface VerificationResult {
@@ -19,9 +28,21 @@ interface VerificationResult {
   revocationReason?: string
   transactionHash?: string
   explorerUrl?: string
-  /** Reason shown to the user when `status` is 'error'. */
   errorMessage?: string
 }
+
+const STATUS_TONE: Record<VerificationResult['status'], string> = {
+  verified: 'text-success',
+  revoked: 'text-destructive',
+  not_found: 'text-muted-foreground',
+  error: 'text-destructive',
+}
+
+const INFO_TILES = [
+  { icon: CheckCircle, title: 'Instant Results', desc: 'Verify in seconds', tone: 'text-success' },
+  { icon: Shield, title: 'No Login Required', desc: 'Public verification', tone: 'text-accent' },
+  { icon: Clock, title: 'Always Available', desc: '24/7 verification', tone: 'text-accent' },
+] as const
 
 export default function VerifierPortal() {
   const [isDragging, setIsDragging] = useState(false)
@@ -31,39 +52,27 @@ export default function VerifierPortal() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /**
-   * SHA-256 of the file, computed in the browser via the Web Crypto API.
-   *
-   * Uses the global `crypto`, not Node's module - importing `crypto` here
-   * shadows the global with a browser shim that has no `.subtle`, which throws
-   * and surfaces as a generic "Verification Error".
-   *
-   * The file never leaves the browser: only the resulting hash is sent, which
-   * is what lets verification work on documents CertFyi has never seen.
+   * SHA-256 of the file, computed in the browser via the Web Crypto API. Uses
+   * the global `crypto`, not a Node import - importing `crypto` shadows the
+   * global with a browser shim that has no `.subtle`. The file never leaves
+   * the browser: only the resulting hash is sent.
    */
   const calculateFileHash = async (file: File): Promise<string> => {
     if (!globalThis.crypto?.subtle) {
-      // Web Crypto needs a secure context: https, or localhost during development.
       throw new Error(
         'Secure context required to hash the file. Open this page over HTTPS or on localhost.',
       )
     }
-
     const buffer = await file.arrayBuffer()
     const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', buffer)
     const hex = Array.from(new Uint8Array(hashBuffer))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
-
-    // 0x-prefixed to match the format the API and contract expect.
     return `0x${hex}`
   }
 
-  // Mock verification - in production, call actual blockchain
   const verifyDocument = async (hash: string): Promise<VerificationResult> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // Mock data - would be replaced with actual blockchain queries
+    await new Promise((resolve) => setTimeout(resolve, 2000))
     const mockResults: { [key: string]: VerificationResult } = {
       ['a'.repeat(64)]: {
         status: 'verified',
@@ -72,7 +81,7 @@ export default function VerifierPortal() {
         issuerAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE',
         issuanceDate: '2026-06-15T14:30:00Z',
         transactionHash: '0x123456789abcdef',
-        explorerUrl: 'https://etherscan.io/tx/0x123456789abcdef'
+        explorerUrl: 'https://etherscan.io/tx/0x123456789abcdef',
       },
       ['b'.repeat(64)]: {
         status: 'revoked',
@@ -82,17 +91,18 @@ export default function VerifierPortal() {
         issuanceDate: '2026-05-01T09:00:00Z',
         revocationReason: 'Document superseded by updated version',
         transactionHash: '0x987654321fedcba',
-        explorerUrl: 'https://etherscan.io/tx/0x987654321fedcba'
+        explorerUrl: 'https://etherscan.io/tx/0x987654321fedcba',
+      },
+    }
+    return (
+      mockResults[hash] || {
+        status: 'not_found',
+        documentHash: hash,
+        issuerName: 'Unknown',
+        issuerAddress: 'N/A',
+        issuanceDate: 'N/A',
       }
-    }
-
-    return mockResults[hash] || {
-      status: 'not_found',
-      documentHash: hash,
-      issuerName: 'Unknown',
-      issuerAddress: 'N/A',
-      issuanceDate: 'N/A'
-    }
+    )
   }
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -100,13 +110,11 @@ export default function VerifierPortal() {
     e.stopPropagation()
     setIsDragging(true)
   }
-
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
   }
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -116,7 +124,6 @@ export default function VerifierPortal() {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-
     const droppedFiles = e.dataTransfer.files
     if (droppedFiles.length > 0) {
       const droppedFile = droppedFiles[0]
@@ -124,7 +131,7 @@ export default function VerifierPortal() {
         setFile(droppedFile)
         handleVerify(droppedFile)
       } else {
-        alert('Please drop a PDF file')
+        toast.error('Please drop a PDF file')
       }
     }
   }
@@ -135,21 +142,18 @@ export default function VerifierPortal() {
       setFile(selectedFile)
       handleVerify(selectedFile)
     } else {
-      alert('Please select a PDF file')
+      toast.error('Please select a PDF file')
     }
   }
 
   const handleVerify = async (pdfFile: File) => {
     setLoading(true)
     setResult(null)
-
     try {
       const hash = await calculateFileHash(pdfFile)
       const verificationResult = await verifyDocument(hash)
       setResult(verificationResult)
     } catch (error) {
-      // Without this the UI shows only "An error occurred", which makes any
-      // failure here undiagnosable.
       console.error('[verify] verification failed:', error)
       setResult({
         status: 'error',
@@ -167,69 +171,44 @@ export default function VerifierPortal() {
   const clearFile = () => {
     setFile(null)
     setResult(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'text-accent'
-      case 'revoked':
-        return 'text-destructive'
-      case 'not_found':
-        return 'text-muted-foreground'
-      case 'error':
-        return 'text-destructive'
-      default:
-        return 'text-muted-foreground'
-    }
-  }
-
-  const getStatusBgColor = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return 'bg-accent/10 border-accent/30'
-      case 'revoked':
-        return 'bg-destructive/10 border-destructive/30'
-      case 'not_found':
-        return 'bg-muted'
-      case 'error':
-        return 'bg-destructive/10 border-destructive/30'
-      default:
-        return 'bg-muted'
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
     <div className="min-h-screen bg-background">
       <HeaderWrapper />
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <main className="mx-auto max-w-4xl px-6 py-16 sm:px-8 sm:py-20 lg:px-10">
         {!file && !result ? (
-          // Upload Section
-          <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Verify Document Authenticity</h2>
-              <p className="text-lg text-muted-foreground">
-                Upload any PDF to check if it&apos;s been verified on the blockchain and view issuer details.
+          <div className="animate-fade-in space-y-8">
+            <div className="mb-10 text-center">
+              <h1 className="mb-4 text-3xl leading-tight font-extrabold tracking-[-1px] text-foreground sm:text-4xl md:text-5xl lg:text-[60px] lg:leading-[1.12]">
+                Verify Document{' '}
+                <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
+                  Authenticity
+                </span>
+              </h1>
+              <p className="mx-auto max-w-xl text-lg leading-[30.6px] text-muted-foreground">
+                Upload any PDF to check if it&apos;s been verified on the blockchain and view
+                issuer details.
               </p>
             </div>
 
-            {/* Upload Zone */}
             <div
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              className={`relative rounded-lg border-2 border-dashed transition-all duration-300 p-12 sm:p-16 text-center cursor-pointer ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-muted/30 hover:border-primary/50'
-              }`}
               onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
+              }}
+              className={`cursor-pointer rounded-lg border-2 border-dashed p-10 text-center shadow-card transition-all duration-300 ease-[var(--ease-premium)] sm:p-16 md:p-20 ${
+                isDragging
+                  ? 'border-foreground/40 bg-card'
+                  : 'border-border/15 bg-card/50 hover:border-foreground/25 hover:bg-card/80'
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -238,46 +217,41 @@ export default function VerifierPortal() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-
-              <div className="flex flex-col items-center gap-4">
-                <div className={`w-16 h-16 rounded-lg flex items-center justify-center transition ${
-                  isDragging
-                    ? 'bg-primary/20'
-                    : 'bg-primary/10'
-                }`}>
-                  <Upload className={`w-8 h-8 transition ${
+              <div className="flex flex-col items-center gap-5">
+                <div
+                  className={`flex h-16 w-16 items-center justify-center rounded-lg shadow-button transition-all duration-300 ease-[var(--ease-premium)] ${
                     isDragging
-                      ? 'text-primary'
-                      : 'text-primary/70'
-                  }`} />
+                      ? 'scale-110 bg-primary text-primary-foreground'
+                      : 'bg-card text-foreground'
+                  }`}
+                >
+                  <Upload className="h-7 w-7" aria-hidden />
                 </div>
-
                 <div>
-                  <p className="text-lg font-semibold mb-1">
+                  <p className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
                     {isDragging ? 'Drop your PDF here' : 'Drag and drop your PDF here'}
                   </p>
-                  <p className="text-muted-foreground">or click to select a file from your computer</p>
+                  <p className="text-lg leading-[30.6px] text-muted-foreground">
+                    or click to select a file from your computer
+                  </p>
                 </div>
-
-                <p className="text-sm text-muted-foreground mt-4">
-                  Maximum file size: 50 MB • Accepted format: PDF
+                <p className="mt-2 text-[15px] font-semibold text-muted-foreground">
+                  Maximum file size: 50 MB &bull; Accepted format: PDF
                 </p>
               </div>
             </div>
 
-            {/* Info Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: CheckCircle, title: 'Instant Results', desc: 'Verify in seconds' },
-                { icon: AlertCircle, title: 'No Login Required', desc: 'Public verification' },
-                { icon: Clock, title: 'Always Available', desc: '24/7 verification' },
-              ].map((info, idx) => {
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+              {INFO_TILES.map((info) => {
                 const Icon = info.icon
                 return (
-                  <div key={idx} className="p-4 rounded-lg border border-border bg-card">
-                    <Icon className="w-5 h-5 text-primary mb-2" />
-                    <p className="font-semibold text-sm">{info.title}</p>
-                    <p className="text-xs text-muted-foreground">{info.desc}</p>
+                  <div
+                    key={info.title}
+                    className="rounded-lg bg-card p-5 shadow-card transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+                  >
+                    <Icon className={`mb-3 h-5 w-5 ${info.tone}`} aria-hidden />
+                    <p className="mb-1 text-sm font-extrabold text-foreground">{info.title}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{info.desc}</p>
                   </div>
                 )
               })}
@@ -286,120 +260,112 @@ export default function VerifierPortal() {
         ) : null}
 
         {loading && (
-          // Loading State
-          <div className="space-y-6 py-12">
+          <div className="animate-fade-in space-y-8 py-16">
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Verifying Your Document</h2>
-              <p className="text-muted-foreground">
+              <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-4 border-border/15 border-t-accent" />
+              <h2 className="mb-2 text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
+                Verifying Your Document
+              </h2>
+              <p className="text-lg leading-[30.6px] text-muted-foreground">
                 Calculating hash and checking blockchain...
               </p>
             </div>
-
-            {/* Fake file info while loading */}
             {file && (
-              <div className="p-4 rounded-lg bg-muted border border-border">
-                <p className="text-sm text-muted-foreground">
-                  📄 {file.name}
-                </p>
+              <div className="flex items-center gap-2 rounded-lg bg-card p-5 shadow-card">
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <p className="truncate text-sm font-semibold text-muted-foreground">{file.name}</p>
               </div>
             )}
           </div>
         )}
 
         {result && !loading && (
-          // Results Section
-          <div className="space-y-6">
+          <div className="animate-fade-in space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl sm:text-3xl font-bold">Verification Result</h2>
+              <h2 className="text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
+                Verification Result
+              </h2>
               <button
                 onClick={clearFile}
-                className="p-2 hover:bg-muted rounded-lg transition"
+                aria-label="Close"
+                className="rounded-full p-2 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" aria-hidden />
               </button>
             </div>
 
-            {/* File Info */}
             {file && (
-              <div className="p-4 rounded-lg bg-muted border border-border">
-                <p className="text-sm font-semibold mb-1">File</p>
+              <div className="rounded-lg bg-card p-5 shadow-card">
+                <p className="mb-1 text-sm font-extrabold text-foreground">File</p>
                 <p className="text-sm text-muted-foreground">{file.name}</p>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="mt-2 font-mono text-xs font-semibold text-muted-foreground">
                   Hash: {result.documentHash.substring(0, 32)}...
                 </p>
               </div>
             )}
 
-            {/* Status Card */}
-            <div className={`p-6 sm:p-8 rounded-lg border ${getStatusBgColor(result.status)}`}>
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 mt-1">
-                  {result.status === 'verified' && (
-                    <CheckCircle className={`w-8 h-8 ${getStatusColor(result.status)}`} />
-                  )}
-                  {result.status === 'revoked' && (
-                    <AlertCircle className={`w-8 h-8 ${getStatusColor(result.status)}`} />
-                  )}
-                  {result.status === 'not_found' && (
-                    <AlertCircle className={`w-8 h-8 ${getStatusColor(result.status)}`} />
-                  )}
-                  {result.status === 'error' && (
-                    <AlertCircle className={`w-8 h-8 ${getStatusColor(result.status)}`} />
+            <div className="rounded-lg bg-card p-8 shadow-card">
+              <div className="flex items-start gap-5">
+                <div className="mt-1 shrink-0">
+                  {result.status === 'verified' ? (
+                    <CheckCircle className="h-8 w-8 text-success" aria-hidden />
+                  ) : (
+                    <AlertCircle className={`h-8 w-8 ${STATUS_TONE[result.status]}`} aria-hidden />
                   )}
                 </div>
-
                 <div className="flex-1">
-                  <h3 className={`text-2xl font-bold mb-2 ${getStatusColor(result.status)}`}>
-                    {result.status === 'verified' && '✓ Document Verified'}
-                    {result.status === 'revoked' && '⚠ Document Revoked'}
+                  <h3
+                    className={`mb-2 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] ${STATUS_TONE[result.status]}`}
+                  >
+                    {result.status === 'verified' && 'Document Verified'}
+                    {result.status === 'revoked' && 'Document Revoked'}
                     {result.status === 'not_found' && 'Document Not Found'}
                     {result.status === 'error' && 'Verification Error'}
                   </h3>
-
-                  <p className="text-sm text-muted-foreground">
-                    {result.status === 'verified' && 'This document has been verified and anchored on the blockchain.'}
-                    {result.status === 'revoked' && `This document was revoked by the issuer. Reason: ${result.revocationReason}`}
-                    {result.status === 'not_found' && 'This document was not found on the blockchain. It may not be verified.'}
+                  <p className="text-lg leading-[30.6px] text-muted-foreground">
+                    {result.status === 'verified' &&
+                      'This document has been verified and anchored on the blockchain.'}
+                    {result.status === 'revoked' &&
+                      `This document was revoked by the issuer. Reason: ${result.revocationReason}`}
+                    {result.status === 'not_found' &&
+                      'This document was not found on the blockchain. It may not be verified.'}
                     {result.status === 'error' &&
-                      (result.errorMessage ?? 'An error occurred during verification. Please try again.')}
+                      (result.errorMessage ??
+                        'An error occurred during verification. Please try again.')}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Details */}
             {result.status !== 'error' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border border-border bg-card">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div className="rounded-lg bg-card p-5 shadow-card">
+                  <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                     Issuer
                   </label>
-                  <p className="font-semibold mb-1">{result.issuerName}</p>
-                  <p className="text-xs text-muted-foreground font-mono break-all">
+                  <p className="mb-1 font-extrabold text-foreground">{result.issuerName}</p>
+                  <p className="font-mono text-xs break-all text-muted-foreground">
                     {result.issuerAddress}
                   </p>
                 </div>
-
-                <div className="p-4 rounded-lg border border-border bg-card">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+                <div className="rounded-lg bg-card p-5 shadow-card">
+                  <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                     Issued On
                   </label>
-                  <p className="font-semibold">
+                  <p className="font-extrabold text-foreground">
                     {new Date(result.issuanceDate).toLocaleDateString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-semibold text-muted-foreground">
                     {new Date(result.issuanceDate).toLocaleTimeString()}
                   </p>
                 </div>
-
                 {result.transactionHash && (
-                  <div className="p-4 rounded-lg border border-border bg-card sm:col-span-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+                  <div className="rounded-lg bg-card p-5 shadow-card sm:col-span-2">
+                    <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                       Transaction Hash
                     </label>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-mono text-primary break-all">
+                      <p className="font-mono text-sm break-all text-accent">
                         {result.transactionHash}
                       </p>
                       {result.explorerUrl && (
@@ -407,9 +373,10 @@ export default function VerifierPortal() {
                           href={result.explorerUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-shrink-0 p-2 hover:bg-muted rounded-lg transition"
+                          aria-label="View on block explorer"
+                          className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <ExternalLink className="h-4 w-4" aria-hidden />
                         </a>
                       )}
                     </div>
@@ -418,19 +385,12 @@ export default function VerifierPortal() {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 flex-col sm:flex-row">
-              <Button
-                onClick={clearFile}
-                variant="outline"
-                className="flex-1"
-              >
+            <div className="flex flex-col gap-4 pt-2 sm:flex-row">
+              <Button onClick={clearFile} variant="outline" className="h-12 flex-1">
                 Verify Another PDF
               </Button>
               <Link href="/" className="flex-1">
-                <Button className="w-full">
-                  Back to Home
-                </Button>
+                <Button className="h-12 w-full">Back to Home</Button>
               </Link>
             </div>
           </div>

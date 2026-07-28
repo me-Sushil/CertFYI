@@ -29,8 +29,8 @@ export function StorageConsent({
   return (
     <label
       className={cn(
-        'flex cursor-pointer gap-3 rounded-lg border border-border bg-card p-4 transition',
-        disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-primary/40',
+        'flex cursor-pointer gap-3 rounded-lg border border-border/15 bg-card p-4 transition-colors duration-150 ease-[var(--ease-premium)]',
+        disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-accent/40',
         className,
       )}
     >

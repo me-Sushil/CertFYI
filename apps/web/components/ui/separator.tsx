@@ -1,21 +1,29 @@
 "use client"
 
+import * as React from "react"
+
 import { cn } from "@/lib/utils"
+
+type SeparatorProps = React.ComponentProps<"div"> & {
+  orientation?: "horizontal" | "vertical"
+  decorative?: boolean
+}
 
 function Separator({
   className,
   orientation = "horizontal",
+  decorative = true,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & { orientation?: "horizontal" | "vertical" }) {
+}: SeparatorProps) {
+  const semanticProps = decorative ? { role: "none" } : { role: "separator", "aria-orientation": orientation }
   return (
     <div
-      role="separator"
       data-slot="separator"
-      aria-orientation={orientation}
+      {...semanticProps}
       className={cn(
-        "shrink-0 bg-border",
+        "shrink-0 bg-border/15",
         orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
-        className,
+        className
       )}
       {...props}
     />

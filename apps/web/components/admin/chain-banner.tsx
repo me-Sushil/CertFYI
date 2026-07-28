@@ -19,9 +19,9 @@ export function ChainBanner() {
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 mb-6 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-      <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-      <p className="text-sm text-amber-800 dark:text-amber-200 flex-1">
+    <div className="mb-8 flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 p-4 shadow-card animate-fade-in-up">
+      <AlertTriangle className="h-5 w-5 shrink-0 text-accent" aria-hidden />
+      <p className="flex-1 text-sm text-foreground">
         Wrong network. Please switch to{' '}
         <strong>{chainNames[requiredChainId] ?? `Chain ID ${requiredChainId}`}</strong>.
       </p>

@@ -20,9 +20,11 @@ import { Search, Shield, AlertTriangle, Loader2, Users, ChevronDown, ChevronUp }
 import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
 import { useIssuers, useSuspendIssuer, useReactivateIssuer } from '@/queries/admin'
 import { formatAddress, formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { IssuerRow } from '@/lib/api-types'
 
 const STATUS_OPTIONS = ['ALL', 'ACTIVE', 'SUSPENDED'] as const
+const TABLE_HEAD = ['Organization', 'Docs', 'Status', '']
 
 export default function IssuerManagementPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -30,33 +32,42 @@ export default function IssuerManagementPage() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [confirmSuspend, setConfirmSuspend] = useState<IssuerRow | null>(null)
 
-  const { data: pagesData, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } = useIssuers(true, {
-    status: filterStatus,
-    search: searchTerm || undefined,
-  })
+  const {
+    data: pagesData,
+    fetchNextPage,
+    hasNextPage,
+    isLoading,
+    isFetchingNextPage,
+  } = useIssuers(true, { status: filterStatus, search: searchTerm || undefined })
   const issuers = pagesData?.pages.flatMap((p) => p.issuers) ?? []
 
   return (
-    <>
+    <div className="animate-fade-in">
       <ChainBanner />
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Issuer Management</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage verified issuers and their credentials</p>
+        <h1 className="text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
+          Issuer Management
+        </h1>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          Manage verified issuers and their credentials
+        </p>
       </div>
 
-      <div className="space-y-4 mb-8">
+      <div className="mb-8 space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search
+            className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <input
             type="text"
             placeholder="Search by name, organization, or wallet..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-background text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+            className="h-12 w-full rounded-full border border-border/15 bg-card pr-5 pl-10 text-sm text-foreground outline-none transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/15"
           />
         </div>
-
         <div className="flex gap-2">
           {STATUS_OPTIONS.map((status) => (
             <Button
@@ -72,22 +83,32 @@ export default function IssuerManagementPage() {
       </div>
 
       {isLoading ? (
-        <div className="border border-border rounded-lg overflow-hidden">
+        <div className="overflow-hidden rounded-lg bg-card shadow-card">
           <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                {['Organization', 'Documents', 'Status', ''].map((h) => (
-                  <th key={h} className="px-4 sm:px-6 py-3 text-left text-sm font-semibold">{h}</th>
+            <thead>
+              <tr className="border-b border-border/15">
+                {TABLE_HEAD.map((h) => (
+                  <th key={h} className="px-6 py-4 text-left text-sm font-extrabold text-foreground">
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="px-4 sm:px-6 py-4"><Skeleton className="h-5 w-48" /></td>
-                  <td className="px-4 sm:px-6 py-4"><Skeleton className="h-5 w-12" /></td>
-                  <td className="px-4 sm:px-6 py-4"><Skeleton className="h-5 w-20" /></td>
-                  <td className="px-4 sm:px-6 py-4"><Skeleton className="h-8 w-8 ml-auto" /></td>
+                <tr key={i} className="border-b border-border/15">
+                  <td className="px-6 py-4">
+                    <Skeleton className="h-5 w-48" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Skeleton className="h-5 w-12" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Skeleton className="ml-auto h-8 w-8 rounded-full" />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -97,14 +118,18 @@ export default function IssuerManagementPage() {
         <EmptyState icon={Users} title="No issuers found" description="Try adjusting your search or filter criteria." />
       ) : (
         <>
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="overflow-hidden rounded-lg bg-card shadow-card">
             <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Organization</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden sm:table-cell">Docs</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-sm font-semibold hidden md:table-cell">Status</th>
-                  <th className="px-4 sm:px-6 py-3 text-right text-sm font-semibold" />
+              <thead>
+                <tr className="border-b border-border/15">
+                  <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Organization</th>
+                  <th className="hidden px-6 py-4 text-left text-sm font-extrabold text-foreground sm:table-cell">
+                    Docs
+                  </th>
+                  <th className="hidden px-6 py-4 text-left text-sm font-extrabold text-foreground md:table-cell">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-extrabold text-foreground" />
                 </tr>
               </thead>
               <tbody>
@@ -125,9 +150,9 @@ export default function IssuerManagementPage() {
           </div>
 
           {hasNextPage && (
-            <div className="text-center py-6">
+            <div className="py-6 text-center">
               <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
                 Load More
               </Button>
             </div>
@@ -135,11 +160,8 @@ export default function IssuerManagementPage() {
         </>
       )}
 
-      <SuspendConfirmDialog
-        issuer={confirmSuspend}
-        onClose={() => setConfirmSuspend(null)}
-      />
-    </>
+      <SuspendConfirmDialog issuer={confirmSuspend} onClose={() => setConfirmSuspend(null)} />
+    </div>
   )
 }
 
@@ -158,43 +180,56 @@ function IssuerRowComponent({
 
   return (
     <>
-      <tr className="border-t border-border hover:bg-muted/30 transition cursor-pointer" onClick={onToggle}>
-        <td className="px-4 sm:px-6 py-4">
-          <p className="font-medium text-sm">{issuer.organization || issuer.name || 'Unnamed Issuer'}</p>
+      <tr
+        className="cursor-pointer border-b border-border/15 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/30"
+        onClick={onToggle}
+      >
+        <td className="px-6 py-4">
+          <p className="text-sm font-semibold text-foreground">
+            {issuer.organization || issuer.name || 'Unnamed Issuer'}
+          </p>
           <p className="text-xs text-muted-foreground">{issuer.email || formatAddress(issuer.walletAddress)}</p>
         </td>
-        <td className="px-4 sm:px-6 py-4 text-sm text-muted-foreground hidden sm:table-cell">
+        <td className="hidden px-6 py-4 text-sm text-muted-foreground sm:table-cell">
           {issuer.documentCount.toLocaleString()}
         </td>
-        <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
+        <td className="hidden px-6 py-4 md:table-cell">
           <StatusBadge status={issuer.status} />
         </td>
-        <td className="px-4 sm:px-6 py-4 text-right">
-          {isExpanded ? <ChevronUp className="w-4 h-4 inline-block text-muted-foreground" /> : <ChevronDown className="w-4 h-4 inline-block text-muted-foreground" />}
+        <td className="px-6 py-4 text-right">
+          {isExpanded ? (
+            <ChevronUp className="inline-block h-4 w-4 text-muted-foreground" aria-hidden />
+          ) : (
+            <ChevronDown className="inline-block h-4 w-4 text-muted-foreground" aria-hidden />
+          )}
         </td>
       </tr>
       {isExpanded && (
-        <tr className="bg-muted/20">
-          <td colSpan={4} className="px-4 sm:px-6 py-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+        <tr className="bg-muted/30">
+          <td colSpan={4} className="px-6 py-5">
+            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Wallet</p>
-                <p className="font-mono text-xs">{formatAddress(issuer.walletAddress, 8)}</p>
+                <p className="mb-0.5 text-xs font-semibold text-muted-foreground">Wallet</p>
+                <p className="font-mono text-xs text-foreground">{formatAddress(issuer.walletAddress, 8)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Registered</p>
-                <p className="text-sm font-medium">{formatDate(issuer.registeredAt)}</p>
+                <p className="mb-0.5 text-xs font-semibold text-muted-foreground">Registered</p>
+                <p className="text-sm font-semibold text-foreground">{formatDate(issuer.registeredAt)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Status</p>
+                <p className="mb-0.5 text-xs font-semibold text-muted-foreground">Status</p>
                 <StatusBadge status={issuer.status} />
               </div>
             </div>
             <div className="flex gap-2">
               {issuer.status === 'ACTIVE' ? (
-                <Button size="sm" variant="outline" className="gap-2 text-destructive" onClick={onSuspend}>
-                  <AlertTriangle className="w-4 h-4" />
-                  Suspend
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 text-destructive hover:bg-destructive/10"
+                  onClick={onSuspend}
+                >
+                  <AlertTriangle className="h-4 w-4" aria-hidden /> Suspend
                 </Button>
               ) : (
                 <OnChainButton
@@ -207,8 +242,7 @@ function IssuerRowComponent({
                   errorMessage="Reactivation failed"
                   variant="outline"
                 >
-                  <Shield className="w-4 h-4" />
-                  Reactivate
+                  <Shield className="h-4 w-4" aria-hidden /> Reactivate
                 </OnChainButton>
               )}
             </div>
@@ -220,27 +254,22 @@ function IssuerRowComponent({
 }
 
 function StatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
+  const isActive = status === 'ACTIVE'
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-      status === 'ACTIVE'
-        ? 'bg-accent/10 text-accent'
-        : 'bg-destructive/10 text-destructive'
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${status === 'ACTIVE' ? 'bg-accent' : 'bg-destructive'}`} />
-      {status === 'ACTIVE' ? 'Active' : 'Suspended'}
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold',
+        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
+      {isActive ? 'Active' : 'Suspended'}
     </span>
   )
 }
 
-function SuspendConfirmDialog({
-  issuer,
-  onClose,
-}: {
-  issuer: IssuerRow | null
-  onClose: () => void
-}) {
+function SuspendConfirmDialog({ issuer, onClose }: { issuer: IssuerRow | null; onClose: () => void }) {
   const suspendUser = useSuspendIssuer()
-
   if (!issuer) return null
 
   return (
@@ -250,9 +279,9 @@ function SuspendConfirmDialog({
           <AlertDialogTitle>Suspend Issuer</AlertDialogTitle>
           <AlertDialogDescription>
             This will revoke <strong>{issuer.organization || issuer.name || 'this issuer'}</strong>&apos;s
-            ISSUER_ROLE on-chain ({formatAddress(issuer.walletAddress)}).
-            They have <strong>{issuer.documentCount}</strong> documents anchored.
-            Documents issued before suspension will remain valid.
+            ISSUER_ROLE on-chain ({formatAddress(issuer.walletAddress)}). They have{' '}
+            <strong>{issuer.documentCount}</strong> documents anchored, which remain valid after
+            suspension.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
