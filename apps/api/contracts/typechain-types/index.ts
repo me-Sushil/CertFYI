@@ -5,6 +5,8 @@ import type * as openzeppelin from "./@openzeppelin";
 export type { openzeppelin };
 import type * as contracts from "./contracts";
 export type { contracts };
+import type * as src from "./src";
+export type { src };
 export * as factories from "./factories";
 export type { AccessControl } from "./@openzeppelin/contracts/access/AccessControl";
 export { AccessControl__factory } from "./factories/@openzeppelin/contracts/access/AccessControl__factory";

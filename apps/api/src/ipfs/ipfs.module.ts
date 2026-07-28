@@ -1,18 +1,19 @@
 import { Module } from '@nestjs/common'
+import { IpfsController } from './ipfs.controller'
+import { IPFS_PROVIDER } from './ipfs.constants'
 import { IpfsService } from './ipfs.service'
-import { IPFS_PROVIDER_TOKEN } from './ipfs.constants'
-import { StorachaProvider } from './providers/storacha.provider'
+import { PinataProvider } from './providers/pinata.provider'
 
-export { IPFS_PROVIDER_TOKEN }
-
+/**
+ * Binds a concrete storage provider to the IpfsProvider port.
+ *
+ * Swapping providers, or pinning to a second one for the redundancy SRS §12
+ * asks for, is a change to this binding only - nothing outside this folder
+ * references PinataProvider.
+ */
 @Module({
-  providers: [
-    IpfsService,
-    {
-      provide: IPFS_PROVIDER_TOKEN,
-      useClass: StorachaProvider,
-    },
-  ],
+  controllers: [IpfsController],
+  providers: [IpfsService, { provide: IPFS_PROVIDER, useClass: PinataProvider }],
   exports: [IpfsService],
 })
 export class IpfsModule {}

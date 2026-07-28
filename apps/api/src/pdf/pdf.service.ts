@@ -1,9 +1,20 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import crypto from 'crypto'
-import { MAX_PDF_SIZE } from '../common/constants/shared.constant'
 import { IpfsService } from '../ipfs/ipfs.service'
+import { MAX_PDF_SIZE_BYTES, PDF_MAGIC_BYTES } from '../common/constants/shared.constant'
 
-const PDF_MAGIC_BYTES = Buffer.from('%PDF-')
+export interface PdfUploadResult {
+  success: boolean
+  filename: string
+  fileSize: number
+  documentHash: string
+  cid: string | null
+  gatewayUrl: string | null
+  pinned: boolean
+  pinError?: string
+  timestamp: string
+  message: string
+}
 
 @Injectable()
 export class PdfService {
@@ -11,69 +22,96 @@ export class PdfService {
 
   constructor(private readonly ipfs: IpfsService) {}
 
-  async upload(file?: Express.Multer.File, storeOnIpfs = false) {
+  /**
+   * Validates a PDF, hashes it, and optionally pins it to IPFS.
+   *
+   * Order matters: the SHA-256 is what gets anchored on-chain and is computed
+   * first, so a pinning outage can never prevent a document being issued.
+   */
+  async upload(file?: Express.Multer.File, storeOnIpfs = false): Promise<PdfUploadResult> {
+    this.validate(file)
+    const pdf = file as Express.Multer.File
+
+    const documentHash = this.hashBuffer(pdf.buffer)
+    const timestamp = new Date().toISOString()
+
+    if (!storeOnIpfs) {
+      return {
+        success: true,
+        filename: pdf.originalname,
+        fileSize: pdf.size,
+        documentHash,
+        cid: null,
+        gatewayUrl: null,
+        pinned: false,
+        timestamp,
+        message: 'PDF hashed. IPFS storage was not requested.',
+      }
+    }
+
+    const outcome = await this.ipfs.pinFile(pdf.buffer, pdf.originalname, 'application/pdf')
+
+    if (!outcome.pinned) {
+      // Degraded, not failed - the hash is what proves authenticity, so the
+      // caller can still anchor and verify (NFR Availability).
+      this.logger.warn(`Pin failed for ${pdf.originalname}, continuing without a CID`)
+    }
+
+    return {
+      success: true,
+      filename: pdf.originalname,
+      fileSize: pdf.size,
+      documentHash,
+      cid: outcome.cid,
+      gatewayUrl: outcome.gatewayUrl,
+      pinned: outcome.pinned,
+      ...(outcome.pinned ? {} : { pinError: outcome.error }),
+      timestamp,
+      message: outcome.pinned
+        ? 'PDF hashed and pinned to IPFS.'
+        : 'PDF hashed. IPFS storage is unavailable - the document can still be anchored and verified.',
+    }
+  }
+
+  /** Hashes a base64-encoded PDF the caller already holds. */
+  hash(pdfContent: string, filename: string) {
+    const buffer = Buffer.from(pdfContent, 'base64')
+    return {
+      success: true,
+      filename,
+      documentHash: this.hashBuffer(buffer),
+      fileSize: buffer.length,
+    }
+  }
+
+  /**
+   * Pins a metadata sidecar.
+   *
+   * Callers must pass a payload that carries no plaintext recipient identity -
+   * a CID is a permanent public handle, and SRS §5 requires personal data stay
+   * encrypted off-chain. Use an opaque `recipientRef` instead (SRS §8.1).
+   */
+  async pinMetadata(metadata: Record<string, unknown>, name: string) {
+    return this.ipfs.pinJson(metadata, name)
+  }
+
+  private validate(file?: Express.Multer.File): void {
     if (!file) {
       throw new BadRequestException('No file provided')
     }
     if (file.mimetype !== 'application/pdf') {
       throw new BadRequestException('File must be a PDF')
     }
-    if (file.size > MAX_PDF_SIZE) {
+    if (file.size > MAX_PDF_SIZE_BYTES) {
       throw new BadRequestException('File size exceeds 50MB limit')
     }
-
-    // Magic-byte check - mimetype is client-supplied and trivially spoofed (SRS §10.4)
-    if (!file.buffer || file.buffer.length < 5 || !file.buffer.slice(0, 5).equals(PDF_MAGIC_BYTES)) {
-      throw new BadRequestException('File does not appear to be a valid PDF')
+    // The declared MIME type is attacker-controlled; the bytes are not.
+    if (!file.buffer.subarray(0, PDF_MAGIC_BYTES.length).equals(PDF_MAGIC_BYTES)) {
+      throw new BadRequestException('File content is not a valid PDF')
     }
-
-    const documentHash = '0x' + crypto.createHash('sha256').update(file.buffer).digest('hex')
-
-    let cid: string | null = null
-    let metadataCid: string | null = null
-
-    if (storeOnIpfs) {
-      try {
-        const uploadResult = await this.ipfs.uploadFile(file.buffer, file.originalname, 'application/pdf')
-        cid = uploadResult.cid
-      } catch (error) {
-        // Pin failure must never block anchoring (SRS Availability NFR)
-        this.logger.error(`IPFS upload failed for ${documentHash}, continuing with null CID`, error)
-      }
-    }
-
-    this.logger.log('[API] PDF uploaded:', {
-      filename: file.originalname,
-      size: file.size,
-      documentHash,
-      cid,
-    })
-
-    const response: Record<string, unknown> = {
-      success: true,
-      filename: file.originalname,
-      fileSize: file.size,
-      documentHash,
-      timestamp: new Date().toISOString(),
-      message: 'PDF uploaded and hashed successfully',
-    }
-
-    if (cid) {
-      response.cid = cid
-      response.gatewayUrl = `${process.env.IPFS_GATEWAY_URL || 'https://w3s.link/ipfs'}/${cid}`
-    }
-
-    return response
   }
 
-  hash(pdfContent: string, filename: string) {
-    const buffer = Buffer.from(pdfContent, 'base64')
-    const documentHash = '0x' + crypto.createHash('sha256').update(buffer).digest('hex')
-    return {
-      success: true,
-      filename,
-      documentHash,
-      fileSize: buffer.length,
-    }
+  private hashBuffer(data: Buffer): string {
+    return '0x' + crypto.createHash('sha256').update(data).digest('hex')
   }
 }

@@ -7,6 +7,8 @@ import type {
   ApproveUserRequest,
   AuditLogResponse,
   BatchAnchorRequest,
+  IpfsHealthResponse,
+  IpfsPinStatusResponse,
   IssuerAccessRequestBody,
   IssuerDetailResponse,
   IssuerListResponse,
@@ -14,6 +16,7 @@ import type {
   LogoutResponse,
   NonceResponse,
   PdfHashRequest,
+  PdfUploadResponse,
   ReactivateIssuerRequest,
   RejectUserRequest,
   SessionResponse,
@@ -139,11 +142,30 @@ export const documentsApi = {
 
 /** PDF */
 export const pdfApi = {
-  upload: (file: File) => {
+  /**
+   * Hashes a PDF, and pins it to IPFS only when `storeOnIpfs` is true.
+   *
+   * Defaults to false: a CID is a permanent public handle, so publishing a
+   * document that names its recipient has to be a deliberate choice.
+   */
+  upload: (file: File, storeOnIpfs = false) => {
     const formData = new FormData()
     formData.append('file', file)
-    return request('/pdf/upload', { method: 'POST', body: formData as unknown as BodyInit })
+    formData.append('storeOnIpfs', String(storeOnIpfs))
+    return request<PdfUploadResponse>('/pdf/upload', {
+      method: 'POST',
+      body: formData as unknown as BodyInit,
+    })
   },
   hash: (body: PdfHashRequest) =>
     request('/pdf/upload', { method: 'PATCH', body: JSON.stringify(body) }),
+}
+
+/** IPFS */
+export const ipfsApi = {
+  health: () => request<IpfsHealthResponse>('/ipfs/health'),
+  status: (cid: string) =>
+    request<IpfsPinStatusResponse>(`/ipfs/${encodeURIComponent(cid)}/status`),
+  /** Direct URL for streaming content through the API rather than the gateway. */
+  contentUrl: (cid: string) => `${API_URL}/ipfs/${encodeURIComponent(cid)}`,
 }

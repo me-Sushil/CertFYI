@@ -64,6 +64,16 @@ export const API_ENDPOINTS = {
   PDF_UPLOAD: '/api/pdf/upload',
 } as const
 
+// Uploads
+/** Largest PDF accepted by `POST /pdf/upload`. */
+export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024
+
+/**
+ * Leading bytes of every PDF ("%PDF-"). Checked server-side because a client
+ * can set any `Content-Type` it likes (SRS §10.4).
+ */
+export const PDF_MAGIC_BYTES = Buffer.from('%PDF-', 'ascii')
+
 // Pagination
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 100

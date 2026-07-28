@@ -269,7 +269,10 @@ let AdminService = class AdminService {
             website: issuer.website,
             registeredAt: issuer.registeredAt.toISOString(),
         };
-        const result = await this.ipfs.uploadJson(profile, `issuer-${normalized}`);
+        const result = await this.ipfs.pinJson(profile, `issuer-${normalized}`);
+        if (!result.pinned) {
+            throw new common_1.ServiceUnavailableException(`Could not pin issuer metadata to IPFS: ${result.error}`);
+        }
         const metadataUri = `ipfs://${result.cid}`;
         await this.prisma.issuer.update({
             where: { walletAddress: normalized },

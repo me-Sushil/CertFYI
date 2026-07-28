@@ -31,8 +31,17 @@ export function useVerifyDocumentMutation() {
   })
 }
 
+/**
+ * Uploads a PDF, optionally pinning it to IPFS.
+ *
+ * Takes an object rather than a bare File: TanStack Query passes a context
+ * object as the second argument to mutationFn, which would otherwise be
+ * received as `storeOnIpfs`. Defaults to false - pinning publishes a permanent
+ * public copy, so it has to be opted into explicitly.
+ */
 export function useUploadPdfMutation() {
   return useMutation({
-    mutationFn: pdfApi.upload,
+    mutationFn: ({ file, storeOnIpfs = false }: { file: File; storeOnIpfs?: boolean }) =>
+      pdfApi.upload(file, storeOnIpfs),
   })
 }

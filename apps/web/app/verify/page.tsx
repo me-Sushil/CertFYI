@@ -6,7 +6,6 @@ import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
 import { Upload, X, CheckCircle, AlertCircle, Clock, User, ExternalLink, ArrowLeft } from 'lucide-react'
 import * as PDFJS from 'pdfjs-dist'
-import crypto from 'crypto'
 
 // Set up PDF.js worker
 PDFJS.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`
@@ -20,6 +19,8 @@ interface VerificationResult {
   revocationReason?: string
   transactionHash?: string
   explorerUrl?: string
+  /** Reason shown to the user when `status` is 'error'. */
+  errorMessage?: string
 }
 
 export default function VerifierPortal() {
@@ -29,12 +30,32 @@ export default function VerifierPortal() {
   const [result, setResult] = useState<VerificationResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Simulate SHA-256 hash calculation (in production, use Web Crypto API)
+  /**
+   * SHA-256 of the file, computed in the browser via the Web Crypto API.
+   *
+   * Uses the global `crypto`, not Node's module - importing `crypto` here
+   * shadows the global with a browser shim that has no `.subtle`, which throws
+   * and surfaces as a generic "Verification Error".
+   *
+   * The file never leaves the browser: only the resulting hash is sent, which
+   * is what lets verification work on documents CertFyi has never seen.
+   */
   const calculateFileHash = async (file: File): Promise<string> => {
+    if (!globalThis.crypto?.subtle) {
+      // Web Crypto needs a secure context: https, or localhost during development.
+      throw new Error(
+        'Secure context required to hash the file. Open this page over HTTPS or on localhost.',
+      )
+    }
+
     const buffer = await file.arrayBuffer()
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', buffer)
+    const hex = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    // 0x-prefixed to match the format the API and contract expect.
+    return `0x${hex}`
   }
 
   // Mock verification - in production, call actual blockchain
@@ -127,12 +148,16 @@ export default function VerifierPortal() {
       const verificationResult = await verifyDocument(hash)
       setResult(verificationResult)
     } catch (error) {
+      // Without this the UI shows only "An error occurred", which makes any
+      // failure here undiagnosable.
+      console.error('[verify] verification failed:', error)
       setResult({
         status: 'error',
         documentHash: 'N/A',
         issuerName: 'N/A',
         issuerAddress: 'N/A',
-        issuanceDate: 'N/A'
+        issuanceDate: 'N/A',
+        errorMessage: error instanceof Error ? error.message : String(error),
       })
     } finally {
       setLoading(false)
@@ -336,7 +361,8 @@ export default function VerifierPortal() {
                     {result.status === 'verified' && 'This document has been verified and anchored on the blockchain.'}
                     {result.status === 'revoked' && `This document was revoked by the issuer. Reason: ${result.revocationReason}`}
                     {result.status === 'not_found' && 'This document was not found on the blockchain. It may not be verified.'}
-                    {result.status === 'error' && 'An error occurred during verification. Please try again.'}
+                    {result.status === 'error' &&
+                      (result.errorMessage ?? 'An error occurred during verification. Please try again.')}
                   </p>
                 </div>
               </div>
