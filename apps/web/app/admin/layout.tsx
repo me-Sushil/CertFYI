@@ -3,7 +3,10 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, Loader2, ShieldAlert } from 'lucide-react'
+import { useAccount } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { LayoutDashboard, Users, FileText, Loader2, ShieldAlert, Wallet } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useSession } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +19,9 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { role, isLoading } = useSession()
+  const { isConnected } = useAccount()
+  const { openConnectModal } = useConnectModal()
+  const { address, role, isLoading } = useSession()
 
   useEffect(() => {
     if (!isLoading && role !== 'ADMIN') {
@@ -24,6 +29,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return () => clearTimeout(timeout)
     }
   }, [isLoading, role, router])
+
+  if (!isConnected) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center animate-fade-in">
+        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-accent/10">
+          <Wallet className="h-7 w-7 text-accent" aria-hidden />
+        </div>
+        <h1 className="text-xl font-extrabold text-foreground">Connect your wallet</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          You need to connect your admin wallet to access this panel.
+        </p>
+        <Button onClick={openConnectModal} className="mt-2">
+          Connect Wallet
+        </Button>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -41,7 +63,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <h1 className="text-xl font-extrabold text-foreground">Admin access required</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
-          You don&apos;t have permission to view this page. Redirecting you home&hellip;
+          {address
+            ? `Wallet ${address.slice(0, 6)}...${address.slice(-4)} is not an admin. Redirecting you home\u2026`
+            : 'You don\'t have permission to view this page. Redirecting you home\u2026'}
         </p>
       </div>
     )

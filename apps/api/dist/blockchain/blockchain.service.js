@@ -38,6 +38,16 @@ const RoleRevokedEvent = {
     ],
 };
 const ROLE_EVENTS = [RoleGrantedEvent, RoleRevokedEvent];
+const HasRoleFn = {
+    type: 'function',
+    name: 'hasRole',
+    stateMutability: 'view',
+    inputs: [
+        { name: 'role', type: 'bytes32' },
+        { name: 'account', type: 'address' },
+    ],
+    outputs: [{ type: 'bool' }],
+};
 let BlockchainService = BlockchainService_1 = class BlockchainService {
     constructor() {
         this.logger = new common_1.Logger(BlockchainService_1.name);
@@ -104,19 +114,7 @@ let BlockchainService = BlockchainService_1 = class BlockchainService {
         if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
             return { ok: false, error: 'Transaction does not target the document contract', status: 400 };
         }
-        const events = (0, viem_1.parseEventLogs)({ abi: ROLE_EVENTS, logs: receipt.logs });
-        const matched = events.filter((event) => event.eventName === eventName &&
-            event.args.role === exports.ISSUER_ROLE &&
-            event.args.account.toLowerCase() === walletAddress.toLowerCase());
-        if (matched.length === 0) {
-            return {
-                ok: false,
-                error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet`,
-                status: 400,
-            };
-        }
-        const senderMatch = matched.some((event) => event.args.sender?.toLowerCase() === adminAddress.toLowerCase());
-        if (!senderMatch) {
+        if (receipt.from.toLowerCase() !== adminAddress.toLowerCase()) {
             return {
                 ok: false,
                 error: `Transaction was sent by a different wallet than the current session. ` +
@@ -124,7 +122,29 @@ let BlockchainService = BlockchainService_1 = class BlockchainService {
                 status: 403,
             };
         }
-        return { ok: true };
+        const events = (0, viem_1.parseEventLogs)({ abi: ROLE_EVENTS, logs: receipt.logs });
+        const matched = events.some((event) => event.eventName === eventName &&
+            event.args.role === exports.ISSUER_ROLE &&
+            event.args.account.toLowerCase() === walletAddress.toLowerCase());
+        if (matched) {
+            return { ok: true };
+        }
+        const hasRole = await this.publicClient.readContract({
+            address: this.contractAddress,
+            abi: [HasRoleFn],
+            functionName: 'hasRole',
+            args: [exports.ISSUER_ROLE, walletAddress],
+        });
+        const expectedState = eventName === 'RoleGranted';
+        if (hasRole === expectedState) {
+            return { ok: true };
+        }
+        return {
+            ok: false,
+            error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet, and the ` +
+                `wallet's current on-chain role state does not match either.`,
+            status: 400,
+        };
     }
     calculateDocumentHash(data) {
         const buffer = typeof data === 'string' ? Buffer.from(data) : data;

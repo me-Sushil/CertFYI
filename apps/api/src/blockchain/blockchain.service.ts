@@ -27,6 +27,17 @@ const RoleRevokedEvent = {
 
 const ROLE_EVENTS = [RoleGrantedEvent, RoleRevokedEvent]
 
+const HasRoleFn = {
+  type: 'function',
+  name: 'hasRole',
+  stateMutability: 'view',
+  inputs: [
+    { name: 'role', type: 'bytes32' },
+    { name: 'account', type: 'address' },
+  ],
+  outputs: [{ type: 'bool' }],
+} as const
+
 export interface RoleGrantVerification {
   ok: boolean
   error?: string
@@ -141,27 +152,8 @@ export class BlockchainService implements OnModuleInit {
       return { ok: false, error: 'Transaction does not target the document contract', status: 400 }
     }
 
-    const events = parseEventLogs({ abi: ROLE_EVENTS, logs: receipt.logs })
-    const matched = events.filter(
-      (event) =>
-        event.eventName === eventName &&
-        event.args.role === ISSUER_ROLE &&
-        event.args.account.toLowerCase() === walletAddress.toLowerCase(),
-    )
-
-    if (matched.length === 0) {
-      return {
-        ok: false,
-        error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet`,
-        status: 400,
-      }
-    }
-
-    // BUG-8: Verify the transaction sender matches the calling admin's session
-    const senderMatch = matched.some(
-      (event) => event.args.sender?.toLowerCase() === adminAddress.toLowerCase(),
-    )
-    if (!senderMatch) {
+    // The sender check applies regardless of which branch below succeeds.
+    if (receipt.from.toLowerCase() !== adminAddress.toLowerCase()) {
       return {
         ok: false,
         error: `Transaction was sent by a different wallet than the current session. ` +
@@ -170,7 +162,44 @@ export class BlockchainService implements OnModuleInit {
       }
     }
 
-    return { ok: true }
+    const events = parseEventLogs({ abi: ROLE_EVENTS, logs: receipt.logs })
+    const matched = events.some(
+      (event) =>
+        event.eventName === eventName &&
+        event.args.role === ISSUER_ROLE &&
+        event.args.account.toLowerCase() === walletAddress.toLowerCase(),
+    )
+
+    if (matched) {
+      return { ok: true }
+    }
+
+    // OpenZeppelin's AccessControl only emits Role{Granted,Revoked} when the
+    // role actually changes - calling grantRole on an account that already
+    // holds it (or revokeRole on one that doesn't) succeeds silently with no
+    // event. Without this fallback, a retry after a grant whose *recording*
+    // failed (network blip, server restart) is permanently stuck: the
+    // transaction is genuinely valid and admin-signed, but can never satisfy
+    // an event-only check again. Read the live role state instead - it is a
+    // fact about the contract right now, independent of which transaction
+    // produced it.
+    const hasRole = await this.publicClient.readContract({
+      address: this.contractAddress as Hex,
+      abi: [HasRoleFn],
+      functionName: 'hasRole',
+      args: [ISSUER_ROLE, walletAddress as Hex],
+    })
+    const expectedState = eventName === 'RoleGranted'
+    if (hasRole === expectedState) {
+      return { ok: true }
+    }
+
+    return {
+      ok: false,
+      error: `Transaction did not emit ${eventName} for ISSUER_ROLE on this wallet, and the ` +
+        `wallet's current on-chain role state does not match either.`,
+      status: 400,
+    }
   }
 
   calculateDocumentHash(data: Buffer | string): string {
