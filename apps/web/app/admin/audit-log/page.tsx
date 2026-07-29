@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/ui/search-input'
 import { FilterGroup } from '@/components/ui/filter-group'
 import { LoadMoreButton } from '@/components/ui/load-more-button'
-import { Download, ExternalLink, FileText } from 'lucide-react'
+import { Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
 import { useAuditLog } from '@/queries/admin'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
 import { formatDateTime, formatAddress } from '@/lib/format'
@@ -43,6 +44,7 @@ const ACTION_DOT: Record<string, string> = {
 export default function AuditLogPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterAction, setFilterAction] = useState('ALL')
+  const [isExporting, setIsExporting] = useState(false)
 
   const {
     data: pagesData,
@@ -59,15 +61,37 @@ export default function AuditLogPage() {
 
   const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/audit-log/export${filterAction !== 'ALL' ? `?action=${filterAction}` : ''}${searchTerm ? `${filterAction !== 'ALL' ? '&' : '?'}actor=${encodeURIComponent(searchTerm)}` : ''}`
 
+  const handleExportCsv = async () => {
+    setIsExporting(true)
+    try {
+      const res = await fetch(exportUrl, { credentials: 'include' })
+      if (!res.ok) throw new Error('Export failed. Please try again.')
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition')
+      const filename = disposition?.match(/filename="([^"]+)"/)?.[1] ?? 'audit-log.csv'
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <FilterGroup options={ACTION_FILTERS} value={filterAction} onChange={setFilterAction} />
-        <a href={exportUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="h-4 w-4" aria-hidden /> Export CSV
-          </Button>
-        </a>
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCsv} disabled={isExporting}>
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
+          Export CSV
+        </Button>
       </div>
 
       <div className="mb-6">

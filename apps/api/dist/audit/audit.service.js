@@ -29,6 +29,32 @@ let AuditService = class AuditService {
     }
     async find(params) {
         const limit = Math.min(params.limit ?? 20, 100);
+        const where = this.buildWhere(params);
+        const cursorObj = params.cursor ? { id: params.cursor } : undefined;
+        const entries = await this.prisma.auditLog.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: limit + 1,
+            ...(cursorObj ? { skip: 1, cursor: cursorObj } : {}),
+        });
+        const hasMore = entries.length > limit;
+        if (hasMore)
+            entries.pop();
+        return {
+            entries: await this.resolveNames(entries),
+            nextCursor: hasMore ? entries[entries.length - 1]?.id ?? null : null,
+        };
+    }
+    async findForExport(params) {
+        const where = this.buildWhere(params);
+        const entries = await this.prisma.auditLog.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: 10_000,
+        });
+        return { entries: await this.resolveNames(entries) };
+    }
+    buildWhere(params) {
         const where = {};
         if (params.action && params.action !== 'ALL') {
             where.action = params.action;
@@ -44,20 +70,7 @@ let AuditService = class AuditService {
                 createdAt.lte = new Date(params.to);
             where.createdAt = createdAt;
         }
-        const cursorObj = params.cursor ? { id: params.cursor } : undefined;
-        const entries = await this.prisma.auditLog.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take: limit + 1,
-            ...(cursorObj ? { skip: 1, cursor: cursorObj } : {}),
-        });
-        const hasMore = entries.length > limit;
-        if (hasMore)
-            entries.pop();
-        return {
-            entries: await this.resolveNames(entries),
-            nextCursor: hasMore ? entries[entries.length - 1]?.id ?? null : null,
-        };
+        return where;
     }
     async resolveNames(entries) {
         const walletAddresses = entries.map((e) => e.actorAddress);

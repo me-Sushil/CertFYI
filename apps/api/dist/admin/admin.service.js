@@ -371,8 +371,7 @@ let AdminService = class AdminService {
         return this.audit.find(params);
     }
     async exportAuditLog(params, res) {
-        const { find } = this.audit;
-        const result = await find({ ...params, limit: 10000 });
+        const result = await this.audit.findForExport(params);
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="audit-log-${new Date().toISOString().slice(0, 10)}.csv"`);
         const headers = ['Action', 'Actor Address', 'Actor Name', 'Target', 'Details', 'Timestamp', 'Tx Hash'];

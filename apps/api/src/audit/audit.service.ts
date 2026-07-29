@@ -35,21 +35,7 @@ export class AuditService {
     limit?: number
   }) {
     const limit = Math.min(params.limit ?? 20, 100)
-    const where: Record<string, unknown> = {}
-
-    if (params.action && params.action !== 'ALL') {
-      where.action = params.action
-    }
-    if (params.actor) {
-      where.actorAddress = params.actor.toLowerCase()
-    }
-    if (params.from || params.to) {
-      const createdAt: Record<string, Date> = {}
-      if (params.from) createdAt.gte = new Date(params.from)
-      if (params.to) createdAt.lte = new Date(params.to)
-      where.createdAt = createdAt
-    }
-
+    const where = this.buildWhere(params)
     const cursorObj = params.cursor ? { id: params.cursor } : undefined
 
     const entries = await this.prisma.auditLog.findMany({
@@ -66,6 +52,34 @@ export class AuditService {
       entries: await this.resolveNames(entries),
       nextCursor: hasMore ? entries[entries.length - 1]?.id ?? null : null,
     }
+  }
+
+  /** Unpaginated fetch for CSV export - bypasses the 100-row page-size cap on `find`. */
+  async findForExport(params: { action?: string; actor?: string; from?: string; to?: string }) {
+    const where = this.buildWhere(params)
+    const entries = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 10_000,
+    })
+    return { entries: await this.resolveNames(entries) }
+  }
+
+  private buildWhere(params: { action?: string; actor?: string; from?: string; to?: string }) {
+    const where: Record<string, unknown> = {}
+    if (params.action && params.action !== 'ALL') {
+      where.action = params.action
+    }
+    if (params.actor) {
+      where.actorAddress = params.actor.toLowerCase()
+    }
+    if (params.from || params.to) {
+      const createdAt: Record<string, Date> = {}
+      if (params.from) createdAt.gte = new Date(params.from)
+      if (params.to) createdAt.lte = new Date(params.to)
+      where.createdAt = createdAt
+    }
+    return where
   }
 
   private async resolveNames(

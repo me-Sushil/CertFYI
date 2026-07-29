@@ -31,6 +31,24 @@ export declare class AuditService {
         }[];
         nextCursor: string | null;
     }>;
+    findForExport(params: {
+        action?: string;
+        actor?: string;
+        from?: string;
+        to?: string;
+    }): Promise<{
+        entries: {
+            actorName: string;
+            id: string;
+            action: string;
+            actorAddress: string;
+            targetRef: string;
+            txHash: string | null;
+            detail: string | null;
+            createdAt: Date;
+        }[];
+    }>;
+    private buildWhere;
     private resolveNames;
     countByAction(action: AuditAction): Promise<number>;
 }

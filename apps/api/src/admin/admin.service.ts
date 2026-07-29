@@ -446,8 +446,7 @@ export class AdminService {
     from?: string
     to?: string
   }, res: Response) {
-    const { find } = this.audit
-    const result = await find({ ...params, limit: 10000 })
+    const result = await this.audit.findForExport(params)
 
     res.setHeader('Content-Type', 'text/csv')
     res.setHeader(

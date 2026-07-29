@@ -76,6 +76,7 @@ export declare class AdminController {
     getDocuments(query: AdminDocumentsQueryDto): Promise<{
         documents: {
             status: string;
+            txHash: string;
             docHash: string;
             issuerAddress: string;
             issuerName: string | null;
@@ -84,7 +85,6 @@ export declare class AdminController {
             recipientEmail: string | null;
             cid: string | null;
             metadataCid: string | null;
-            txHash: string;
             anchoredAt: Date;
             revokedAt: Date | null;
             revokeTxHash: string | null;
@@ -109,8 +109,8 @@ export declare class AdminController {
         };
         recentActivity: {
             createdAt: Date;
-            txHash: string | null;
             action: import("@prisma/client").$Enums.AuditAction;
+            txHash: string | null;
             detail: string | null;
         }[];
     }>;
