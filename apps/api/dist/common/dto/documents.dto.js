@@ -135,7 +135,7 @@ __decorate([
 ], RevokeDocumentResponseDto.prototype, "message", void 0);
 class BatchDocumentDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { documentHash: { required: true, type: () => String, pattern: "HASH_REGEX" }, recipientEmail: { required: false, type: () => String }, recipientName: { required: false, type: () => String } };
+        return { documentHash: { required: true, type: () => String, pattern: "HASH_REGEX" }, recipientEmail: { required: true, type: () => String }, recipientName: { required: true, type: () => String, maxLength: 200 }, cid: { required: false, type: () => String, pattern: "CID_REGEX" } };
     }
 }
 exports.BatchDocumentDto = BatchDocumentDto;
@@ -146,27 +146,37 @@ __decorate([
     __metadata("design:type", String)
 ], BatchDocumentDto.prototype, "documentHash", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ format: 'email', example: 'recipient@example.com' }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, swagger_1.ApiProperty)({ format: 'email', example: 'recipient@example.com' }),
+    (0, class_validator_1.IsEmail)({}, { message: 'recipientEmail must be a valid email address' }),
     __metadata("design:type", String)
 ], BatchDocumentDto.prototype, "recipientEmail", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'Ada Lovelace' }),
-    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({ example: 'Ada Lovelace' }),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(200),
     __metadata("design:type", String)
 ], BatchDocumentDto.prototype, "recipientName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'IPFS CID of the PDF itself, when the issuer chose to store a copy.',
+        example: EXAMPLE_CID,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(CID_REGEX, { message: 'Invalid CID format' }),
+    __metadata("design:type", String)
+], BatchDocumentDto.prototype, "cid", void 0);
 class BatchAnchorDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { documents: { required: true, type: () => [require("./documents.dto").BatchDocumentDto] }, issuerAddress: { required: true, type: () => String }, issuerName: { required: false, type: () => String }, batchId: { required: true, type: () => String } };
+        return { documents: { required: true, type: () => [require("./documents.dto").BatchDocumentDto] }, documentType: { required: true, type: () => String, enum: shared_constant_1.DOCUMENT_TYPES }, txHash: { required: true, type: () => String, pattern: "TX_REGEX" }, batchId: { required: true, type: () => String } };
     }
 }
 exports.BatchAnchorDto = BatchAnchorDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
         type: [BatchDocumentDto],
-        description: 'Documents to anchor together under one Merkle root. Must be non-empty.',
+        description: 'Documents anchored together under one Merkle root. Must be non-empty.',
     }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ArrayNotEmpty)(),
@@ -175,17 +185,21 @@ __decorate([
     __metadata("design:type", Array)
 ], BatchAnchorDto.prototype, "documents", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: EXAMPLE_WALLET }),
+    (0, swagger_1.ApiProperty)({ enum: shared_constant_1.DOCUMENT_TYPES, example: 'Certificate' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsIn)(shared_constant_1.DOCUMENT_TYPES, { message: `documentType must be one of: ${shared_constant_1.DOCUMENT_TYPES.join(', ')}` }),
     __metadata("design:type", String)
-], BatchAnchorDto.prototype, "issuerAddress", void 0);
+], BatchAnchorDto.prototype, "documentType", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'Example University' }),
-    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the confirmed `anchorMerkleBatch` transaction, signed by the issuer’s own wallet.',
+        pattern: TX_PATTERN,
+        example: EXAMPLE_TX,
+    }),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(TX_REGEX, { message: 'Invalid transaction hash format' }),
     __metadata("design:type", String)
-], BatchAnchorDto.prototype, "issuerName", void 0);
+], BatchAnchorDto.prototype, "txHash", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Caller-supplied identifier used to look the batch up later.',

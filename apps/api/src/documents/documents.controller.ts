@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import {
   ApiBadRequestResponse,
   ApiCookieAuth,
@@ -33,6 +34,7 @@ import { IssuerActiveGuard } from '../common/guards/issuer-active.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import type { SessionPayload } from '../common/constants/roles.constant'
+import { AUTHENTICATED_THROTTLE } from '../common/constants/shared.constant'
 
 @ApiTags(API_TAGS.DOCUMENTS)
 @Controller('documents')
@@ -43,6 +45,7 @@ export class DocumentsController {
   @HttpCode(201)
   @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
   @Roles('ISSUER')
+  @Throttle({ default: AUTHENTICATED_THROTTLE })
   @ApiCookieAuth(SESSION_COOKIE_AUTH)
   @ApiOperation({
     summary: 'Anchor a single document hash',
@@ -63,6 +66,7 @@ export class DocumentsController {
   @HttpCode(200)
   @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
   @Roles('ISSUER')
+  @Throttle({ default: AUTHENTICATED_THROTTLE })
   @ApiCookieAuth(SESSION_COOKIE_AUTH)
   @ApiOperation({
     summary: 'Revoke a previously anchored document',
@@ -103,6 +107,7 @@ export class DocumentsController {
   @HttpCode(201)
   @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
   @Roles('ISSUER')
+  @Throttle({ default: AUTHENTICATED_THROTTLE })
   @ApiCookieAuth(SESSION_COOKIE_AUTH)
   @ApiOperation({
     summary: 'Anchor many documents in one transaction',
@@ -115,8 +120,8 @@ export class DocumentsController {
     description: 'Validation failed or empty batch.',
     type: ValidationErrorDto,
   })
-  anchorBatch(@Body() body: BatchAnchorDto) {
-    return this.documentsService.anchorBatch(body)
+  anchorBatch(@CurrentUser() user: SessionPayload, @Body() body: BatchAnchorDto) {
+    return this.documentsService.anchorBatch(body, user.address)
   }
 
   @Get('anchor-batch')

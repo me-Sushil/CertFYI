@@ -16,6 +16,7 @@ exports.PdfController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
+const throttler_1 = require("@nestjs/throttler");
 const swagger_1 = require("@nestjs/swagger");
 const pdf_service_1 = require("./pdf.service");
 const pdf_dto_1 = require("../common/dto/pdf.dto");
@@ -25,6 +26,7 @@ const session_guard_1 = require("../common/guards/session.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const issuer_active_guard_1 = require("../common/guards/issuer-active.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const shared_constant_1 = require("../common/constants/shared.constant");
 let PdfController = class PdfController {
     constructor(pdfService) {
         this.pdfService = pdfService;
@@ -80,6 +82,7 @@ exports.PdfController = PdfController = __decorate([
     (0, common_1.Controller)('pdf'),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
     (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, throttler_1.Throttle)({ default: shared_constant_1.AUTHENTICATED_THROTTLE }),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'No valid session cookie.', type: api_error_dto_1.ApiErrorDto }),
     (0, swagger_1.ApiForbiddenResponse)({ description: 'Session is not an active issuer.', type: api_error_dto_1.ApiErrorDto }),

@@ -106,8 +106,8 @@
   --surface-base: #f3f3f3;
   --pure-white: #ffffff;
   /* Brand accent - true source of value is --accent below; this is the tint for gradients/washes. */
-  --accent-soft: #66b0ff;
-  --accent-glow: rgba(26, 131, 255, 0.15);
+  --accent-soft: #9B8AFF;
+  --accent-glow: rgba(108, 76, 245, 0.15);
   --accent-peach: #fe8f57;
   --success: #0eb579;
   --success-foreground: #ffffff;
@@ -126,26 +126,26 @@
   --secondary-foreground: #111213;
   --muted: #e8e8e8;
   --muted-foreground: rgba(17, 18, 19, 0.7);
-  --accent: #1a83ff;
+  --accent: #6C4CF5;
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --border: #111213;
   --input: #e8e8e8;
-  --ring: #1a83ff;
-  --chart-1: #1a83ff;
-  --chart-2: #66b0ff;
+  --ring: #6C4CF5;
+  --chart-1: #6C4CF5;
+  --chart-2: #9B8AFF;
   --chart-3: #0eb579;
-  --chart-4: #1a83ff;
+  --chart-4: #6C4CF5;
   --chart-5: #111213;
   --radius: 20px;
   --sidebar: #ffffff;
   --sidebar-foreground: #111213;
   --sidebar-primary: #111213;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a83ff;
+  --sidebar-accent: #6C4CF5;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #111213;
-  --sidebar-ring: #1a83ff;
+  --sidebar-ring: #6C4CF5;
 }
 
 .dark {
@@ -154,8 +154,8 @@
   --heading-black: #ededed;
   --surface-base: #111213;
   --pure-white: #1a1a1a;
-  --accent-soft: #66b0ff;
-  --accent-glow: rgba(74, 158, 255, 0.18);
+  --accent-soft: #9B8AFF;
+  --accent-glow: rgba(108, 76, 245, 0.25);
   --accent-peach: #fe8f57;
   --success: #3cdb9a;
   --success-foreground: #0a1f16;
@@ -174,25 +174,25 @@
   --secondary-foreground: #ededed;
   --muted: #2a2a2a;
   --muted-foreground: rgba(237, 237, 237, 0.7);
-  --accent: #4a9eff;
+  --accent: #8B7AFF;
   --accent-foreground: #111213;
   --destructive: #f87171;
   --border: #ededed;
   --input: #2a2a2a;
-  --ring: #4a9eff;
-  --chart-1: #4a9eff;
-  --chart-2: #66b0ff;
-  --chart-3: #4a9eff;
+  --ring: #8B7AFF;
+  --chart-1: #8B7AFF;
+  --chart-2: #9B8AFF;
+  --chart-3: #8B7AFF;
   --chart-4: #3cdb9a;
   --chart-5: #ededed;
   --sidebar: #1a1a1a;
   --sidebar-foreground: #ededed;
   --sidebar-primary: #ffffff;
   --sidebar-primary-foreground: #111213;
-  --sidebar-accent: #4a9eff;
+  --sidebar-accent: #8B7AFF;
   --sidebar-accent-foreground: #111213;
   --sidebar-border: #ededed;
-  --sidebar-ring: #4a9eff;
+  --sidebar-ring: #8B7AFF;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -202,8 +202,8 @@
     --heading-black: #ededed;
     --surface-base: #111213;
     --pure-white: #1a1a1a;
-    --accent-soft: #66b0ff;
-    --accent-glow: rgba(74, 158, 255, 0.18);
+    --accent-soft: #9B8AFF;
+    --accent-glow: rgba(108, 76, 245, 0.25);
     --accent-peach: #fe8f57;
     --success: #3cdb9a;
     --success-foreground: #0a1f16;
@@ -222,25 +222,25 @@
     --secondary-foreground: #ededed;
     --muted: #2a2a2a;
     --muted-foreground: rgba(237, 237, 237, 0.7);
-    --accent: #4a9eff;
+    --accent: #8B7AFF;
     --accent-foreground: #111213;
     --destructive: #f87171;
     --border: #ededed;
     --input: #2a2a2a;
-    --ring: #4a9eff;
-    --chart-1: #4a9eff;
-    --chart-2: #66b0ff;
-    --chart-3: #4a9eff;
+    --ring: #8B7AFF;
+    --chart-1: #8B7AFF;
+    --chart-2: #9B8AFF;
+    --chart-3: #8B7AFF;
     --chart-4: #3cdb9a;
     --chart-5: #ededed;
     --sidebar: #1a1a1a;
     --sidebar-foreground: #ededed;
     --sidebar-primary: #ffffff;
     --sidebar-primary-foreground: #111213;
-    --sidebar-accent: #4a9eff;
+    --sidebar-accent: #8B7AFF;
     --sidebar-accent-foreground: #111213;
     --sidebar-border: #ededed;
-    --sidebar-ring: #4a9eff;
+    --sidebar-ring: #8B7AFF;
   }
 }
 
@@ -290,15 +290,15 @@
   }
 }
 
-@utility text-gradient-blue {
-  background: linear-gradient(135deg, #1a83ff, #66b0ff);
+@utility text-gradient-brand {
+  background: linear-gradient(135deg, #6C4CF5, #9B8AFF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-@utility text-gradient-blue-dark {
-  background: linear-gradient(135deg, #4a9eff, #66b0ff);
+@utility text-gradient-brand-dark {
+  background: linear-gradient(135deg, #8B7AFF, #9B8AFF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

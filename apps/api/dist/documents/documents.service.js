@@ -26,7 +26,6 @@ let DocumentsService = class DocumentsService {
         this.audit = audit;
         this.ipfs = ipfs;
         this.prisma = prisma;
-        this.anchoredBatches = new Map();
     }
     async anchor(body, issuerAddress) {
         const verification = await this.blockchain.verifyDocumentAnchor(body.documentHash, body.txHash, issuerAddress);
@@ -162,45 +161,102 @@ let DocumentsService = class DocumentsService {
             },
         };
     }
-    anchorBatch(body) {
+    async anchorBatch(body, issuerAddress) {
         const leaves = body.documents.map((d) => Buffer.from(d.documentHash.slice(2), 'hex'));
         const merkleRoot = this.blockchain.calculateMerkleRoot(leaves);
-        const merkleRootHex = '0x' + merkleRoot.toString('hex');
-        const txHash = '0x' + crypto_1.default.randomBytes(32).toString('hex');
-        const timestamp = new Date().toISOString();
-        const batchRecord = {
-            batchId: body.batchId,
-            merkleRoot: merkleRootHex,
-            issuerAddress: body.issuerAddress,
-            issuerName: body.issuerName,
-            documentCount: body.documents.length,
-            documents: body.documents,
-            txHash,
-            timestamp,
-            status: 'confirmed',
-            gasEstimate: '0.15',
-        };
-        this.anchoredBatches.set(body.batchId, batchRecord);
+        const merkleRootHex = ('0x' + merkleRoot.toString('hex'));
+        const verification = await this.blockchain.verifyMerkleBatchAnchor(merkleRootHex, body.txHash, issuerAddress);
+        if (!verification.ok) {
+            throw new common_1.BadRequestException(verification.error ?? 'Could not verify the batch anchoring transaction');
+        }
+        const issuer = await this.prisma.issuer.findUnique({ where: { walletAddress: issuerAddress } });
+        const issuerName = issuer?.organization ?? issuer?.name ?? null;
+        const existing = await this.prisma.anchoredDocument.findMany({
+            where: { docHash: { in: body.documents.map((d) => d.documentHash) } },
+            select: { docHash: true, txHash: true },
+        });
+        const conflicting = existing.find((e) => e.txHash.toLowerCase() !== body.txHash.toLowerCase());
+        if (conflicting) {
+            throw new common_1.ConflictException(`Document ${conflicting.docHash} was already anchored by a different transaction`);
+        }
+        const alreadyRecorded = new Set(existing.map((e) => e.docHash));
+        const records = [];
+        for (const doc of body.documents) {
+            if (alreadyRecorded.has(doc.documentHash)) {
+                records.push(await this.prisma.anchoredDocument.findUniqueOrThrow({ where: { docHash: doc.documentHash } }));
+                continue;
+            }
+            const metadataCid = await this.pinMetadataSidecar({
+                documentHash: doc.documentHash,
+                issuerAddress,
+                issuerName,
+                documentType: body.documentType,
+                txHash: body.txHash,
+                cid: doc.cid ?? null,
+                recipientEmail: doc.recipientEmail,
+                recipientName: doc.recipientName,
+            });
+            records.push(await this.prisma.anchoredDocument.create({
+                data: {
+                    docHash: doc.documentHash,
+                    issuerAddress,
+                    issuerName,
+                    documentType: body.documentType,
+                    recipientName: doc.recipientName,
+                    recipientEmail: doc.recipientEmail,
+                    cid: doc.cid ?? null,
+                    metadataCid,
+                    txHash: body.txHash,
+                    batchId: body.batchId,
+                },
+            }));
+        }
+        if (existing.length === 0) {
+            await this.audit.record({
+                action: 'BATCH_ANCHORED',
+                actorAddress: issuerAddress,
+                targetRef: body.batchId,
+                txHash: body.txHash,
+                detail: `${body.documents.length} documents, merkleRoot: ${merkleRootHex}`,
+            });
+        }
         return {
             success: true,
             batchId: body.batchId,
             merkleRoot: merkleRootHex,
-            txHash,
-            documentCount: body.documents.length,
-            timestamp,
+            txHash: body.txHash,
+            documentCount: records.length,
+            timestamp: new Date().toISOString(),
             status: 'confirmed',
-            message: `Successfully anchored ${body.documents.length} documents in a single transaction`,
+            message: `Successfully anchored ${records.length} documents in a single transaction`,
         };
     }
-    getBatch(batchId) {
+    async getBatch(batchId) {
         if (!batchId) {
             throw new common_1.BadRequestException('Missing batchId parameter');
         }
-        const batch = this.anchoredBatches.get(batchId);
-        if (!batch) {
+        const documents = await this.prisma.anchoredDocument.findMany({ where: { batchId } });
+        if (documents.length === 0) {
             throw new common_1.NotFoundException({ error: 'Batch not found', batchId });
         }
-        return { success: true, batch };
+        return {
+            success: true,
+            batch: {
+                batchId,
+                issuerAddress: documents[0].issuerAddress,
+                issuerName: documents[0].issuerName ?? undefined,
+                documentCount: documents.length,
+                documents: documents.map((d) => ({
+                    documentHash: d.docHash,
+                    recipientEmail: d.recipientEmail ?? undefined,
+                    recipientName: d.recipientName ?? undefined,
+                    cid: d.cid ?? undefined,
+                })),
+                txHash: documents[0].txHash,
+                timestamp: documents[0].anchoredAt.toISOString(),
+                status: 'confirmed',
+            },
+        };
     }
     async verify(documentHash, pdfContent) {
         if (pdfContent) {

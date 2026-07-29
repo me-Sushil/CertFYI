@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button'
 import { OnChainButton } from '@/components/admin/on-chain-button'
 import { ChainBanner } from '@/components/admin/chain-banner'
 import { IssuerMetadataPanel } from '@/components/admin/issuer-metadata-panel'
-import { Skeleton } from '@/components/ui/skeleton'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { SearchInput } from '@/components/ui/search-input'
+import { FilterGroup } from '@/components/ui/filter-group'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -16,33 +19,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Search, Shield, AlertTriangle, Loader2, Users, ChevronDown, ExternalLink } from 'lucide-react'
+import { Shield, AlertTriangle, Users, ChevronDown } from 'lucide-react'
 import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
 import { useIssuers, useSuspendIssuer, useReactivateIssuer } from '@/queries/admin'
-import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
+import { formatAddress, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { IssuerRow } from '@/lib/api-types'
 
-const STATUS_OPTIONS = ['ALL', 'ACTIVE', 'SUSPENDED'] as const
+const STATUS_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'SUSPENDED', label: 'Suspended' },
+]
 
-function StatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
-  const isActive = status === 'ACTIVE'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
-      {isActive ? 'Active' : 'Suspended'}
-    </span>
-  )
+const ISSUER_BADGE: Record<string, { label: string; tone: 'success' | 'destructive' }> = {
+  ACTIVE: { label: 'Active', tone: 'success' },
+  SUSPENDED: { label: 'Suspended', tone: 'destructive' },
 }
 
 export default function IssuerManagementPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL')
+  const [filterStatus, setFilterStatus] = useState('ALL')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [confirmSuspend, setConfirmSuspend] = useState<IssuerRow | null>(null)
   const reactivateUser = useReactivateIssuer()
@@ -60,37 +57,15 @@ export default function IssuerManagementPage() {
     <div>
       <ChainBanner />
 
-      {/* Search + Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input
-            type="text"
-            placeholder="Search by name, organization, or wallet..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
-          />
-        </div>
-        <div className="flex gap-2">
-          {STATUS_OPTIONS.map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={cn(
-                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
-                filterStatus === status
-                  ? 'bg-primary text-primary-foreground shadow-button'
-                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
-              )}
-            >
-              {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Search by name, organization, or wallet..."
+        />
+        <FilterGroup options={STATUS_FILTERS} value={filterStatus} onChange={setFilterStatus} />
       </div>
 
-      {/* Loading */}
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -106,7 +81,6 @@ export default function IssuerManagementPage() {
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
             <table className="w-full">
               <thead>
@@ -134,7 +108,6 @@ export default function IssuerManagementPage() {
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="space-y-3 sm:hidden">
             {issuers.map((issuer) => {
               const isOpen = expandedRow === issuer.walletAddress
@@ -153,7 +126,7 @@ export default function IssuerManagementPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <StatusBadge status={issuer.status} />
+                      <StatusBadge {...ISSUER_BADGE[issuer.status]} />
                       <ChevronDown
                         className={cn(
                           'h-4 w-4 text-muted-foreground transition-transform duration-200',
@@ -180,7 +153,7 @@ export default function IssuerManagementPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-muted-foreground mb-0.5">Status</p>
-                          <StatusBadge status={issuer.status} />
+                          <StatusBadge {...ISSUER_BADGE[issuer.status]} />
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -221,15 +194,7 @@ export default function IssuerManagementPage() {
             })}
           </div>
 
-          {/* Load more */}
-          {hasNextPage && (
-            <div className="py-6 text-center">
-              <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                Load More
-              </Button>
-            </div>
-          )}
+          <LoadMoreButton hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} fetchNextPage={fetchNextPage} />
         </>
       )}
 
@@ -267,7 +232,7 @@ function IssuerRowComponent({
           {issuer.documentCount.toLocaleString()}
         </td>
         <td className="px-6 py-4">
-          <StatusBadge status={issuer.status} />
+          <StatusBadge {...ISSUER_BADGE[issuer.status]} />
         </td>
         <td className="px-6 py-4 text-right">
           <ChevronDown
@@ -293,7 +258,7 @@ function IssuerRowComponent({
               </div>
               <div>
                 <p className="mb-0.5 text-xs font-semibold text-muted-foreground">Status</p>
-                <StatusBadge status={issuer.status} />
+                <StatusBadge {...ISSUER_BADGE[issuer.status]} />
               </div>
             </div>
             <div className="flex gap-2">

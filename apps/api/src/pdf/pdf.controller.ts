@@ -9,6 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { Throttle } from '@nestjs/throttler'
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -29,11 +30,13 @@ import { SessionGuard } from '../common/guards/session.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { IssuerActiveGuard } from '../common/guards/issuer-active.guard'
 import { Roles } from '../common/decorators/roles.decorator'
+import { AUTHENTICATED_THROTTLE } from '../common/constants/shared.constant'
 
 @ApiTags(API_TAGS.PDF)
 @Controller('pdf')
 @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
 @Roles('ISSUER')
+@Throttle({ default: AUTHENTICATED_THROTTLE })
 @ApiCookieAuth(SESSION_COOKIE_AUTH)
 @ApiUnauthorizedResponse({ description: 'No valid session cookie.', type: ApiErrorDto })
 @ApiForbiddenResponse({ description: 'Session is not an active issuer.', type: ApiErrorDto })

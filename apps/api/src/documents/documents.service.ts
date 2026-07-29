@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import crypto from 'crypto'
+import type { AnchoredDocument } from '@prisma/client'
 import type { Hex } from 'viem'
 import { BlockchainService } from '../blockchain/blockchain.service'
 import { AuditService } from '../audit/audit.service'
@@ -10,10 +11,6 @@ import { buildMetadataSidecar } from '../common/utils/metadata-sidecar.util'
 
 @Injectable()
 export class DocumentsService {
-  // Batch anchoring is out of scope for this workstream (owned by the
-  // issuance/bulk-issue workstream) - kept as the original in-memory mock.
-  private readonly anchoredBatches = new Map<string, any>()
-
   constructor(
     private readonly blockchain: BlockchainService,
     private readonly audit: AuditService,
@@ -198,51 +195,129 @@ export class DocumentsService {
     }
   }
 
-  /** Anchor multiple documents using Merkle tree batching. Out of scope - kept as the original mock. */
-  anchorBatch(body: BatchAnchorDto) {
+  /**
+   * Record a bulk anchor: many documents committed under one Merkle root in a
+   * single transaction.
+   *
+   * The Merkle root is never trusted from the client - it is recomputed here
+   * from the document hashes the caller wants persisted, then that exact
+   * root is what gets verified against the chain. A client cannot claim a
+   * document was part of a batch it wasn't actually anchored in.
+   */
+  async anchorBatch(body: BatchAnchorDto, issuerAddress: string) {
     const leaves = body.documents.map((d) => Buffer.from(d.documentHash.slice(2), 'hex'))
     const merkleRoot = this.blockchain.calculateMerkleRoot(leaves)
-    const merkleRootHex = '0x' + merkleRoot.toString('hex')
+    const merkleRootHex = ('0x' + merkleRoot.toString('hex')) as Hex
 
-    const txHash = '0x' + crypto.randomBytes(32).toString('hex')
-    const timestamp = new Date().toISOString()
-
-    const batchRecord = {
-      batchId: body.batchId,
-      merkleRoot: merkleRootHex,
-      issuerAddress: body.issuerAddress,
-      issuerName: body.issuerName,
-      documentCount: body.documents.length,
-      documents: body.documents,
-      txHash,
-      timestamp,
-      status: 'confirmed',
-      gasEstimate: '0.15',
+    const verification = await this.blockchain.verifyMerkleBatchAnchor(
+      merkleRootHex,
+      body.txHash as Hex,
+      issuerAddress,
+    )
+    if (!verification.ok) {
+      throw new BadRequestException(verification.error ?? 'Could not verify the batch anchoring transaction')
     }
 
-    this.anchoredBatches.set(body.batchId, batchRecord)
+    const issuer = await this.prisma.issuer.findUnique({ where: { walletAddress: issuerAddress } })
+    const issuerName = issuer?.organization ?? issuer?.name ?? null
+
+    const existing = await this.prisma.anchoredDocument.findMany({
+      where: { docHash: { in: body.documents.map((d) => d.documentHash) } },
+      select: { docHash: true, txHash: true },
+    })
+    const conflicting = existing.find((e) => e.txHash.toLowerCase() !== body.txHash.toLowerCase())
+    if (conflicting) {
+      throw new ConflictException(
+        `Document ${conflicting.docHash} was already anchored by a different transaction`,
+      )
+    }
+    const alreadyRecorded = new Set(existing.map((e) => e.docHash))
+
+    const records: AnchoredDocument[] = []
+    for (const doc of body.documents) {
+      if (alreadyRecorded.has(doc.documentHash)) {
+        records.push(await this.prisma.anchoredDocument.findUniqueOrThrow({ where: { docHash: doc.documentHash } }))
+        continue
+      }
+
+      const metadataCid = await this.pinMetadataSidecar({
+        documentHash: doc.documentHash,
+        issuerAddress,
+        issuerName,
+        documentType: body.documentType,
+        txHash: body.txHash,
+        cid: doc.cid ?? null,
+        recipientEmail: doc.recipientEmail,
+        recipientName: doc.recipientName,
+      })
+
+      records.push(
+        await this.prisma.anchoredDocument.create({
+          data: {
+            docHash: doc.documentHash,
+            issuerAddress,
+            issuerName,
+            documentType: body.documentType,
+            recipientName: doc.recipientName,
+            recipientEmail: doc.recipientEmail,
+            cid: doc.cid ?? null,
+            metadataCid,
+            txHash: body.txHash,
+            batchId: body.batchId,
+          },
+        }),
+      )
+    }
+
+    if (existing.length === 0) {
+      await this.audit.record({
+        action: 'BATCH_ANCHORED',
+        actorAddress: issuerAddress,
+        targetRef: body.batchId,
+        txHash: body.txHash,
+        detail: `${body.documents.length} documents, merkleRoot: ${merkleRootHex}`,
+      })
+    }
 
     return {
       success: true,
       batchId: body.batchId,
       merkleRoot: merkleRootHex,
-      txHash,
-      documentCount: body.documents.length,
-      timestamp,
+      txHash: body.txHash,
+      documentCount: records.length,
+      timestamp: new Date().toISOString(),
       status: 'confirmed',
-      message: `Successfully anchored ${body.documents.length} documents in a single transaction`,
+      message: `Successfully anchored ${records.length} documents in a single transaction`,
     }
   }
 
-  getBatch(batchId?: string) {
+  async getBatch(batchId?: string) {
     if (!batchId) {
       throw new BadRequestException('Missing batchId parameter')
     }
-    const batch = this.anchoredBatches.get(batchId)
-    if (!batch) {
+    const documents = await this.prisma.anchoredDocument.findMany({ where: { batchId } })
+    if (documents.length === 0) {
       throw new NotFoundException({ error: 'Batch not found', batchId })
     }
-    return { success: true, batch }
+
+    return {
+      success: true,
+      batch: {
+        batchId,
+        issuerAddress: documents[0].issuerAddress,
+        issuerName: documents[0].issuerName ?? undefined,
+        documentCount: documents.length,
+        documents: documents.map((d) => ({
+          documentHash: d.docHash,
+          recipientEmail: d.recipientEmail ?? undefined,
+          recipientName: d.recipientName ?? undefined,
+          cid: d.cid ?? undefined,
+        })),
+        txHash: documents[0].txHash,
+        timestamp: documents[0].anchoredAt.toISOString(),
+        status: 'confirmed',
+      },
+    }
   }
 
   /**

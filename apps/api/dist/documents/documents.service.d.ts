@@ -8,7 +8,6 @@ export declare class DocumentsService {
     private readonly audit;
     private readonly ipfs;
     private readonly prisma;
-    private readonly anchoredBatches;
     constructor(blockchain: BlockchainService, audit: AuditService, ipfs: IpfsService, prisma: PrismaService);
     anchor(body: AnchorDto, issuerAddress: string): Promise<{
         success: boolean;
@@ -45,20 +44,34 @@ export declare class DocumentsService {
             batchId: null;
         };
     }>;
-    anchorBatch(body: BatchAnchorDto): {
+    anchorBatch(body: BatchAnchorDto, issuerAddress: string): Promise<{
         success: boolean;
         batchId: string;
-        merkleRoot: string;
+        merkleRoot: `0x${string}`;
         txHash: string;
         documentCount: number;
         timestamp: string;
         status: string;
         message: string;
-    };
-    getBatch(batchId?: string): {
+    }>;
+    getBatch(batchId?: string): Promise<{
         success: boolean;
-        batch: any;
-    };
+        batch: {
+            batchId: string;
+            issuerAddress: string;
+            issuerName: string | undefined;
+            documentCount: number;
+            documents: {
+                documentHash: string;
+                recipientEmail: string | undefined;
+                recipientName: string | undefined;
+                cid: string | undefined;
+            }[];
+            txHash: string;
+            timestamp: string;
+            status: string;
+        };
+    }>;
     verify(documentHash: string, pdfContent?: string): Promise<{
         success: boolean;
         isValid: boolean;

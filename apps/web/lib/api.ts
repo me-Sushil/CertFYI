@@ -9,6 +9,7 @@ import type {
   ApproveUserRequest,
   AuditLogResponse,
   BatchAnchorRequest,
+  BatchAnchorResponse,
   IpfsHealthResponse,
   IpfsPinStatusResponse,
   IssuerAccessRequestBody,
@@ -194,7 +195,7 @@ export const documentsApi = {
     request<RevokeDocumentResponse>('/documents/revoke', { method: 'POST', body: JSON.stringify(body) }),
   getAnchor: (hash: string) => request(`/documents/anchor?hash=${encodeURIComponent(hash)}`),
   anchorBatch: (body: BatchAnchorRequest) =>
-    request('/documents/anchor-batch', { method: 'POST', body: JSON.stringify(body) }),
+    request<BatchAnchorResponse>('/documents/anchor-batch', { method: 'POST', body: JSON.stringify(body) }),
   getBatch: (batchId: string) =>
     request(`/documents/anchor-batch?batchId=${encodeURIComponent(batchId)}`),
   verify: (body: VerifyDocumentRequest) =>

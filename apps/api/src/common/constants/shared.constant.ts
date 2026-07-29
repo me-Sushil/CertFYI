@@ -64,6 +64,16 @@ export const API_ENDPOINTS = {
   PDF_UPLOAD: '/api/pdf/upload',
 } as const
 
+// Rate limiting
+/**
+ * Higher throttle tier for session-authenticated issuer routes (PDF upload,
+ * document anchor/revoke). The global default (60/min, app.module.ts) is
+ * sized for anonymous public traffic; a signed-in issuer bulk-hashing dozens
+ * of PDFs sequentially is legitimate load, not abuse, so those routes opt
+ * into this tier via `@Throttle({ default: AUTHENTICATED_THROTTLE })`.
+ */
+export const AUTHENTICATED_THROTTLE = { limit: 300, ttl: 60_000 }
+
 // Uploads
 /** Largest PDF accepted by `POST /pdf/upload`. */
 export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024

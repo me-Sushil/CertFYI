@@ -168,15 +168,29 @@ export interface RevokeDocumentResponse {
 
 export interface BatchAnchorDocumentEntry {
   documentHash: string
-  recipientEmail?: string
-  recipientName?: string
+  recipientEmail: string
+  recipientName: string
+  /** IPFS CID of the PDF, when storage was requested. */
+  cid?: string
 }
 
 export interface BatchAnchorRequest {
   documents: BatchAnchorDocumentEntry[]
-  issuerAddress: string
-  issuerName?: string
+  documentType: string
+  /** Hash of the confirmed `anchorMerkleBatch` tx, signed by the issuer's own wallet. */
+  txHash: string
   batchId: string
+}
+
+export interface BatchAnchorResponse {
+  success: boolean
+  batchId: string
+  merkleRoot: string
+  txHash: string
+  documentCount: number
+  timestamp: string
+  status: string
+  message: string
 }
 
 export interface VerifyDocumentRequest {

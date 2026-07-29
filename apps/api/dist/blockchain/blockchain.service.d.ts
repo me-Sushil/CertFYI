@@ -27,6 +27,7 @@ export declare class BlockchainService implements OnModuleInit {
     verifyDocumentAnchor(documentHash: Hex, txHash: Hex, issuerAddress: string): Promise<RoleGrantVerification>;
     verifyDocumentRevoke(documentHash: Hex, txHash: Hex, revokerAddress: string): Promise<RoleGrantVerification>;
     getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null>;
+    verifyMerkleBatchAnchor(merkleRoot: Hex, txHash: Hex, issuerAddress: string): Promise<RoleGrantVerification>;
     getReceiptSummary(txHash: Hex): Promise<{
         blockNumber: number;
     } | null>;
