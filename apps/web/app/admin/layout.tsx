@@ -22,10 +22,17 @@ function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate: () =>
   return (
     <aside className="flex h-full flex-col bg-card">
       <div className="border-b border-border/10 p-6 sm:p-8">
-        <Link href="/" className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl" onClick={onNavigate}>
-          CertFyi
+       <Link href="/" className="flex items-center gap-2 outline-none">
+        <div className="flex items-center gap-2.5">
+          <div className=" rounded-2xl bg-white px-4 py-2">
+            <img
+              src="/certFYI-logo.png"
+              alt="CertFyi Logo"
+              className="h-10 w-auto"
+            />
+          </div>
+        </div>
         </Link>
-        <p className="mt-1 text-xs font-semibold text-muted-foreground">Admin Panel</p>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-4 sm:p-5">
         {NAV_ITEMS.map((item) => {
