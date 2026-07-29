@@ -67,6 +67,30 @@ const DocumentRevokedEvent = {
         { indexed: false, name: 'timestamp', type: 'uint256' },
     ],
 };
+const MerkleRootAnchoredEvent = {
+    type: 'event',
+    name: 'MerkleRootAnchored',
+    inputs: [
+        { indexed: true, name: 'merkleRoot', type: 'bytes32' },
+        { indexed: true, name: 'issuer', type: 'address' },
+        { indexed: false, name: 'documentCount', type: 'uint256' },
+        { indexed: false, name: 'timestamp', type: 'uint256' },
+        { indexed: false, name: 'batchId', type: 'string' },
+    ],
+};
+const BATCH_EVENTS = [MerkleRootAnchoredEvent];
+const GetMerkleBatchFn = {
+    type: 'function',
+    name: 'getMerkleBatch',
+    stateMutability: 'view',
+    inputs: [{ name: '_merkleRoot', type: 'bytes32' }],
+    outputs: [
+        { name: 'issuer', type: 'address' },
+        { name: 'documentCount', type: 'uint256' },
+        { name: 'timestamp', type: 'uint256' },
+        { name: 'batchId', type: 'string' },
+    ],
+};
 const DOCUMENT_EVENTS = [DocumentAnchoredEvent, DocumentRevokedEvent];
 const GetDocumentFn = {
     type: 'function',
@@ -279,6 +303,49 @@ let BlockchainService = BlockchainService_1 = class BlockchainService {
             timestamp: Number(timestamp),
             revoked,
             documentType,
+        };
+    }
+    async verifyMerkleBatchAnchor(merkleRoot, txHash, issuerAddress) {
+        let receipt;
+        try {
+            receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
+        }
+        catch {
+            return { ok: false, error: 'Transaction not found', status: 400 };
+        }
+        if (receipt.status !== 'success') {
+            return { ok: false, error: 'On-chain transaction did not succeed', status: 400 };
+        }
+        if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
+            return { ok: false, error: 'Transaction does not target the document contract', status: 400 };
+        }
+        if (receipt.from.toLowerCase() !== issuerAddress.toLowerCase()) {
+            return {
+                ok: false,
+                error: 'Transaction was sent by a different wallet than the current session.',
+                status: 403,
+            };
+        }
+        const events = (0, viem_1.parseEventLogs)({ abi: BATCH_EVENTS, logs: receipt.logs });
+        const matched = events.some((event) => event.eventName === 'MerkleRootAnchored' &&
+            event.args.merkleRoot.toLowerCase() === merkleRoot.toLowerCase());
+        if (matched) {
+            return { ok: true };
+        }
+        const [batchIssuer, documentCount] = await this.publicClient.readContract({
+            address: this.contractAddress,
+            abi: [GetMerkleBatchFn],
+            functionName: 'getMerkleBatch',
+            args: [merkleRoot],
+        });
+        if (documentCount > 0n && batchIssuer.toLowerCase() === issuerAddress.toLowerCase()) {
+            return { ok: true };
+        }
+        return {
+            ok: false,
+            error: 'Transaction did not emit MerkleRootAnchored for this root, and the root is not ' +
+                'anchored on-chain for this issuer.',
+            status: 400,
         };
     }
     async getReceiptSummary(txHash) {

@@ -117,21 +117,30 @@ export class BatchDocumentDto {
   @Matches(HASH_REGEX, { message: 'Invalid document hash format' })
   documentHash!: string
 
-  @ApiPropertyOptional({ format: 'email', example: 'recipient@example.com' })
-  @IsOptional()
-  @IsString()
-  recipientEmail?: string
+  @ApiProperty({ format: 'email', example: 'recipient@example.com' })
+  @IsEmail({}, { message: 'recipientEmail must be a valid email address' })
+  recipientEmail!: string
 
-  @ApiPropertyOptional({ example: 'Ada Lovelace' })
+  @ApiProperty({ example: 'Ada Lovelace' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  recipientName!: string
+
+  @ApiPropertyOptional({
+    description: 'IPFS CID of the PDF itself, when the issuer chose to store a copy.',
+    example: EXAMPLE_CID,
+  })
   @IsOptional()
   @IsString()
-  recipientName?: string
+  @Matches(CID_REGEX, { message: 'Invalid CID format' })
+  cid?: string
 }
 
 export class BatchAnchorDto {
   @ApiProperty({
     type: [BatchDocumentDto],
-    description: 'Documents to anchor together under one Merkle root. Must be non-empty.',
+    description: 'Documents anchored together under one Merkle root. Must be non-empty.',
   })
   @IsArray()
   @ArrayNotEmpty()
@@ -139,15 +148,20 @@ export class BatchAnchorDto {
   @Type(() => BatchDocumentDto)
   documents!: BatchDocumentDto[]
 
-  @ApiProperty({ example: EXAMPLE_WALLET })
+  @ApiProperty({ enum: DOCUMENT_TYPES, example: 'Certificate' })
   @IsString()
-  @IsNotEmpty()
-  issuerAddress!: string
+  @IsIn(DOCUMENT_TYPES, { message: `documentType must be one of: ${DOCUMENT_TYPES.join(', ')}` })
+  documentType!: string
 
-  @ApiPropertyOptional({ example: 'Example University' })
-  @IsOptional()
+  @ApiProperty({
+    description:
+      'Hash of the confirmed `anchorMerkleBatch` transaction, signed by the issuer’s own wallet.',
+    pattern: TX_PATTERN,
+    example: EXAMPLE_TX,
+  })
   @IsString()
-  issuerName?: string
+  @Matches(TX_REGEX, { message: 'Invalid transaction hash format' })
+  txHash!: string
 
   @ApiProperty({
     description: 'Caller-supplied identifier used to look the batch up later.',

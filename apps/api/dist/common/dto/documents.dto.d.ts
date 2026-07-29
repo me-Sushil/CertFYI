@@ -19,13 +19,14 @@ export declare class RevokeDocumentResponseDto {
 }
 export declare class BatchDocumentDto {
     documentHash: string;
-    recipientEmail?: string;
-    recipientName?: string;
+    recipientEmail: string;
+    recipientName: string;
+    cid?: string;
 }
 export declare class BatchAnchorDto {
     documents: BatchDocumentDto[];
-    issuerAddress: string;
-    issuerName?: string;
+    documentType: string;
+    txHash: string;
     batchId: string;
 }
 export declare class VerifyDocumentDto {

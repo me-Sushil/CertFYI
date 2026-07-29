@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentsController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const swagger_1 = require("@nestjs/swagger");
 const documents_service_1 = require("./documents.service");
 const documents_dto_1 = require("../common/dto/documents.dto");
@@ -25,6 +26,7 @@ const roles_guard_1 = require("../common/guards/roles.guard");
 const issuer_active_guard_1 = require("../common/guards/issuer-active.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+const shared_constant_1 = require("../common/constants/shared.constant");
 let DocumentsController = class DocumentsController {
     constructor(documentsService) {
         this.documentsService = documentsService;
@@ -38,8 +40,8 @@ let DocumentsController = class DocumentsController {
     getAnchor(hash) {
         return this.documentsService.getAnchor(hash);
     }
-    anchorBatch(body) {
-        return this.documentsService.anchorBatch(body);
+    anchorBatch(user, body) {
+        return this.documentsService.anchorBatch(body, user.address);
     }
     getBatch(batchId) {
         return this.documentsService.getBatch(batchId);
@@ -57,6 +59,7 @@ __decorate([
     (0, common_1.HttpCode)(201),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
     (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, throttler_1.Throttle)({ default: shared_constant_1.AUTHENTICATED_THROTTLE }),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiOperation)({
         summary: 'Anchor a single document hash',
@@ -80,6 +83,7 @@ __decorate([
     (0, common_1.HttpCode)(200),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
     (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, throttler_1.Throttle)({ default: shared_constant_1.AUTHENTICATED_THROTTLE }),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiOperation)({
         summary: 'Revoke a previously anchored document',
@@ -126,6 +130,7 @@ __decorate([
     (0, common_1.HttpCode)(201),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
     (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, throttler_1.Throttle)({ default: shared_constant_1.AUTHENTICATED_THROTTLE }),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiOperation)({
         summary: 'Anchor many documents in one transaction',
@@ -138,9 +143,10 @@ __decorate([
         type: api_error_dto_1.ValidationErrorDto,
     }),
     openapi.ApiResponse({ status: 201 }),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [documents_dto_1.BatchAnchorDto]),
+    __metadata("design:paramtypes", [Object, documents_dto_1.BatchAnchorDto]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "anchorBatch", null);
 __decorate([

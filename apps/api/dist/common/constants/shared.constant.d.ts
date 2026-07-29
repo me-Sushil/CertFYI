@@ -42,6 +42,10 @@ export declare const API_ENDPOINTS: {
     readonly DOCUMENT_VERIFY: "/api/documents/verify";
     readonly PDF_UPLOAD: "/api/pdf/upload";
 };
+export declare const AUTHENTICATED_THROTTLE: {
+    limit: number;
+    ttl: number;
+};
 export declare const MAX_PDF_SIZE_BYTES: number;
 export declare const PDF_MAGIC_BYTES: Buffer<ArrayBuffer>;
 export declare const DEFAULT_PAGE_SIZE = 20;

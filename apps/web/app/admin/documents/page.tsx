@@ -2,37 +2,33 @@
 
 import { useMemo, useState } from 'react'
 import { useDebounce } from 'use-debounce'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { FileSpreadsheet, Search, Loader2, ExternalLink, ChevronDown, Inbox } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { SearchInput } from '@/components/ui/search-input'
+import { FilterGroup } from '@/components/ui/filter-group'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
+import { FileSpreadsheet, ExternalLink, ChevronDown, Loader2 } from 'lucide-react'
 import { useAdminDocuments } from '@/queries/admin'
 import { cn } from '@/lib/utils'
 import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
 import type { AdminDocumentRow } from '@/lib/api-types'
 
-const STATUS_OPTIONS = ['ALL', 'ACTIVE', 'REVOKED'] as const
+const STATUS_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'REVOKED', label: 'Revoked' },
+]
 
-function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
-  const isActive = status === 'active'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
-      {isActive ? 'Active' : 'Revoked'}
-    </span>
-  )
+const DOC_BADGE: Record<string, { label: string; tone: 'success' | 'destructive' }> = {
+  active: { label: 'Active', tone: 'success' },
+  revoked: { label: 'Revoked', tone: 'destructive' },
 }
 
 export default function AdminDocumentsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch] = useDebounce(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('ALL')
+  const [statusFilter, setStatusFilter] = useState('ALL')
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const docsQuery = useAdminDocuments(true, {
@@ -51,42 +47,14 @@ export default function AdminDocumentsPage() {
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          {isSearchPending || (docsQuery.isFetching && !docsQuery.isFetchingNextPage) ? (
-            <Loader2
-              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
-              aria-hidden
-            />
-          ) : (
-            <Search
-              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-          )}
-          <input
-            type="text"
-            placeholder="Search by name, email, type, or hash..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
-          />
-        </div>
-        <div className="flex gap-2">
-          {STATUS_OPTIONS.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => setStatusFilter(opt)}
-              className={cn(
-                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
-                statusFilter === opt
-                  ? 'bg-primary text-primary-foreground shadow-button'
-                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
-              )}
-            >
-              {opt === 'ALL' ? 'All' : opt.charAt(0) + opt.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search by name, email, type, or hash..."
+          isSearchPending={isSearchPending}
+          isFetching={docsQuery.isFetching && !docsQuery.isFetchingNextPage}
+        />
+        <FilterGroup options={STATUS_FILTERS} value={statusFilter} onChange={setStatusFilter} />
       </div>
 
       <p className="mb-5 text-sm font-semibold text-muted-foreground">
@@ -151,7 +119,7 @@ export default function AdminDocumentsPage() {
                       <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={doc.status} />
+                      <StatusBadge {...DOC_BADGE[doc.status]} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       {doc.txHash && (
@@ -190,7 +158,7 @@ export default function AdminDocumentsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <StatusBadge status={doc.status} />
+                      <StatusBadge {...DOC_BADGE[doc.status]} />
                       <ChevronDown
                         className={cn(
                           'h-4 w-4 text-muted-foreground transition-transform duration-200',
@@ -246,18 +214,7 @@ export default function AdminDocumentsPage() {
             })}
           </div>
 
-          {docsQuery.hasNextPage && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="outline"
-                onClick={() => docsQuery.fetchNextPage()}
-                disabled={docsQuery.isFetchingNextPage}
-              >
-                {docsQuery.isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Load more
-              </Button>
-            </div>
-          )}
+          <LoadMoreButton hasNextPage={docsQuery.hasNextPage} isFetchingNextPage={docsQuery.isFetchingNextPage} fetchNextPage={docsQuery.fetchNextPage} />
         </>
       )}
     </div>

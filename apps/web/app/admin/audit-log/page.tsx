@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
+import { SearchInput } from '@/components/ui/search-input'
+import { FilterGroup } from '@/components/ui/filter-group'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
+import { Download, ExternalLink, FileText } from 'lucide-react'
 import { useAuditLog } from '@/queries/admin'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
 import { formatDateTime, formatAddress } from '@/lib/format'
@@ -59,22 +62,7 @@ export default function AuditLogPage() {
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {ACTION_FILTERS.map((action) => (
-            <button
-              key={action.value}
-              onClick={() => setFilterAction(action.value)}
-              className={cn(
-                'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
-                filterAction === action.value
-                  ? 'bg-primary text-primary-foreground shadow-button'
-                  : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
-              )}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
+        <FilterGroup options={ACTION_FILTERS} value={filterAction} onChange={setFilterAction} />
         <a href={exportUrl} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="gap-2">
             <Download className="h-4 w-4" aria-hidden /> Export CSV
@@ -82,14 +70,11 @@ export default function AuditLogPage() {
         </a>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <input
-          type="text"
-          placeholder="Filter by actor address..."
+      <div className="mb-6">
+        <SearchInput
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
+          onChange={setSearchTerm}
+          placeholder="Filter by actor address..."
         />
       </div>
 
@@ -114,14 +99,7 @@ export default function AuditLogPage() {
             ))}
           </div>
 
-          {hasNextPage && (
-            <div className="py-6 text-center">
-              <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                Load More
-              </Button>
-            </div>
-          )}
+          <LoadMoreButton hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} fetchNextPage={fetchNextPage} />
         </>
       )}
     </div>

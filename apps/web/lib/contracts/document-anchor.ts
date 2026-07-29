@@ -181,21 +181,46 @@ export function calculateDocumentHash(data: string | Buffer): string {
   return '0x' + crypto.createHash('sha256').update(data).digest('hex')
 }
 
-export function calculateMerkleRoot(leafHashes: string[]): string {
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.startsWith('0x') ? hex.slice(2) : hex
+  const bytes = new Uint8Array(clean.length / 2)
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(clean.substring(i * 2, i * 2 + 2), 16)
+  }
+  return bytes
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return '0x' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function sha256Concat(a: Uint8Array, b: Uint8Array): Promise<Uint8Array> {
+  const combined = new Uint8Array(a.length + b.length)
+  combined.set(a, 0)
+  combined.set(b, a.length)
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', combined)
+  return new Uint8Array(digest)
+}
+
+/**
+ * Must match `BlockchainService.calculateMerkleRoot` on the backend byte for
+ * byte: both hash the raw concatenated bytes of each pair, not a string or
+ * hex-text representation. The backend independently recomputes this same
+ * root from the document hashes before trusting a batch anchor tx, so any
+ * divergence here would make every batch fail verification.
+ */
+export async function calculateMerkleRoot(leafHashes: string[]): Promise<string> {
   if (leafHashes.length === 0) {
     throw new Error('Cannot calculate Merkle root from empty array')
   }
 
-  let tree = leafHashes.map(hash => hash.toLowerCase())
+  let tree = leafHashes.map(hexToBytes)
 
   while (tree.length > 1) {
-    const nextLevel = []
+    const nextLevel: Uint8Array[] = []
     for (let i = 0; i < tree.length; i += 2) {
       if (i + 1 < tree.length) {
-        const combined = tree[i] + tree[i + 1].substring(2)
-        const crypto = require('crypto')
-        const hash = '0x' + crypto.createHash('sha256').update(combined).digest('hex')
-        nextLevel.push(hash)
+        nextLevel.push(await sha256Concat(tree[i], tree[i + 1]))
       } else {
         nextLevel.push(tree[i])
       }
@@ -203,7 +228,7 @@ export function calculateMerkleRoot(leafHashes: string[]): string {
     tree = nextLevel
   }
 
-  return tree[0]
+  return bytesToHex(tree[0])
 }
 
 export const CHAIN_CONFIG = {

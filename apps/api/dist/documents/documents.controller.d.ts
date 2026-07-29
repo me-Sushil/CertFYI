@@ -39,20 +39,34 @@ export declare class DocumentsController {
             batchId: null;
         };
     }>;
-    anchorBatch(body: BatchAnchorDto): {
+    anchorBatch(user: SessionPayload, body: BatchAnchorDto): Promise<{
         success: boolean;
         batchId: string;
-        merkleRoot: string;
+        merkleRoot: `0x${string}`;
         txHash: string;
         documentCount: number;
         timestamp: string;
         status: string;
         message: string;
-    };
-    getBatch(batchId?: string): {
+    }>;
+    getBatch(batchId?: string): Promise<{
         success: boolean;
-        batch: any;
-    };
+        batch: {
+            batchId: string;
+            issuerAddress: string;
+            issuerName: string | undefined;
+            documentCount: number;
+            documents: {
+                documentHash: string;
+                recipientEmail: string | undefined;
+                recipientName: string | undefined;
+                cid: string | undefined;
+            }[];
+            txHash: string;
+            timestamp: string;
+            status: string;
+        };
+    }>;
     verify(body: VerifyDocumentDto): Promise<{
         success: boolean;
         isValid: boolean;
