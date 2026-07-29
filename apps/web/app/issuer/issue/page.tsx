@@ -1,3 +1,4 @@
+//certfyi/apps/web/app/issuer/issue/page.tsx
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
@@ -592,7 +593,7 @@ export default function SingleIssuancePage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('form')} disabled={isBusy}>
+                  <Button variant="outline" className="h-12 flex-1" onClick={resetForm} disabled={isBusy}>
                     Back
                   </Button>
                   {phase === 'error' && txHash ? (
