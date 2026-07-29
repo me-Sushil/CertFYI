@@ -1,475 +1,289 @@
-# CertFyi - Blockchain Document Verification Platform
+# CertFYI
 
-A comprehensive platform for issuing, verifying, and managing tamper-proof digital documents on the blockchain using a **Turborepo monorepo** architecture.
+A decentralized document verification platform that anchors PDF fingerprints (SHA-256 hashes) on the Ethereum blockchain, enabling anyone to verify document authenticity, issuer identity, and issuance timestamp without a central authority.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourrepo%2Fcertfyi)
+## Tech Stack
 
-> **Note**: This project uses **Turborepo** for managing multiple applications and shared packages. See [MONOREPO.md](./MONOREPO.md) for detailed architecture and development guide.
+| Layer | Technology |
+|-------|-----------|
+| Smart Contract | Solidity 0.8.20, OpenZeppelin 5.x, Hardhat |
+| Backend | NestJS 10, TypeScript, Prisma, PostgreSQL |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, shadcn/ui |
+| Web3 | wagmi 2, viem 2, RainbowKit 2, ethers 6 |
+| Auth | Sign-In with Ethereum (SIWE) + JWT |
+| Storage | IPFS (Pinata), PostgreSQL |
+| Build | Turborepo, pnpm workspaces |
+| Chain | Ethereum Sepolia (testnet) |
 
-## Features
-
-### For Verifiers
-- **Public Verification Portal**: Upload any PDF to verify its authenticity
-- **Real-time Verification**: Instant blockchain verification
-- **Batch Verification**: Check multiple documents at once
-- **Detailed Reports**: Full audit trail and issuer information
-
-### For Issuers
-- **Single Issuance**: Issue documents one at a time
-- **Bulk Issuance**: Anchor 100+ documents in a single transaction using Merkle trees
-- **Gas Optimization**: Batch multiple documents for cost efficiency
-- **Dashboard Analytics**: Track all issued and revoked documents
-- **Document Revocation**: Revoke documents when needed with audit trail
-
-### For Administrators
-- **Issuer Management**: Approve and manage verified issuers
-- **Audit Logging**: Complete audit trail of all platform activity
-- **Platform Analytics**: System-wide statistics and monitoring
-- **Compliance Tools**: Tools for regulatory compliance
-
-## Architecture
-
-### Monorepo Structure (Turborepo)
-```
-┌────────────────────────────────────────────────────────┐
-│         Root Workspace (Turborepo orchestration)        │
-│            turbo.json | package.json | pnpm            │
-└────────────────────────────────────────────────────────┘
-         ↓              ↓              ↓
-    ┌────────┐    ┌────────┐    ┌────────────┐
-    │ apps/  │    │packages│    │  Tools &   │
-    │  web   │    │ ├─ ui  │    │   Config   │
-    │ apps/  │    │ ├─shared│    │            │
-    │  api   │    │ └─contract│  │            │
-    └────────┘    └────────┘    └────────────┘
-```
-
-### System Architecture
-```
-┌─────────────────────────────────────────────────────────────┐
-│     Frontend (Next.js 16, @certfyi/web, apps/web)           │
-│  - Verifier Portal   - Issuer Dashboard   - Admin Dashboard │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-            ┌──────────┴──────────┐
-            ↓                     ↓
-┌───────────────────────┐  ┌──────────────────────┐
-│  Shared Layer         │  │  UI Components       │
-│  @certfyi/shared      │  │  @certfyi/ui         │
-│ ├─ types.ts          │  │ ├─ shadcn/ui        │
-│ ├─ schemas.ts        │  │ ├─ custom           │
-│ ├─ constants.ts      │  │ └─ theme system    │
-└───────────┬───────────┘  └──────────────────────┘
-            │
-┌───────────┴──────────────────────────────────────┐
-│  API Endpoints & Services (apps/web/app/api)     │
-│  - Document Anchoring  - Verification - PDF Ops  │
-└──────────────┬───────────────────────────────────┘
-               │
-    ┌──────────┼──────────┐
-    ↓          ↓          ↓
-┌─────────┐ ┌──────────┐ ┌──────────────┐
-│Database │ │Blockchain│ │  Blob        │
-│Postgres │ │ Ethereum │ │  Storage     │
-│         │ │ (L1/L2)  │ │  (Vercel)    │
-└─────────┘ └──────────┘ └──────────────┘
-```
-
-## Technology Stack
-
-### Build & Monorepo
-- **Monorepo**: Turborepo with pnpm workspaces
-- **Build System**: Turbo with smart caching & parallelization
-- **Package Manager**: pnpm 9.0+
-- **Node.js**: 18.0.0 or higher
-
-### Frontend (`apps/web`)
-- **Framework**: Next.js 16 with App Router
-- **UI Components**: shadcn/ui (built-in components)
-- **Styling**: Tailwind CSS v4 with custom design tokens
-- **State Management**: React Hooks + SWR + Zustand
-- **Wallet**: wagmi + RainbowKit (MetaMask integration)
-- **Type Safety**: TypeScript 5.3+
-
-### UI Package (`packages/ui`)
-- **shadcn/ui Components**: Button, Card, Dialog, Input, etc.
-- **Tailwind CSS**: Responsive design system
-- **Custom Components**: Header, Logo, ThemeToggleInline
-- **Barrel Exports**: Clean unified imports
-
-### Shared Package (`packages/shared`)
-- **Types**: TypeScript interfaces for Document, Issuer, VerificationResult
-- **Validation**: Zod schemas for API/form validation
-- **Constants**: Blockchain addresses, API endpoints, chains
-- **Barrel Exports**: Centralized package interface
-
-### Backend Services
-- **API Routes**: Next.js API routes (`apps/web/app/api`)
-- **Database**: PostgreSQL (configured for Prisma ORM)
-- **Authentication**: Session-based with MetaMask wallet
-- **File Storage**: Vercel Blob for PDF uploads
-- **NestJS**: Backend scaffolded in `apps/api` (ready for expansion)
-
-### Smart Contracts (`packages/contracts`)
-- **Language**: Solidity 0.8.19
-- **Network**: Ethereum (Sepolia testnet / Mainnet)
-- **Framework**: Hardhat/Foundry
-- **Security**: OpenZeppelin contracts
-- **Features**: 
-  - Merkle tree batching (100+ documents per transaction)
-  - Document revocation with audit trail
-  - Access control & role management
-
-### Infrastructure & Deployment
-- **Hosting**: Vercel (Edge Computing, auto-scaling)
-- **SSL/TLS**: Auto HTTPS with custom domain support
-- **Monitoring**: Error tracking & performance monitoring
-- **Analytics**: Web vitals & user analytics
-- **Wallet**: MetaMask via wagmi & RainbowKit
-
-## Quick Start
-
-### Prerequisites
-- **Node.js** 18.0.0 or higher
-- **pnpm** 9.0.0 or higher (package manager)
-- **Git** for version control
-- **Web3 wallet** (MetaMask) for blockchain testing
-
-### Installation
-
-```bash
-# Clone repository
-git clone https://github.com/yourrepo/certfyi
-cd certfyi
-
-# Install dependencies (pnpm workspace)
-pnpm install
-
-# Configure environment variables
-cp .env.example .env.local
-# Edit .env.local with your blockchain RPC URL, database URL, etc.
-
-# Start all development servers (web + api)
-pnpm dev
-
-# Or start specific app:
-pnpm dev:web      # Only frontend on port 3000
-pnpm dev:api      # Only backend (when available)
-```
-
-Visit **http://localhost:3000** to access the application.
-
-### Monorepo Commands
-
-```bash
-# Build all packages
-pnpm build
-
-# Build specific app
-pnpm build:web    # Build only web
-pnpm build:api    # Build only API (when ready)
-
-# Type checking
-pnpm type-check   # Check all packages
-
-# Linting
-pnpm lint         # Lint all packages
-
-# Testing
-pnpm test         # Run all tests
-pnpm test:watch   # Run tests in watch mode
-
-# Cleanup
-pnpm clean        # Remove all build artifacts and node_modules
-```
-
-See [MONOREPO.md](./MONOREPO.md) for comprehensive monorepo documentation.
-
-## Project Structure
-
-This project uses **Turborepo** monorepo architecture for scalability and efficient builds:
+## Monorepo Structure
 
 ```
 certfyi/
 ├── apps/
-│   ├── web/                           # Next.js 16 Frontend (@certfyi/web)
-│   │   ├── app/                       # Next.js App Router
-│   │   │   ├── page.tsx              # Home page
-│   │   │   ├── verify/               # Verifier portal
-│   │   │   ├── issuer/               # Issuer dashboard
-│   │   │   ├── admin/                # Admin dashboard
-│   │   │   ├── api/                  # API routes
-│   │   │   │   ├── documents/        # Document operations
-│   │   │   │   └── pdf/              # PDF processing
-│   │   │   └── providers.tsx         # Client providers
-│   │   ├── components/               # React components
-│   │   │   ├── header.tsx
-│   │   │   ├── logo.tsx
-│   │   │   └── theme-toggle-inline.tsx
-│   │   ├── lib/                      # Utilities
-│   │   ├── public/                   # Static assets
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── api/                           # NestJS Backend (@certfyi/api) [Scaffolded]
-│       ├── src/
-│       ├── package.json
-│       └── tsconfig.json
-│
-├── packages/
-│   ├── shared/                        # Shared Types & Schemas (@certfyi/shared)
-│   │   ├── src/
-│   │   │   ├── types.ts              # TypeScript types
-│   │   │   ├── schemas.ts            # Zod validation schemas
-│   │   │   ├── constants.ts          # App constants
-│   │   │   └── index.ts              # Barrel exports
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   ├── ui/                            # UI Components (@certfyi/ui)
-│   │   ├── src/
-│   │   │   ├── components/           # All shadcn/ui components
-│   │   │   └── index.ts              # Barrel exports
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── contracts/                     # Smart Contracts (@certfyi/contracts)
-│       ├── src/
-│       │   ├── DocumentAnchor.sol
-│       │   └── IssuerRegistry.sol
-│       ├── test/
-│       ├── scripts/
-│       ├── package.json
-│       └── hardhat.config.ts
-│
-├── turbo.json                         # Turbo build configuration
-├── pnpm-workspace.yaml               # pnpm workspace configuration
-├── package.json                       # Root workspace package
-├── MONOREPO.md                        # Detailed monorepo guide
-├── TURBOREPO_SETUP.md                # Turborepo setup documentation
-├── DATABASE.md                        # Database schema
-├── SECURITY.md                        # Security guidelines
-├── DEPLOYMENT.md                      # Deployment guide
-└── README.md                          # This file
+│   ├── api/                    # NestJS backend (port 3001)
+│   │   ├── contracts/          # Solidity smart contracts (Hardhat)
+│   │   ├── prisma/             # Database schema & migrations
+│   │   └── src/
+│   │       ├── admin/          # Issuer management, on-chain role grants
+│   │       ├── audit/          # Audit trail logging
+│   │       ├── auth/           # SIWE verification, session JWT
+│   │       ├── blockchain/     # On-chain anchoring, verification, Merkle batches
+│   │       ├── common/         # DTOs, guards, decorators, constants
+│   │       ├── documents/      # Anchor, revoke, verify documents
+│   │       ├── ipfs/           # Pinata IPFS pinning with graceful degradation
+│   │       ├── issuer/         # Issuer dashboard endpoints
+│   │       ├── pdf/            # PDF validation, hashing, upload
+│   │       └── prisma/         # Database service
+│   └── web/                    # Next.js frontend
+│       ├── app/
+│       │   ├── admin/          # Admin dashboard, issuer management, audit log
+│       │   ├── issuer/         # Issuer dashboard, issue, bulk-issue, history
+│       │   ├── request-access/ # Issuer access request form
+│       │   └── verify/         # Public document verification portal
+│       ├── components/         # UI components (shadcn/ui + custom)
+│       ├── hooks/              # Custom React hooks (on-chain actions, chain enforcement)
+│       ├── lib/                # API client, contracts, auth context, utilities
+│       └── queries/            # TanStack React Query hooks
+├── turbo.json                  # Turborepo pipeline config
+├── pnpm-workspace.yaml         # Workspace declaration
+└── package.json                # Root scripts
 ```
 
-### Workspace Dependencies
-The monorepo uses **pnpm workspaces** with the following dependency structure:
-- `@certfyi/web` depends on `@certfyi/shared` and `@certfyi/ui`
-- `@certfyi/api` depends on `@certfyi/shared`
-- All packages are linked locally for fast development iteration
+## Features
 
-## API Endpoints
+### Public Document Verification
 
-### Documents
-- `POST /api/documents/anchor` - Anchor single document
-- `POST /api/documents/anchor-batch` - Anchor batch with Merkle root
-- `POST /api/documents/verify` - Verify document authenticity
-- `GET /api/documents/verify?hash=...` - Quick verification
+Anyone can verify a document without logging in. Upload a PDF, the app computes its SHA-256 hash client-side and checks it directly against the on-chain contract. Displays issuer name, document type, issuance date, transaction hash, and IPFS link.
 
-### PDF Processing
-- `POST /api/pdf/upload` - Upload and hash PDF
-- `PATCH /api/pdf/hash` - Calculate hash of existing PDF
+### Single Document Issuance
+
+A 3-step wizard for issuers: fill metadata form, preview, then confirm. The PDF is pinned to IPFS via Pinata, anchored on-chain through the issuer's wallet, and recorded in the database after transaction verification.
+
+### Bulk Document Issuance (Merkle Batching)
+
+Upload a CSV mapping plus multiple PDFs. The platform computes a Merkle tree root from all document hashes and submits a single `anchorMerkleBatch` transaction for gas efficiency. The backend independently recomputes and verifies the Merkle root.
+
+### Document Revocation
+
+Issuers can revoke their own documents on-chain. The backend verifies the revocation receipt before updating records.
+
+### Admin Dashboard
+
+- Approve/reject issuer access requests with on-chain role grants
+- Suspend/reactivate issuers
+- Upload issuer metadata to IPFS and set on-chain
+- Browse all anchored documents
+- Full audit log with filtering and CSV export
+
+### Issuer Access Request
+
+Unapproved wallets can submit organization details. Admins review and approve, granting the ISSUER_ROLE on-chain.
+
+### IPFS Integration
+
+Documents and metadata are pinned to IPFS via Pinata. IPFS failures never block on-chain anchoring (graceful degradation). Failed pins can be retried later.
+
+### Audit Trail
+
+All admin and issuer actions are logged with timestamps, actor addresses, and transaction hashes. The log is filterable, paginated, and exportable to CSV.
+
+## Smart Contract
+
+**Contract:** `DocumentAnchor.sol` (Solidity 0.8.20)
+**Deployed:** Sepolia at `0x742d35Cc6634C0532925a3b844Bc9e7595f42bE`
+
+| Function | Access | Purpose |
+|----------|--------|---------|
+| `anchorDocument(bytes32, string)` | ISSUER_ROLE | Anchor a single document hash |
+| `anchorMerkleBatch(bytes32, uint256, string)` | ISSUER_ROLE | Anchor a Merkle root for batch |
+| `revokeDocument(bytes32)` | ISSUER_ROLE / ADMIN_ROLE | Revoke a document |
+| `verifyDocument(bytes32)` | Public | Check if a hash is anchored |
+| `getDocument(bytes32)` | Public | Get full document record |
+| `verifyMerkleProof(...)` | Public | Verify membership in a batch |
+| `grantRole(bytes32, address)` | ADMIN_ROLE | Grant issuer role |
+| `revokeRole(bytes32, address)` | ADMIN_ROLE | Revoke issuer role |
+| `setIssuerMetadata(address, string)` | ADMIN_ROLE | Set issuer metadata CID |
+
+Built with OpenZeppelin's `AccessControl` and `ReentrancyGuard`.
+
+## Authentication Flow
+
+1. User connects wallet via RainbowKit
+2. Backend generates a nonce (stored in a short-lived httpOnly cookie, 5 min TTL)
+3. User signs a SIWE message
+4. Backend verifies the signature and issues a session JWT (httpOnly cookie, 7 days)
+5. Role is determined:
+   - **ADMIN** — wallet matches `ADMIN_WALLET_ADDRESS` env var
+   - **ISSUER** — wallet exists in `Issuer` table with `ACTIVE` status
+   - **UNAPPROVED** — all other wallets
+
+## Database Schema (PostgreSQL via Prisma)
+
+| Model | Purpose |
+|-------|---------|
+| `AccessRequest` | Issuer access requests (PENDING / APPROVED / REJECTED) |
+| `Issuer` | Off-chain index of on-chain ISSUER_ROLE holders (ACTIVE / SUSPENDED) |
+| `AuditLog` | Full audit trail of all platform actions |
+| `VerificationLog` | Tracks verification requests for analytics |
+| `AnchoredDocument` | Documents anchored on-chain (hash, issuer, CID, tx, revocation status) |
+
+## Prerequisites
+
+- Node.js >= 18.0.0
+- pnpm >= 9.0.0
+- PostgreSQL database
+- Ethereum wallet with Sepolia ETH (for deployment/admin)
+- Pinata account (for IPFS pinning)
 
 ## Environment Variables
 
-```bash
-# Smart Contract
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_CHAIN_ID=11155111
+Create a `.env` file in the root directory:
 
+```env
 # Database
-DATABASE_URL=postgresql://user:pass@host/certfyi
+DATABASE_URL=postgresql://user:password@localhost:5432/certfyi
 
 # Blockchain
-ETHERSCAN_API_KEY=...
+CONTRACT_ADDRESS=0x742d35Cc6634C0532925a3b844Bc9e7595f42bE
+CHAIN_ID=11155111
+RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
 
-# Email (optional)
-SENDGRID_API_KEY=...
+# Admin
+ADMIN_WALLET_ADDRESS=0xYourAdminWallet
 
-# Monitoring
-SENTRY_DSN=...
+# IPFS
+PINATA_JWT=your_pinata_jwt_token
+
+# API
+PORT=3001
+WEB_APP_URL=http://localhost:3000
+SWAGGER_ENABLED=true
+
+# Frontend (prefix with NEXT_PUBLIC_)
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x742d35Cc6634C0532925a3b844Bc9e7595f42bE
+NEXT_PUBLIC_CHAIN_ID=11155111
 ```
 
-See `.env.example` for complete list.
+## Getting Started
 
-## Usage Examples
+### Installation
 
-### Verify a Document
+```bash
+# Clone the repository
+git clone https://github.com/your-org/certfyi.git
+cd certfyi
 
-```typescript
-import { POST as verifyDocument } from '@/app/api/documents/verify/route'
-
-const response = await fetch('/api/documents/verify', {
-  method: 'POST',
-  body: JSON.stringify({
-    documentHash: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE...',
-  })
-})
-
-const { isValid, issuer, timestamp } = await response.json()
+# Install dependencies
+pnpm install
 ```
 
-### Issue a Document
+### Database Setup
 
-```typescript
-const response = await fetch('/api/documents/anchor', {
-  method: 'POST',
-  body: JSON.stringify({
-    documentHash: '0x...',
-    documentType: 'Certificate',
-    recipientEmail: 'recipient@example.com',
-    issuerAddress: '0x...'
-  })
-})
+```bash
+# Generate Prisma client
+cd apps/api
+npx prisma generate
 
-const { txHash, status } = await response.json()
+# Run migrations
+npx prisma migrate deploy
 ```
 
-### Bulk Issue Documents
+### Smart Contract Deployment (optional)
 
-```typescript
-const response = await fetch('/api/documents/anchor-batch', {
-  method: 'POST',
-  body: JSON.stringify({
-    documents: [
-      { documentHash: '0x...', recipientEmail: '...' },
-      { documentHash: '0x...', recipientEmail: '...' },
-    ],
-    issuerAddress: '0x...',
-    batchId: 'batch-001'
-  })
-})
+```bash
+cd apps/api/contracts
 
-const { merkleRoot, txHash } = await response.json()
+# Compile
+npx hardhat compile
+
+# Deploy to Sepolia
+npx hardhat run scripts/deploy.ts --network sepolia
 ```
-
-## Smart Contract Functions
-
-```solidity
-// Anchor a single document
-anchorDocument(bytes32 documentHash, string memory documentType)
-
-// Anchor multiple documents with Merkle root
-anchorMerkleBatch(bytes32 merkleRoot, uint256 documentCount, string memory batchId)
-
-// Verify document authenticity
-verifyDocument(bytes32 documentHash) returns (bool)
-
-// Revoke a document
-revokeDocument(bytes32 documentHash)
-
-// Verify Merkle proof
-verifyMerkleProof(bytes32[] calldata proof, bytes32 merkleRoot, bytes32 leaf) returns (bool)
-```
-
-## Deployment
 
 ### Development
+
 ```bash
+# Run all apps
 pnpm dev
+
+# Run only the API
+pnpm dev:api
+
+# Run only the web frontend
+pnpm dev:web
 ```
 
-### Production
-See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive deployment guide.
+### Build
 
 ```bash
-vercel deploy --prod
+# Build all apps
+pnpm build
+
+# Build individually
+pnpm build:api
+pnpm build:web
 ```
+
+## API Documentation
+
+When `SWAGGER_ENABLED=true`, Swagger UI is available at `http://localhost:3001/docs`.
+
+### Key Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/health` | — | Health check |
+| GET | `/api/platform/stats` | — | Public platform statistics |
+| POST | `/api/auth/nonce` | — | Generate SIWE nonce |
+| POST | `/api/auth/verify` | — | Verify SIWE signature |
+| POST | `/api/auth/logout` | Session | Destroy session |
+| GET | `/api/auth/session` | Session | Get current session |
+| POST | `/api/documents/verify` | — | Verify a document hash |
+| POST | `/api/documents/anchor` | Issuer | Record anchored document |
+| POST | `/api/documents/batch-anchor` | Issuer | Record batch-anchored documents |
+| POST | `/api/documents/revoke` | Issuer | Record revoked document |
+| POST | `/api/pdf/validate` | Issuer | Validate and hash PDF |
+| POST | `/api/pdf/upload` | Issuer | Upload PDF to IPFS |
+| GET | `/api/issuer/profile` | Issuer | Get issuer profile |
+| GET | `/api/issuer/stats` | Issuer | Get issuer statistics |
+| GET | `/api/issuer/documents` | Issuer | List issued documents |
+| POST | `/api/issuer/request-access` | Session | Submit access request |
+| GET | `/api/admin/requests` | Admin | List access requests |
+| POST | `/api/admin/requests/:id/approve` | Admin | Approve issuer |
+| POST | `/api/admin/requests/:id/reject` | Admin | Reject issuer |
+| POST | `/api/admin/issuers/:address/suspend` | Admin | Suspend issuer |
+| POST | `/api/admin/issuers/:address/reactivate` | Admin | Reactivate issuer |
+| GET | `/api/admin/audit-log` | Admin | Get audit log |
 
 ## Security
 
-⚠️ This is a production-ready system. See [SECURITY.md](SECURITY.md) for:
-- Authentication & authorization
-- Smart contract security
-- API security
-- Database security
-- Deployment security
+- **On-chain verification** — Every transaction receipt is verified server-side before database recording (prevents spoofing)
+- **Replay protection** — Unique transaction hash constraints prevent replay attacks
+- **Sender verification** — Transaction sender must match the authenticated session wallet
+- **Rate limiting** — 60 requests per minute via @nestjs/throttler
+- **Security headers** — Helmet with strict CSP
+- **ReentrancyGuard** — All contract state-changing functions protected
+- **httpOnly cookies** — Sessions stored in secure, httpOnly cookies (no localStorage)
+- **PDF validation** — Magic byte verification, not just MIME type checking
+- **Input validation** — class-validator with whitelist mode strips unknown properties
+- **Stateless nonce** — 5-minute TTL prevents stale SIWE messages
 
-### Key Security Features
-- ✅ Input validation on all APIs
-- ✅ ReentrancyGuard on smart contracts
-- ✅ Row-level security for database
-- ✅ HTTPS/SSL encryption
-- ✅ Audit logging of all operations
-- ✅ Rate limiting (recommended)
+## Scripts Reference
 
-## Testing
-
-```bash
-# Run tests
-pnpm test
-
-# Run integration tests
-pnpm test:integration
-
-# Run security scan
-pnpm security:scan
-
-# Check test coverage
-pnpm test:coverage
-```
-
-## Performance Metrics
-
-- **Page Load Time**: < 2 seconds (target)
-- **API Response Time**: < 200ms (average)
-- **Verification Time**: < 5 seconds
-- **Batch Anchoring**: 100 documents in ~1 transaction
-- **Gas Efficiency**: ~0.0015 ETH per document (batched)
-
-## Roadmap
-
-- [ ] Layer 2 optimization (Arbitrum, Optimism)
-- [ ] Multi-chain support (Polygon, BSC)
-- [ ] NFT certificates
-- [ ] Mobile app
-- [ ] DAO governance
-- [ ] IPFS integration
-- [ ] Zero-knowledge proofs
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+| Script | Description |
+|--------|-------------|
+| `pnpm dev` | Start all apps in development mode |
+| `pnpm build` | Build all apps |
+| `pnpm dev:api` | Start only the API |
+| `pnpm dev:web` | Start only the frontend |
+| `pnpm build:api` | Build only the API |
+| `pnpm build:web` | Build only the frontend |
+| `pnpm lint` | Lint all apps |
+| `pnpm type-check` | Type-check all apps |
+| `pnpm test` | Run tests |
+| `pnpm clean` | Clean all build outputs and node_modules |
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file
-
-## Support
-
-- 📖 [Documentation](https://docs.certfyi.com)
-- 💬 [Discord Community](https://discord.gg/certfyi)
-- 🐛 [Issue Tracker](https://github.com/yourrepo/certfyi/issues)
-- 📧 [Email Support](mailto:support@certfyi.com)
-
-## Acknowledgments
-
-- Built with [Next.js](https://nextjs.org)
-- UI Components from [shadcn/ui](https://ui.shadcn.com)
-- Smart Contract Libraries from [OpenZeppelin](https://openzeppelin.com)
-- Hosted on [Vercel](https://vercel.com)
-
-## Disclaimer
-
-This platform is for legitimate credential verification only. Users are responsible for:
-- Obtaining proper authorization to issue documents
-- Ensuring documents are not fraudulently created
-- Complying with all applicable laws and regulations
-
-## Contact
-
-- **Website**: https://certfyi.com
-- **Email**: hello@certfyi.com
-- **Twitter**: [@CertFyi](https://twitter.com/certfyi)
-- **GitHub**: [CertFyi](https://github.com/certfyi)
-
----
-
-Made with ❤️ by the CertFyi Team
+Private
