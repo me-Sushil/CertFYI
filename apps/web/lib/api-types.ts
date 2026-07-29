@@ -85,6 +85,7 @@ export interface IssuerDocumentRow {
   revokedAt: string | null
   revokeTxHash?: string
   status: 'active' | 'revoked'
+  batchId: string | null
 }
 
 export interface IssuerDocumentsResponse {
@@ -333,6 +334,7 @@ export interface AdminDocumentRow {
   revokedAt: string | null
   revokeTxHash: string | null
   status: 'active' | 'revoked'
+  batchId: string | null
 }
 
 export interface AdminDocumentsResponse {

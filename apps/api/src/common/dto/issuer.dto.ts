@@ -128,6 +128,9 @@ export class IssuerDocumentDto {
 
   @ApiProperty({ enum: ['active', 'revoked'], example: 'active' })
   status!: 'active' | 'revoked'
+
+  @ApiProperty({ example: null, nullable: true, description: 'Set when issued as part of a bulk batch anchor.' })
+  batchId!: string | null
 }
 
 export class IssuerDocumentsResponseDto {

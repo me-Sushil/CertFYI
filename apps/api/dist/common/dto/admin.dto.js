@@ -482,7 +482,7 @@ __decorate([
 ], AdminDocumentsQueryDto.prototype, "limit", void 0);
 class AdminDocumentEntityDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { docHash: { required: true, type: () => String }, issuerAddress: { required: true, type: () => String }, issuerName: { required: true, type: () => String, nullable: true }, documentType: { required: true, type: () => String, nullable: true }, recipientName: { required: true, type: () => String, nullable: true }, recipientEmail: { required: true, type: () => String, nullable: true }, cid: { required: true, type: () => String, nullable: true }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => Date }, revokedAt: { required: true, type: () => Date, nullable: true }, revokeTxHash: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => String } };
+        return { docHash: { required: true, type: () => String }, issuerAddress: { required: true, type: () => String }, issuerName: { required: true, type: () => String, nullable: true }, documentType: { required: true, type: () => String, nullable: true }, recipientName: { required: true, type: () => String, nullable: true }, recipientEmail: { required: true, type: () => String, nullable: true }, cid: { required: true, type: () => String, nullable: true }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => Date }, revokedAt: { required: true, type: () => Date, nullable: true }, revokeTxHash: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => String }, batchId: { required: true, type: () => String, nullable: true } };
     }
 }
 exports.AdminDocumentEntityDto = AdminDocumentEntityDto;
@@ -534,6 +534,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: 'active' }),
     __metadata("design:type", String)
 ], AdminDocumentEntityDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: null, description: 'Set when issued as part of a bulk batch anchor.' }),
+    __metadata("design:type", Object)
+], AdminDocumentEntityDto.prototype, "batchId", void 0);
 class AdminDocumentsListResponseDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { documents: { required: true, type: () => [require("./admin.dto").AdminDocumentEntityDto] }, nextCursor: { required: true, type: () => String, nullable: true } };

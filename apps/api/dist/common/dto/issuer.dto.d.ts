@@ -24,6 +24,7 @@ export declare class IssuerDocumentDto {
     revokedAt: string | null;
     revokeTxHash?: string;
     status: 'active' | 'revoked';
+    batchId: string | null;
 }
 export declare class IssuerDocumentsResponseDto {
     documents: IssuerDocumentDto[];

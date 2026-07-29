@@ -29,6 +29,7 @@ export declare class IssuerController {
             revokedAt: string | null;
             revokeTxHash: string | undefined;
             status: "revoked" | "active";
+            batchId: string | null;
         }[];
         nextCursor: string | null;
     }>;

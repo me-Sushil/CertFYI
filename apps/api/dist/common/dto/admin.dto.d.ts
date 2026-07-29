@@ -109,6 +109,7 @@ export declare class AdminDocumentEntityDto {
     revokedAt: Date | null;
     revokeTxHash: string | null;
     status: string;
+    batchId: string | null;
 }
 export declare class AdminDocumentsListResponseDto {
     documents: AdminDocumentEntityDto[];

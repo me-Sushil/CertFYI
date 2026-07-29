@@ -108,6 +108,7 @@ export class IssuerService {
       revokedAt: d.revokedAt?.toISOString() ?? null,
       revokeTxHash: d.revokeTxHash ?? undefined,
       status: d.revokedAt ? 'revoked' as const : 'active' as const,
+      batchId: d.batchId ?? null,
     }))
 
     return {

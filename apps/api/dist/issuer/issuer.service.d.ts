@@ -38,6 +38,7 @@ export declare class IssuerService {
             revokedAt: string | null;
             revokeTxHash: string | undefined;
             status: "revoked" | "active";
+            batchId: string | null;
         }[];
         nextCursor: string | null;
     }>;

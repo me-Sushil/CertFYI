@@ -405,6 +405,9 @@ export class AdminDocumentEntityDto {
 
   @ApiProperty({ example: 'active' })
   status!: string
+
+  @ApiProperty({ nullable: true, type: String, example: null, description: 'Set when issued as part of a bulk batch anchor.' })
+  batchId!: string | null
 }
 
 export class AdminDocumentsListResponseDto {

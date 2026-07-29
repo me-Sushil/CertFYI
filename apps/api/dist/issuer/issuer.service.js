@@ -103,6 +103,7 @@ let IssuerService = class IssuerService {
             revokedAt: d.revokedAt?.toISOString() ?? null,
             revokeTxHash: d.revokeTxHash ?? undefined,
             status: d.revokedAt ? 'revoked' : 'active',
+            batchId: d.batchId ?? null,
         }));
         return {
             documents,

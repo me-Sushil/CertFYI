@@ -114,7 +114,7 @@ __decorate([
 ], IssuerStatsResponseDto.prototype, "recentActivityCount", void 0);
 class IssuerDocumentDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, revokeTxHash: { required: false, type: () => String }, status: { required: true, type: () => Object } };
+        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, revokeTxHash: { required: false, type: () => String }, status: { required: true, type: () => Object }, batchId: { required: true, type: () => String, nullable: true } };
     }
 }
 exports.IssuerDocumentDto = IssuerDocumentDto;
@@ -154,6 +154,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ enum: ['active', 'revoked'], example: 'active' }),
     __metadata("design:type", String)
 ], IssuerDocumentDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: null, nullable: true, description: 'Set when issued as part of a bulk batch anchor.' }),
+    __metadata("design:type", Object)
+], IssuerDocumentDto.prototype, "batchId", void 0);
 class IssuerDocumentsResponseDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { documents: { required: true, type: () => [require("./issuer.dto").IssuerDocumentDto] }, nextCursor: { required: true, type: () => String, nullable: true } };
