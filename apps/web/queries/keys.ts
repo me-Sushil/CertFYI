@@ -2,6 +2,11 @@ export const keys = {
   session: {
     all: ['session'] as const,
   },
+  platform: {
+    stats: {
+      all: ['platform', 'stats'] as const,
+    },
+  },
   admin: {
     requests: {
       all: ['admin', 'requests'] as const,

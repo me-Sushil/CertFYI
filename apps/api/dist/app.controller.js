@@ -16,12 +16,16 @@ const swagger_1 = require("@nestjs/swagger");
 const app_service_1 = require("./app.service");
 const swagger_constants_1 = require("./common/swagger/swagger.constants");
 const health_dto_1 = require("./common/dto/health.dto");
+const platform_stats_dto_1 = require("./common/dto/platform-stats.dto");
 let AppController = class AppController {
     constructor(appService) {
         this.appService = appService;
     }
     getHealth() {
         return this.appService.getHealth();
+    }
+    getStats() {
+        return this.appService.getPlatformStats();
     }
 };
 exports.AppController = AppController;
@@ -37,6 +41,18 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "getHealth", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Public platform statistics',
+        description: 'Returns aggregate counts for the landing page hero section. Unauthenticated and lightly cached.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Platform stats.', type: platform_stats_dto_1.PlatformStatsDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "getStats", null);
 exports.AppController = AppController = __decorate([
     (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.HEALTH),
     (0, common_1.Controller)(),

@@ -13,7 +13,7 @@ import {
   Upload, CheckCircle, Plus, ExternalLink,
   X, Menu, Wallet, Loader2, AlertTriangle, ShieldCheck,
 } from 'lucide-react'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+
 import { Sidebar } from '@/components/issuer-sidebar'
 import { PinStatus } from '@/components/ipfs/pin-status'
 import { CidBadge } from '@/components/ipfs/cid-badge'
@@ -323,7 +323,6 @@ export default function SingleIssuancePage() {
             </div>
             <div className="flex-1 lg:hidden" />
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

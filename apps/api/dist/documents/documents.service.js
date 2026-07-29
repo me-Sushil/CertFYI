@@ -271,6 +271,7 @@ let DocumentsService = class DocumentsService {
             }
         }
         const onChain = await this.blockchain.getOnChainDocument(documentHash);
+        this.prisma.verificationLog.create({ data: {} }).catch(() => { });
         if (!onChain) {
             return {
                 success: true,
@@ -326,6 +327,7 @@ let DocumentsService = class DocumentsService {
         if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
             throw new common_1.BadRequestException('Invalid hash format');
         }
+        this.prisma.verificationLog.create({ data: {} }).catch(() => { });
         const onChain = await this.blockchain.getOnChainDocument(hash);
         const isValid = !!onChain && !onChain.revoked;
         return {

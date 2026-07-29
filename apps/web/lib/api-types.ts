@@ -355,3 +355,8 @@ export interface AuditLogResponse {
   entries: AuditLogEntry[]
   nextCursor: string | null
 }
+
+export interface PlatformStatsResponse {
+  totalDocumentsAnchored: number
+  totalVerifications: number
+}

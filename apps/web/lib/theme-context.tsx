@@ -2,48 +2,28 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark'
+type Theme = 'light'
 
 interface ThemeContextType {
   theme: Theme
-  setTheme: (theme: Theme) => void
   mounted: boolean
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('certfyi-theme') as Theme | null
-    const initialTheme = (stored && (stored === 'light' || stored === 'dark')) ? stored : 'light'
-
-    setThemeState(initialTheme)
-
     const html = document.documentElement
-    html.classList.remove('light', 'dark')
-    html.classList.add(initialTheme)
-    
+    html.classList.remove('dark')
+    html.classList.add('light')
+
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (!mounted) return
-
-    const html = document.documentElement
-    html.classList.remove('light', 'dark')
-    html.classList.add(theme)
-  }, [theme, mounted])
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme)
-    localStorage.setItem('certfyi-theme', newTheme)
-  }
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, mounted }}>
+    <ThemeContext.Provider value={{ theme: 'light', mounted }}>
       {children}
     </ThemeContext.Provider>
   )

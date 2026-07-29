@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Activity, ExternalLink, RefreshCw, X, Menu, Loader2, Wallet } from 'lucide-react'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+
 import { Button } from '@/components/ui/button'
 import { Sidebar } from '@/components/issuer-sidebar'
 import { toast } from 'sonner'
@@ -114,7 +114,6 @@ export default function IssuerActivityPage() {
             </div>
             <div className="flex-1 lg:hidden" />
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

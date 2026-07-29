@@ -13,7 +13,7 @@ import {
   Upload, Download, X, Menu, Wallet, Loader2, FileText, Trash2,
   ExternalLink, CheckCircle, AlertTriangle,
 } from 'lucide-react'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+
 import { Sidebar } from '@/components/issuer-sidebar'
 import { useUploadPdfMutation, useAnchorBatchMutation } from '@/queries/documents'
 import { useRequiredChain } from '@/hooks/use-required-chain'
@@ -465,7 +465,6 @@ export default function BulkIssuancePage() {
             </div>
             <div className="flex-1 lg:hidden" />
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { Logo } from '@/components/logo'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { Button } from '@/components/ui/button'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useRouter } from 'next/navigation'
@@ -55,9 +54,8 @@ export function Header() {
             </Button>
           </div>
 
-          {/* Wallet Connect & Theme */}
+          {/* Wallet Connect */}
           <ConnectButton />
-          <ThemeToggleInline />
         </div>
       </div>
     </header>

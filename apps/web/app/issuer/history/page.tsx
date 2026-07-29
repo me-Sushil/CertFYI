@@ -9,7 +9,7 @@ import {
   Search, FileText, History, ExternalLink, ChevronDown,
   X, Menu, Loader2, Ban, MoreVertical, Copy, Check,
 } from 'lucide-react'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+
 import { Button } from '@/components/ui/button'
 import { Sidebar } from '@/components/issuer-sidebar'
 import { OnChainButton } from '@/components/admin/on-chain-button'
@@ -172,7 +172,6 @@ export default function IssuanceHistoryPage() {
             </div>
             <div className="flex-1 lg:hidden" />
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

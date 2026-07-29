@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { HeaderWrapper } from "@/components/header-wrapper";
 import { Features } from "@/components/features";
-import { Check, ArrowRight, FileCheck, Zap, Shield } from "lucide-react";
+import { HeroStats } from "@/components/hero-stats";
+import { ArrowRight, FileCheck, Zap } from "lucide-react";
 
 const STEPS = [
   {
@@ -25,10 +26,10 @@ const STEPS = [
 ];
 
 const heroCta =
-  "inline-flex items-center gap-3 rounded-full bg-card px-[38px] py-[22px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0";
+  "inline-flex items-center gap-3 rounded-full bg-card px-[28px] py-[16px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0";
 
 const heroCtaSecondary =
-  "inline-flex items-center gap-3 rounded-full border border-border/15 px-[38px] py-[22px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0";
+  "inline-flex items-center gap-3 rounded-full border border-border/15 px-[28px] py-[16px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0";
 
 export default function HomePage() {
   return (
@@ -55,13 +56,11 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 mx-auto max-w-5xl text-center">
-
-          <h1 className="stagger-2 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
-            The productivity app{" "}
+          <h1 className="stagger-1 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
+            Trust every certificate.{" "}
             <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
-              you&apos;ll actually
-            </span>{" "}
-            enjoy using
+              Instantly.
+            </span>
           </h1>
 
           <p className="stagger-3 mx-auto mb-12 max-w-2xl animate-fade-in-up text-base leading-relaxed text-muted-foreground opacity-0 sm:text-lg">
@@ -81,21 +80,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="stagger-5 mx-auto grid max-w-2xl animate-fade-in-up grid-cols-1 gap-6 opacity-0 sm:grid-cols-3">
-            {[
-              "Decentralized & Trustless",
-              "Instant Verification",
-              "Zero Hidden Fees",
-            ].map((text) => (
-              <div
-                key={text}
-                className="flex items-center justify-center gap-2.5 text-lg text-muted-foreground"
-              >
-                <Check className="h-5 w-5 shrink-0 text-accent" aria-hidden />
-                <span>{text}</span>
-              </div>
-            ))}
-          </div>
+          <HeroStats />
         </div>
       </section>
 

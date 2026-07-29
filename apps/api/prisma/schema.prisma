@@ -85,6 +85,15 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+/// Tracks public verification requests for platform stats.
+model VerificationLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("verification_logs")
+}
+
 model AnchoredDocument {
   docHash         String    @id @map("doc_hash")
   issuerAddress   String    @map("issuer_address")

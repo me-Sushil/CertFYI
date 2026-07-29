@@ -11,7 +11,7 @@ import {
   ArrowUpRight, Menu, X, ChevronRight, LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
+
 import { Sidebar } from '@/components/issuer-sidebar'
 import { useSession } from '@/lib/auth-context'
 import { useIssuerStats, useIssuerDocuments, useIssuerActivity } from '@/queries/issuer'
@@ -118,9 +118,8 @@ export default function IssuerDashboard() {
             {/* Spacer on mobile so ConnectButton stays right */}
             <div className="flex-1 lg:hidden" />
 
-            {/* Right: blockchain standard — wallet + theme */}
+            {/* Right: wallet */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

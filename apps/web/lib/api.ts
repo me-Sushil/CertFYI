@@ -21,6 +21,7 @@ import type {
   IssuerDocumentsQuery,
   IssuerActivityResponse,
   IssuerActivityQuery,
+  PlatformStatsResponse,
   RetryPinResponse,
   LogoutResponse,
   NonceResponse,
@@ -222,6 +223,11 @@ export const pdfApi = {
   },
   hash: (body: PdfHashRequest) =>
     request('/pdf/upload', { method: 'PATCH', body: JSON.stringify(body) }),
+}
+
+/** Platform (public) */
+export const platformApi = {
+  getStats: () => request<PlatformStatsResponse>('/stats'),
 }
 
 /** IPFS */

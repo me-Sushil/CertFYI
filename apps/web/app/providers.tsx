@@ -6,6 +6,7 @@ import {
   RainbowKitProvider,
   RainbowKitAuthenticationProvider,
   createAuthenticationAdapter,
+  lightTheme,
   type AuthenticationStatus,
 } from '@rainbow-me/rainbowkit'
 import { WagmiProvider, createConfig, http } from 'wagmi'
@@ -93,7 +94,14 @@ function AuthedRainbowKit({ children }: { children: ReactNode }) {
 
   return (
     <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-      <RainbowKitProvider>{children}</RainbowKitProvider>
+      <RainbowKitProvider
+        theme={lightTheme({
+          accentColor: '#6C4CF5',
+          accentColorForeground: '#ffffff',
+          borderRadius: 'large',
+          fontStack: 'system',
+        })}
+      >{children}</RainbowKitProvider>
     </RainbowKitAuthenticationProvider>
   )
 }

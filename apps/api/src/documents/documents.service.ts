@@ -344,6 +344,10 @@ export class DocumentsService {
 
     const onChain = await this.blockchain.getOnChainDocument(documentHash as Hex)
 
+    // Fire-and-forget: log every verification for platform stats without
+    // slowing the response or failing the request on a db hiccup.
+    this.prisma.verificationLog.create({ data: {} }).catch(() => {})
+
     if (!onChain) {
       return {
         success: true,
@@ -406,6 +410,9 @@ export class DocumentsService {
     if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
       throw new BadRequestException('Invalid hash format')
     }
+
+    this.prisma.verificationLog.create({ data: {} }).catch(() => {})
+
     const onChain = await this.blockchain.getOnChainDocument(hash as Hex)
     const isValid = !!onChain && !onChain.revoked
     return {

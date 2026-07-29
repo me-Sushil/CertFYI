@@ -8,7 +8,6 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { LayoutDashboard, Users, FileSpreadsheet, ScrollText, Loader2, ShieldAlert, Wallet, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { useSession } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -86,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <p className="max-w-sm text-sm text-muted-foreground">
           You need to connect your admin wallet to access this panel.
         </p>
-        <Button onClick={openConnectModal} className="mt-2">
+        <Button onClick={openConnectModal} className="mt-2 bg-accent text-accent-foreground">
           Connect Wallet
         </Button>
       </div>
@@ -159,7 +158,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <div className="flex-1 lg:hidden" />
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggleInline />
               <ConnectButton />
             </div>
           </div>

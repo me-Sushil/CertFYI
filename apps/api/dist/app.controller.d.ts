@@ -6,4 +6,8 @@ export declare class AppController {
         status: string;
         service: string;
     };
+    getStats(): Promise<{
+        totalDocumentsAnchored: number;
+        totalVerifications: number;
+    }>;
 }

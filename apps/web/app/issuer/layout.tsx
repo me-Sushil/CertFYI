@@ -40,7 +40,7 @@ export default function IssuerLayout({ children }: { children: React.ReactNode }
         <p className="max-w-sm text-sm text-muted-foreground">
           Connect the wallet approved as an issuer to access this dashboard.
         </p>
-        <Button onClick={openConnectModal} className="mt-2">
+        <Button onClick={openConnectModal} className="mt-2 bg-accent text-accent-foreground">
           Connect Wallet
         </Button>
       </GateScreen>
@@ -89,7 +89,7 @@ export default function IssuerLayout({ children }: { children: React.ReactNode }
           in your browser is different. Switch back to the approved issuer wallet in your wallet
           extension, or disconnect and sign in again with this one.
         </p>
-        <Button onClick={openConnectModal} className="mt-2">
+        <Button onClick={openConnectModal} className="mt-2 bg-accent text-accent-foreground">
           Switch Wallet
         </Button>
       </GateScreen>
