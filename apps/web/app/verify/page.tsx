@@ -16,16 +16,20 @@ import {
   FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { documentsApi } from '@/lib/api'
+import { getExplorerUrl } from '@/lib/contracts/document-anchor'
+import { CidBadge } from '@/components/ipfs/cid-badge'
 
 interface VerificationResult {
   status: 'verified' | 'revoked' | 'not_found' | 'error'
   documentHash: string
   issuerName: string
-  issuerAddress: string
+  documentType?: string
   issuanceDate: string
   revocationReason?: string
   transactionHash?: string
-  explorerUrl?: string
+  explorerUrl?: string | null
+  cid?: string | null
   errorMessage?: string
 }
 
@@ -64,37 +68,30 @@ export default function VerifierPortal() {
   }
 
   const verifyDocument = async (hash: string): Promise<VerificationResult> => {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    const mockResults: { [key: string]: VerificationResult } = {
-      ['a'.repeat(64)]: {
-        status: 'verified',
-        documentHash: 'a'.repeat(64),
-        issuerName: 'Stanford University',
-        issuerAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE',
-        issuanceDate: '2026-06-15T14:30:00Z',
-        transactionHash: '0x123456789abcdef',
-        explorerUrl: 'https://etherscan.io/tx/0x123456789abcdef',
-      },
-      ['b'.repeat(64)]: {
-        status: 'revoked',
-        documentHash: 'b'.repeat(64),
-        issuerName: 'MIT',
-        issuerAddress: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
-        issuanceDate: '2026-05-01T09:00:00Z',
-        revocationReason: 'Document superseded by updated version',
-        transactionHash: '0x987654321fedcba',
-        explorerUrl: 'https://etherscan.io/tx/0x987654321fedcba',
-      },
-    }
-    return (
-      mockResults[hash] || {
+    const response = await documentsApi.verify({ documentHash: hash })
+
+    if (response.status !== 'active' && response.status !== 'revoked') {
+      return {
         status: 'not_found',
         documentHash: hash,
         issuerName: 'Unknown',
-        issuerAddress: 'N/A',
         issuanceDate: 'N/A',
       }
-    )
+    }
+
+    return {
+      status: response.status === 'revoked' ? 'revoked' : 'verified',
+      documentHash: hash,
+      issuerName: response.issuer ?? 'Unknown',
+      documentType: response.documentType,
+      issuanceDate: response.issuedDate ?? 'N/A',
+      revocationReason: response.status === 'revoked' ? response.error : undefined,
+      transactionHash: response.onchainData?.transactionHash,
+      explorerUrl: response.onchainData
+        ? getExplorerUrl(response.onchainData.transactionHash)
+        : undefined,
+      cid: response.cid,
+    }
   }
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -151,7 +148,6 @@ export default function VerifierPortal() {
         status: 'error',
         documentHash: 'N/A',
         issuerName: 'N/A',
-        issuerAddress: 'N/A',
         issuanceDate: 'N/A',
         errorMessage: error instanceof Error ? error.message : String(error),
       })
@@ -339,16 +335,16 @@ export default function VerifierPortal() {
               </div>
             </div>
 
-            {result.status !== 'error' && (
+            {(result.status === 'verified' || result.status === 'revoked') && (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                   <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                     Issuer
                   </label>
                   <p className="mb-1 font-extrabold text-foreground">{result.issuerName}</p>
-                  <p className="font-mono text-xs break-all text-muted-foreground">
-                    {result.issuerAddress}
-                  </p>
+                  {result.documentType && (
+                    <p className="text-xs font-semibold text-muted-foreground">{result.documentType}</p>
+                  )}
                 </div>
                 <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
                   <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
@@ -382,6 +378,14 @@ export default function VerifierPortal() {
                         </a>
                       )}
                     </div>
+                  </div>
+                )}
+                {result.cid && (
+                  <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 sm:col-span-2">
+                    <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
+                      Stored Copy (IPFS)
+                    </label>
+                    <CidBadge cid={result.cid} />
                   </div>
                 )}
               </div>

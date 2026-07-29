@@ -1,20 +1,37 @@
 import { DocumentsService } from './documents.service';
 import { AnchorDto, BatchAnchorDto, VerifyDocumentDto } from '../common/dto/documents.dto';
+import type { SessionPayload } from '../common/constants/roles.constant';
 export declare class DocumentsController {
     private readonly documentsService;
     constructor(documentsService: DocumentsService);
-    anchor(body: AnchorDto): Promise<{
+    anchor(user: SessionPayload, body: AnchorDto): Promise<{
         success: boolean;
         txHash: string;
         documentHash: string;
+        cid: string | null;
+        metadataCid: string | null;
         timestamp: string;
         status: string;
         message: string;
     }>;
-    getAnchor(hash?: string): {
+    getAnchor(hash?: string): Promise<{
         success: boolean;
-        document: any;
-    };
+        document: {
+            documentHash: string;
+            documentType: string;
+            recipientEmail: string | undefined;
+            recipientName: string | undefined;
+            issuerAddress: string;
+            issuerName: string | undefined;
+            txHash: string;
+            cid: string | null;
+            metadataCid: string | null;
+            timestamp: string;
+            status: string;
+            merkleRoot: null;
+            batchId: null;
+        };
+    }>;
     anchorBatch(body: BatchAnchorDto): {
         success: boolean;
         batchId: string;
@@ -29,32 +46,13 @@ export declare class DocumentsController {
         success: boolean;
         batch: any;
     };
-    verify(body: VerifyDocumentDto): {
+    verify(body: VerifyDocumentDto): Promise<{
         success: boolean;
         isValid: boolean;
         error: string;
         message: string;
         documentHash?: undefined;
-        issuer?: undefined;
-        documentType?: undefined;
-        issuedDate?: undefined;
         status?: undefined;
-        onchainData?: undefined;
-    } | {
-        success: boolean;
-        isValid: boolean;
-        documentHash: string;
-        issuer: string;
-        documentType: string;
-        issuedDate: string;
-        status: string;
-        message: string;
-        onchainData: {
-            transactionHash: string;
-            blockNumber: number;
-            network: string;
-        };
-        error?: undefined;
     } | {
         success: boolean;
         isValid: boolean;
@@ -62,15 +60,45 @@ export declare class DocumentsController {
         status: string;
         message: string;
         error: string;
-        issuer?: undefined;
-        documentType?: undefined;
-        issuedDate?: undefined;
-        onchainData?: undefined;
-    };
-    quickVerify(hash?: string): {
+    } | {
+        isValid: boolean;
+        status: string;
+        message: string;
+        error: string;
+        success: boolean;
+        documentHash: string;
+        issuer: string;
+        documentType: string;
+        issuedDate: string;
+        cid: string | null;
+        gatewayUrl: string | null;
+        onchainData: {
+            transactionHash: string;
+            blockNumber: number;
+            network: string;
+        } | undefined;
+    } | {
+        isValid: boolean;
+        status: string;
+        message: string;
+        success: boolean;
+        documentHash: string;
+        issuer: string;
+        documentType: string;
+        issuedDate: string;
+        cid: string | null;
+        gatewayUrl: string | null;
+        onchainData: {
+            transactionHash: string;
+            blockNumber: number;
+            network: string;
+        } | undefined;
+        error?: undefined;
+    }>;
+    quickVerify(hash?: string): Promise<{
         success: boolean;
         hash: string;
         isValid: boolean;
         status: string;
-    };
+    }>;
 }

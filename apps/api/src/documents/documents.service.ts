@@ -1,100 +1,144 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import crypto from 'crypto'
+import type { Hex } from 'viem'
 import { BlockchainService } from '../blockchain/blockchain.service'
 import { AuditService } from '../audit/audit.service'
+import { IpfsService } from '../ipfs/ipfs.service'
 import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto'
 import { PrismaService } from '../prisma/prisma.service'
+import { buildMetadataSidecar } from '../common/utils/metadata-sidecar.util'
 
 @Injectable()
 export class DocumentsService {
-  // Mock stores for demo purposes (matches the original route handlers).
-  // The issuance/verification workstream will replace these.
-  private readonly anchoredDocuments = new Map<string, any>()
+  // Batch anchoring is out of scope for this workstream (owned by the
+  // issuance/bulk-issue workstream) - kept as the original in-memory mock.
   private readonly anchoredBatches = new Map<string, any>()
 
   constructor(
     private readonly blockchain: BlockchainService,
     private readonly audit: AuditService,
+    private readonly ipfs: IpfsService,
     private readonly prisma: PrismaService,
   ) {}
 
   /**
-   * Anchor a single document hash on the blockchain.
+   * Record a single document anchor.
+   *
+   * The issuer has already signed and confirmed `anchorDocument` on-chain in
+   * their own wallet; this verifies that receipt before writing anything, so
+   * the database can never disagree with the chain (BUG-8's pattern, applied
+   * to issuance).
    */
-  async anchor(body: AnchorDto) {
-    const txHash = '0x' + crypto.randomBytes(32).toString('hex')
-    const timestamp = new Date().toISOString()
-
-    // Persist to the database for reporting and document counting.
-    // The issuance workstream will replace the mock txHash with a real one.
-    await this.prisma.anchoredDocument
-      .create({
-        data: {
-          docHash: body.documentHash,
-          issuerAddress: body.issuerAddress.toLowerCase(),
-          issuerName: body.issuerName ?? null,
-          documentType: body.documentType ?? null,
-          recipientName: body.recipientName ?? null,
-          recipientEmail: body.recipientEmail ?? null,
-          txHash,
-        },
-      })
-      .catch(() => {
-        // Hash already anchored — this is fine, the on-chain tx will revert
-      })
-
-    await this.audit.record({
-      action: 'DOCUMENT_ANCHORED',
-      actorAddress: body.issuerAddress,
-      targetRef: body.documentHash,
-      txHash,
-      detail: `Document type: ${body.documentType}`,
-    })
-
-    const anchorRecord = {
-      documentHash: body.documentHash,
-      documentType: body.documentType,
-      recipientEmail: body.recipientEmail,
-      recipientName: body.recipientName,
-      issuerAddress: body.issuerAddress,
-      issuerName: body.issuerName,
-      txHash,
-      timestamp,
-      status: 'confirmed',
-      merkleRoot: null,
-      batchId: null,
+  async anchor(body: AnchorDto, issuerAddress: string) {
+    const verification = await this.blockchain.verifyDocumentAnchor(
+      body.documentHash as Hex,
+      body.txHash as Hex,
+      issuerAddress,
+    )
+    if (!verification.ok) {
+      throw new BadRequestException(verification.error ?? 'Could not verify the anchoring transaction')
     }
 
-    this.anchoredDocuments.set(body.documentHash, anchorRecord)
-
-    console.log('[API] Document anchored:', {
-      documentHash: body.documentHash,
-      issuer: body.issuerAddress,
-      txHash,
+    const existing = await this.prisma.anchoredDocument.findUnique({
+      where: { docHash: body.documentHash },
     })
+    // The contract itself reverts a second anchorDocument for the same hash,
+    // so a successful receipt for a hash we already recorded is a retried
+    // recording call after a network blip, not a new document - idempotent.
+    if (existing && existing.txHash.toLowerCase() !== body.txHash.toLowerCase()) {
+      throw new ConflictException('This document hash was anchored by a different transaction')
+    }
+
+    const issuer = await this.prisma.issuer.findUnique({ where: { walletAddress: issuerAddress } })
+    const issuerName = issuer?.organization ?? issuer?.name ?? null
+
+    const metadataCid = await this.pinMetadataSidecar({
+      documentHash: body.documentHash,
+      issuerAddress,
+      issuerName,
+      documentType: body.documentType,
+      txHash: body.txHash,
+      cid: body.cid ?? null,
+      recipientEmail: body.recipientEmail,
+      recipientName: body.recipientName,
+    })
+
+    const record = await this.prisma.anchoredDocument.upsert({
+      where: { docHash: body.documentHash },
+      create: {
+        docHash: body.documentHash,
+        issuerAddress,
+        issuerName,
+        documentType: body.documentType,
+        recipientName: body.recipientName ?? null,
+        recipientEmail: body.recipientEmail ?? null,
+        cid: body.cid ?? null,
+        metadataCid,
+        txHash: body.txHash,
+      },
+      update: {},
+    })
+
+    if (!existing) {
+      await this.audit.record({
+        action: 'DOCUMENT_ANCHORED',
+        actorAddress: issuerAddress,
+        targetRef: body.documentHash,
+        txHash: body.txHash,
+        detail: `Document type: ${body.documentType}`,
+      })
+
+      if (this.ipfs.isConfigured() && !metadataCid) {
+        await this.audit.record({
+          action: 'IPFS_PIN_FAILED',
+          actorAddress: issuerAddress,
+          targetRef: body.documentHash,
+          detail: 'Metadata sidecar pin failed',
+        })
+      }
+    }
 
     return {
       success: true,
-      txHash,
-      documentHash: body.documentHash,
-      timestamp,
+      txHash: record.txHash,
+      documentHash: record.docHash,
+      cid: record.cid,
+      metadataCid: record.metadataCid,
+      timestamp: record.anchoredAt.toISOString(),
       status: 'confirmed',
       message: 'Document successfully anchored on the blockchain',
     }
   }
 
-  getAnchor(hash?: string) {
+  async getAnchor(hash?: string) {
     if (!hash) {
       throw new BadRequestException('Missing hash parameter')
     }
-    const record = this.anchoredDocuments.get(hash)
+    const record = await this.prisma.anchoredDocument.findUnique({ where: { docHash: hash } })
     if (!record) {
       throw new NotFoundException({ error: 'Document not found', hash })
     }
-    return { success: true, document: record }
+    return {
+      success: true,
+      document: {
+        documentHash: record.docHash,
+        documentType: record.documentType ?? '',
+        recipientEmail: record.recipientEmail ?? undefined,
+        recipientName: record.recipientName ?? undefined,
+        issuerAddress: record.issuerAddress,
+        issuerName: record.issuerName ?? undefined,
+        txHash: record.txHash,
+        cid: record.cid,
+        metadataCid: record.metadataCid,
+        timestamp: record.anchoredAt.toISOString(),
+        status: record.revokedAt ? 'revoked' : 'confirmed',
+        merkleRoot: null,
+        batchId: null,
+      },
+    }
   }
 
-  /** Anchor multiple documents using Merkle tree batching. */
+  /** Anchor multiple documents using Merkle tree batching. Out of scope - kept as the original mock. */
   anchorBatch(body: BatchAnchorDto) {
     const leaves = body.documents.map((d) => Buffer.from(d.documentHash.slice(2), 'hex'))
     const merkleRoot = this.blockchain.calculateMerkleRoot(leaves)
@@ -117,14 +161,6 @@ export class DocumentsService {
     }
 
     this.anchoredBatches.set(body.batchId, batchRecord)
-
-    console.log('[API] Batch anchored:', {
-      batchId: body.batchId,
-      documentCount: body.documents.length,
-      merkleRoot: merkleRootHex,
-      issuer: body.issuerAddress,
-      txHash,
-    })
 
     return {
       success: true,
@@ -149,8 +185,15 @@ export class DocumentsService {
     return { success: true, batch }
   }
 
-  /** Verify if a document hash is anchored and not revoked. */
-  verify(documentHash: string, pdfContent?: string) {
+  /**
+   * Verify a document hash against the chain.
+   *
+   * The chain is the trust root (NFR Availability): this reads directly from
+   * `DocumentAnchor.getDocument`, not from our database, so verification keeps
+   * working even if the index is stale or the database is unreachable for
+   * anything but the display-only fields (issuer name, CID).
+   */
+  async verify(documentHash: string, pdfContent?: string) {
     if (pdfContent) {
       const calculatedHash = this.calculateDocumentHash(Buffer.from(pdfContent, 'base64'))
       if (calculatedHash !== documentHash) {
@@ -164,56 +207,113 @@ export class DocumentsService {
       }
     }
 
-    const mockIsValid = Math.random() > 0.2
+    const onChain = await this.blockchain.getOnChainDocument(documentHash as Hex)
 
-    if (mockIsValid) {
-      const mockIssuer = ['Stanford University', 'MIT', 'Harvard', 'Yale'][
-        Math.floor(Math.random() * 4)
-      ]
-      const daysAgo = Math.floor(Math.random() * 90)
-      const timestamp = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)
-
+    if (!onChain) {
       return {
         success: true,
-        isValid: true,
+        isValid: false,
         documentHash,
-        issuer: mockIssuer,
-        documentType: 'Certificate',
-        issuedDate: timestamp.toISOString(),
-        status: 'active',
-        message: 'Document verified successfully',
-        onchainData: {
-          transactionHash: '0x' + crypto.randomBytes(32).toString('hex'),
-          blockNumber: Math.floor(Math.random() * 20000000),
-          network: 'Ethereum Mainnet',
-        },
+        status: 'not_found',
+        message: 'This hash has not been anchored on the blockchain.',
+        error: 'Document not found on-chain',
+      }
+    }
+
+    const record = await this.prisma.anchoredDocument.findUnique({ where: { docHash: documentHash } })
+    const issuer = await this.prisma.issuer.findUnique({
+      where: { walletAddress: onChain.issuer.toLowerCase() },
+    })
+    const issuerLabel =
+      record?.issuerName ?? issuer?.organization ?? issuer?.name ?? onChain.issuer
+
+    const receiptSummary = record ? await this.blockchain.getReceiptSummary(record.txHash as Hex) : null
+
+    const base = {
+      success: true,
+      documentHash,
+      issuer: issuerLabel,
+      documentType: onChain.documentType,
+      issuedDate: new Date(onChain.timestamp * 1000).toISOString(),
+      cid: record?.cid ?? null,
+      gatewayUrl: record?.cid ? this.ipfs.gatewayUrl(record.cid) : null,
+      onchainData: record
+        ? {
+            transactionHash: record.txHash,
+            blockNumber: receiptSummary?.blockNumber ?? 0,
+            network: this.blockchain.chainName(),
+          }
+        : undefined,
+    }
+
+    if (onChain.revoked) {
+      return {
+        ...base,
+        isValid: false,
+        status: 'revoked',
+        message: 'This document has been revoked by its issuer.',
+        error: 'Document is revoked',
       }
     }
 
     return {
-      success: true,
-      isValid: false,
-      documentHash,
-      status: 'revoked',
-      message: 'Document is revoked or no longer valid',
-      error: 'This document has been revoked by the issuer',
+      ...base,
+      isValid: true,
+      status: 'active',
+      message: 'Document verified successfully',
     }
   }
 
-  quickVerify(hash?: string) {
+  async quickVerify(hash?: string) {
     if (!hash) {
       throw new BadRequestException('Missing hash parameter')
     }
     if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
       throw new BadRequestException('Invalid hash format')
     }
-    const isValid = Math.random() > 0.2
+    const onChain = await this.blockchain.getOnChainDocument(hash as Hex)
+    const isValid = !!onChain && !onChain.revoked
     return {
       success: true,
       hash,
       isValid,
-      status: isValid ? 'active' : 'revoked',
+      status: !onChain ? 'not_found' : onChain.revoked ? 'revoked' : 'active',
     }
+  }
+
+  /**
+   * Pins the public, non-identifying metadata sidecar (SRS §8.2, adjusted per
+   * §5/§12 - see docs/adr). Never includes plaintext recipient PII: only an
+   * opaque `recipientRef` hash, mirroring SRS §8.1's on-chain rule.
+   */
+  private async pinMetadataSidecar(input: {
+    documentHash: string
+    issuerAddress: string
+    issuerName: string | null
+    documentType: string
+    txHash: string
+    cid: string | null
+    recipientEmail?: string
+    recipientName?: string
+  }): Promise<string | null> {
+    if (!this.ipfs.isConfigured()) return null
+
+    const sidecar = buildMetadataSidecar({
+      documentHash: input.documentHash,
+      issuerAddress: input.issuerAddress,
+      issuerName: input.issuerName,
+      documentType: input.documentType,
+      issuedAt: new Date().toISOString(),
+      chainId: this.blockchain.contractChainId,
+      txHash: input.txHash,
+      cid: input.cid,
+      revoked: false,
+      recipientEmail: input.recipientEmail,
+      recipientName: input.recipientName,
+    })
+
+    const outcome = await this.ipfs.pinJson(sidecar, `${input.documentHash}.metadata`)
+    return outcome.pinned ? outcome.cid : null
   }
 
   private calculateDocumentHash(data: Buffer): string {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import type { Hex, Abi } from 'viem'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ interface OnChainButtonProps {
   variant?: 'default' | 'outline' | 'destructive'
   disabled?: boolean
   className?: string
+  onLoadingChange?: (loading: boolean) => void
 }
 
 export function OnChainButton({
@@ -31,24 +32,37 @@ export function OnChainButton({
   variant = 'default',
   disabled,
   className,
+  onLoadingChange,
 }: OnChainButtonProps) {
   const { isCorrectChain, switchToCorrectChain } = useRequiredChain()
   const { writeContract, data: txHash, isPending, error } = useWriteContract()
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  const [isHandling, setIsHandling] = useState(false)
+  const handledTxRef = useRef<Hex | null>(null)
+
+  const isLoading = isPending || isConfirming || isHandling
+
+  useEffect(() => {
+    onLoadingChange?.(isLoading)
+  }, [isLoading, onLoadingChange])
 
   useEffect(() => {
     if (!isSuccess || !txHash) return
-    let cancelled = false
+    if (handledTxRef.current === txHash) return
+
+    handledTxRef.current = txHash as Hex
+    setIsHandling(true)
     ;(async () => {
       try {
         await onConfirmed(txHash as Hex)
-        if (!cancelled) toast.success(successMessage)
+        toast.success(successMessage)
       } catch {
-        if (!cancelled) toast.error(errorMessage)
+        toast.error(errorMessage)
+      } finally {
+        setIsHandling(false)
       }
     })()
-    return () => { cancelled = true }
-  }, [isSuccess, txHash])
+  }, [isSuccess, txHash, onConfirmed, successMessage, errorMessage])
 
   const handleClick = () => {
     if (!isCorrectChain) {
@@ -70,13 +84,13 @@ export function OnChainButton({
         size="sm"
         variant={variant}
         onClick={handleClick}
-        disabled={disabled || isPending}
+        disabled={disabled || isLoading}
         className={className}
       >
-        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {children}
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+        {isConfirming ? 'Confirming...' : isHandling ? 'Recording...' : children}
       </Button>
-      {error && (
+      {error && !isLoading && (
         <p className="text-xs text-destructive mt-1">
           {errorMessage}
         </p>

@@ -21,6 +21,10 @@ const pdf_service_1 = require("./pdf.service");
 const pdf_dto_1 = require("../common/dto/pdf.dto");
 const api_error_dto_1 = require("../common/dto/api-error.dto");
 const swagger_constants_1 = require("../common/swagger/swagger.constants");
+const session_guard_1 = require("../common/guards/session.guard");
+const roles_guard_1 = require("../common/guards/roles.guard");
+const issuer_active_guard_1 = require("../common/guards/issuer-active.guard");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
 let PdfController = class PdfController {
     constructor(pdfService) {
         this.pdfService = pdfService;
@@ -40,7 +44,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Upload a PDF and get its hash',
         description: 'Validates the file is a PDF under 50 MB and returns its SHA-256 hash. The resulting ' +
-            '`documentHash` is what you pass to `POST /documents/anchor`.',
+            '`documentHash` is what you pass to `POST /documents/anchor`. Issuer-only (FR-I1).',
     }),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiBody)({ type: pdf_dto_1.PdfUploadDto, description: 'PDF file in the `file` field.' }),
@@ -61,7 +65,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Hash a base64 PDF',
         description: 'Same hash as `POST /pdf/upload`, for callers that already hold the bytes and prefer JSON ' +
-            'over multipart.',
+            'over multipart. Issuer-only (FR-I1).',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Hash computed.', type: pdf_dto_1.PdfHashResponseDto }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Validation failed.', type: api_error_dto_1.ValidationErrorDto }),
@@ -74,6 +78,11 @@ __decorate([
 exports.PdfController = PdfController = __decorate([
     (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.PDF),
     (0, common_1.Controller)('pdf'),
+    (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
+    (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
+    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'No valid session cookie.', type: api_error_dto_1.ApiErrorDto }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Session is not an active issuer.', type: api_error_dto_1.ApiErrorDto }),
     __metadata("design:paramtypes", [pdf_service_1.PdfService])
 ], PdfController);
 //# sourceMappingURL=pdf.controller.js.map

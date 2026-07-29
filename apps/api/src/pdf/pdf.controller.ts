@@ -5,6 +5,7 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -12,18 +13,30 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
+  ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
 import { PdfService } from './pdf.service'
 import { PdfHashDto, PdfHashResponseDto, PdfUploadDto, PdfUploadResponseDto } from '../common/dto/pdf.dto'
 import { ApiErrorDto, ValidationErrorDto } from '../common/dto/api-error.dto'
-import { API_TAGS } from '../common/swagger/swagger.constants'
+import { API_TAGS, SESSION_COOKIE_AUTH } from '../common/swagger/swagger.constants'
+import { SessionGuard } from '../common/guards/session.guard'
+import { RolesGuard } from '../common/guards/roles.guard'
+import { IssuerActiveGuard } from '../common/guards/issuer-active.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 
 @ApiTags(API_TAGS.PDF)
 @Controller('pdf')
+@UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
+@Roles('ISSUER')
+@ApiCookieAuth(SESSION_COOKIE_AUTH)
+@ApiUnauthorizedResponse({ description: 'No valid session cookie.', type: ApiErrorDto })
+@ApiForbiddenResponse({ description: 'Session is not an active issuer.', type: ApiErrorDto })
 export class PdfController {
   constructor(private readonly pdfService: PdfService) {}
 
@@ -34,7 +47,7 @@ export class PdfController {
     summary: 'Upload a PDF and get its hash',
     description:
       'Validates the file is a PDF under 50 MB and returns its SHA-256 hash. The resulting ' +
-      '`documentHash` is what you pass to `POST /documents/anchor`.',
+      '`documentHash` is what you pass to `POST /documents/anchor`. Issuer-only (FR-I1).',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: PdfUploadDto, description: 'PDF file in the `file` field.' })
@@ -58,7 +71,7 @@ export class PdfController {
     summary: 'Hash a base64 PDF',
     description:
       'Same hash as `POST /pdf/upload`, for callers that already hold the bytes and prefer JSON ' +
-      'over multipart.',
+      'over multipart. Issuer-only (FR-I1).',
   })
   @ApiOkResponse({ description: 'Hash computed.', type: PdfHashResponseDto })
   @ApiBadRequestResponse({ description: 'Validation failed.', type: ValidationErrorDto })

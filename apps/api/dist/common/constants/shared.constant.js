@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IS_TEST = exports.IS_DEVELOPMENT = exports.IS_PRODUCTION = exports.VALIDATION = exports.MAX_PDF_SIZE = exports.MAX_PAGE_SIZE = exports.DEFAULT_PAGE_SIZE = exports.PDF_MAGIC_BYTES = exports.MAX_PDF_SIZE_BYTES = exports.API_ENDPOINTS = exports.DOCUMENT_STATUS = exports.REQUEST_STATUS = exports.ISSUER_STATUS = exports.CONTRACT_ADDRESSES = exports.RPC_URLS = exports.SUPPORTED_CHAINS = exports.API_URL = exports.APP_URL = exports.APP_DESCRIPTION = exports.APP_NAME = void 0;
+exports.IS_TEST = exports.IS_DEVELOPMENT = exports.IS_PRODUCTION = exports.VALIDATION = exports.MAX_PDF_SIZE = exports.DOCUMENT_TYPES = exports.MAX_PAGE_SIZE = exports.DEFAULT_PAGE_SIZE = exports.PDF_MAGIC_BYTES = exports.MAX_PDF_SIZE_BYTES = exports.API_ENDPOINTS = exports.DOCUMENT_STATUS = exports.REQUEST_STATUS = exports.ISSUER_STATUS = exports.CONTRACT_ADDRESSES = exports.RPC_URLS = exports.SUPPORTED_CHAINS = exports.API_URL = exports.APP_URL = exports.APP_DESCRIPTION = exports.APP_NAME = void 0;
 exports.APP_NAME = 'CertFyi';
 exports.APP_DESCRIPTION = 'Web3 Document Verification Platform';
 exports.APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -52,6 +52,7 @@ exports.MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024;
 exports.PDF_MAGIC_BYTES = Buffer.from('%PDF-', 'ascii');
 exports.DEFAULT_PAGE_SIZE = 20;
 exports.MAX_PAGE_SIZE = 100;
+exports.DOCUMENT_TYPES = ['Certificate', 'Diploma', 'License', 'Other'];
 exports.MAX_PDF_SIZE = 50 * 1024 * 1024;
 exports.VALIDATION = {
     MIN_NAME_LENGTH: 2,

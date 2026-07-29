@@ -78,6 +78,9 @@ export const PDF_MAGIC_BYTES = Buffer.from('%PDF-', 'ascii')
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 100
 
+/** Allowed values for `AnchorDto.documentType` - mirrors the issuer UI's select options. */
+export const DOCUMENT_TYPES = ['Certificate', 'Diploma', 'License', 'Other'] as const
+
 // File upload
 export const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50MB
 

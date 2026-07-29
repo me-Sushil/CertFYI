@@ -25,9 +25,11 @@ enum AuditAction {
   ISSUER_REACTIVATED
   ISSUER_METADATA_SET
   DOCUMENT_ANCHORED
+  DOCUMENT_ANCHOR_FAILED
   BATCH_ANCHORED
   DOCUMENT_REVOKED
   IPFS_PIN_FAILED
+  IPFS_PIN_RETRIED
 }
 
 /// Tracks issuer access requests. Absence of a row for a wallet means

@@ -79,6 +79,8 @@ export interface IssuerDocumentRow {
   recipientName?: string
   recipientEmail?: string
   txHash: string
+  cid?: string | null
+  metadataCid?: string | null
   anchoredAt: string
   revokedAt: string | null
   status: 'active' | 'revoked'
@@ -89,15 +91,34 @@ export interface IssuerDocumentsResponse {
   nextCursor: string | null
 }
 
+export interface IssuerDocumentsQuery {
+  status?: 'all' | 'active' | 'revoked'
+  search?: string
+  cursor?: string
+}
+
 export interface IssuerActivityEntry {
   action: string
   detail?: string
   createdAt: string
   txHash?: string
+  docHash?: string
+}
+
+export interface IssuerActivityQuery {
+  action?: string
+  cursor?: string
+}
+
+export interface RetryPinResponse {
+  success: boolean
+  metadataCid: string | null
+  message: string
 }
 
 export interface IssuerActivityResponse {
   entries: IssuerActivityEntry[]
+  nextCursor: string | null
 }
 
 export interface IssuerAccessRequestBody {
@@ -110,11 +131,24 @@ export interface IssuerAccessRequestBody {
 
 export interface AnchorDocumentRequest {
   documentHash: string
+  /** Hash of the confirmed `anchorDocument` tx, signed by the issuer's own wallet. */
+  txHash: string
   documentType: string
   recipientEmail?: string
   recipientName?: string
-  issuerAddress: string
-  issuerName?: string
+  /** IPFS CID of the PDF, when the issuer chose to store a copy. */
+  cid?: string
+}
+
+export interface AnchorDocumentResponse {
+  success: boolean
+  txHash: string
+  documentHash: string
+  cid: string | null
+  metadataCid: string | null
+  timestamp: string
+  status: string
+  message: string
 }
 
 export interface BatchAnchorDocumentEntry {
@@ -133,6 +167,27 @@ export interface BatchAnchorRequest {
 export interface VerifyDocumentRequest {
   documentHash: string
   pdfContent?: string
+}
+
+export interface VerifyOnchainData {
+  transactionHash: string
+  blockNumber: number
+  network: string
+}
+
+export interface VerifyDocumentResponse {
+  success: boolean
+  isValid: boolean
+  documentHash?: string
+  issuer?: string
+  documentType?: string
+  issuedDate?: string
+  status?: 'active' | 'revoked' | 'not_found'
+  message: string
+  onchainData?: VerifyOnchainData
+  cid?: string | null
+  gatewayUrl?: string | null
+  error?: string
 }
 
 export interface PdfUploadResponse {

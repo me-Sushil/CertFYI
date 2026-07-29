@@ -3,19 +3,27 @@ import { Type } from 'class-transformer'
 import {
   ArrayNotEmpty,
   IsArray,
+  IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
   ValidateNested,
 } from 'class-validator'
+import { DOCUMENT_TYPES } from '../constants/shared.constant'
 
 const HASH_REGEX = /^0x[a-fA-F0-9]{64}$/
 const HASH_PATTERN = '^0x[a-fA-F0-9]{64}$'
+const TX_REGEX = /^0x[a-fA-F0-9]{64}$/
+const TX_PATTERN = '^0x[a-fA-F0-9]{64}$'
+const CID_REGEX = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58,})$/
 
 const EXAMPLE_HASH = '0x' + 'e3b0c442'.repeat(8)
 const EXAMPLE_TX = '0x' + 'ab'.repeat(32)
 const EXAMPLE_WALLET = '0x1234567890abcdef1234567890abcdef12345678'
+const EXAMPLE_CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
 
 export class AnchorDto {
   @ApiProperty({
@@ -27,30 +35,42 @@ export class AnchorDto {
   @Matches(HASH_REGEX, { message: 'Invalid document hash format' })
   documentHash!: string
 
-  @ApiProperty({ description: 'Free-form document category.', example: 'Certificate' })
+  @ApiProperty({
+    description:
+      'Hash of the confirmed `anchorDocument` transaction, signed by the issuer’s own ' +
+      'wallet. The backend verifies this on-chain before persisting anything - identity comes ' +
+      'from the session, never from this field.',
+    pattern: TX_PATTERN,
+    example: EXAMPLE_TX,
+  })
   @IsString()
-  @IsNotEmpty()
+  @Matches(TX_REGEX, { message: 'Invalid transaction hash format' })
+  txHash!: string
+
+  @ApiProperty({ enum: DOCUMENT_TYPES, example: 'Certificate' })
+  @IsString()
+  @IsIn(DOCUMENT_TYPES, { message: `documentType must be one of: ${DOCUMENT_TYPES.join(', ')}` })
   documentType!: string
 
   @ApiPropertyOptional({ format: 'email', example: 'recipient@example.com' })
   @IsOptional()
-  @IsString()
+  @IsEmail({}, { message: 'recipientEmail must be a valid email address' })
   recipientEmail?: string
 
   @ApiPropertyOptional({ example: 'Ada Lovelace' })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   recipientName?: string
 
-  @ApiProperty({ description: 'Wallet of the issuing organization.', example: EXAMPLE_WALLET })
-  @IsString()
-  @IsNotEmpty()
-  issuerAddress!: string
-
-  @ApiPropertyOptional({ example: 'Example University' })
+  @ApiPropertyOptional({
+    description: 'IPFS CID of the PDF itself, when the issuer chose to store a copy.',
+    example: EXAMPLE_CID,
+  })
   @IsOptional()
   @IsString()
-  issuerName?: string
+  @Matches(CID_REGEX, { message: 'Invalid CID format' })
+  cid?: string
 }
 
 export class BatchDocumentDto {
@@ -132,6 +152,22 @@ export class AnchorResponseDto {
   @ApiProperty({ example: EXAMPLE_HASH })
   documentHash!: string
 
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'IPFS CID of the PDF, when a copy was stored.',
+    example: null,
+  })
+  cid!: string | null
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'IPFS CID of the public, non-identifying metadata sidecar (SRS §8.2).',
+    example: EXAMPLE_CID,
+  })
+  metadataCid!: string | null
+
   @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
   timestamp!: string
 
@@ -163,6 +199,12 @@ export class AnchorRecordDto {
 
   @ApiProperty({ example: EXAMPLE_TX })
   txHash!: string
+
+  @ApiProperty({ nullable: true, type: String, example: null })
+  cid!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: EXAMPLE_CID })
+  metadataCid!: string | null
 
   @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
   timestamp!: string
@@ -289,7 +331,7 @@ export class VerifyDocumentResponseDto {
   @ApiPropertyOptional({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
   issuedDate?: string
 
-  @ApiPropertyOptional({ enum: ['active', 'revoked'], example: 'active' })
+  @ApiPropertyOptional({ enum: ['active', 'revoked', 'not_found'], example: 'active' })
   status?: string
 
   @ApiProperty({ example: 'Document verified successfully' })
@@ -297,6 +339,15 @@ export class VerifyDocumentResponseDto {
 
   @ApiPropertyOptional({ type: OnchainDataDto, description: 'Present for valid documents.' })
   onchainData?: OnchainDataDto
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'IPFS CID of the PDF, when the issuer chose to store a copy.',
+  })
+  cid?: string | null
+
+  @ApiPropertyOptional({ nullable: true, description: 'Public gateway URL for `cid`.' })
+  gatewayUrl?: string | null
 
   @ApiPropertyOptional({ description: 'Reason the document is not valid.' })
   error?: string

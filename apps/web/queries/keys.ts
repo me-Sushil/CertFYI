@@ -32,10 +32,13 @@ export const keys = {
     },
     documents: {
       all: ['issuer', 'documents'] as const,
-      list: (cursor?: string) => ['issuer', 'documents', cursor ?? ''] as const,
+      list: (filters?: { status?: string; search?: string; cursor?: string }) =>
+        ['issuer', 'documents', filters?.status ?? 'all', filters?.search ?? '', filters?.cursor ?? ''] as const,
     },
     activity: {
       all: ['issuer', 'activity'] as const,
+      list: (filters?: { action?: string; cursor?: string }) =>
+        ['issuer', 'activity', filters?.action ?? 'ALL', filters?.cursor ?? ''] as const,
     },
   },
   document: {

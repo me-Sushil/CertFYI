@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Plus, Upload, History } from 'lucide-react'
+import { LayoutDashboard, Plus, Upload, History, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export const NAV_ITEMS = [
@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { href: '/issuer/issue', label: 'Issue Document', icon: Plus },
   { href: '/issuer/bulk-issue', label: 'Bulk Issue', icon: Upload },
   { href: '/issuer/history', label: 'History', icon: History },
+  { href: '/issuer/activity', label: 'Activity', icon: Activity },
 ]
 
 export function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {

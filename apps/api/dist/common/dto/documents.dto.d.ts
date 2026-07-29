@@ -1,10 +1,10 @@
 export declare class AnchorDto {
     documentHash: string;
+    txHash: string;
     documentType: string;
     recipientEmail?: string;
     recipientName?: string;
-    issuerAddress: string;
-    issuerName?: string;
+    cid?: string;
 }
 export declare class BatchDocumentDto {
     documentHash: string;
@@ -25,6 +25,8 @@ export declare class AnchorResponseDto {
     success: boolean;
     txHash: string;
     documentHash: string;
+    cid: string | null;
+    metadataCid: string | null;
     timestamp: string;
     status: string;
     message: string;
@@ -37,6 +39,8 @@ export declare class AnchorRecordDto {
     issuerAddress: string;
     issuerName?: string;
     txHash: string;
+    cid: string | null;
+    metadataCid: string | null;
     timestamp: string;
     status: string;
     merkleRoot: string | null;
@@ -87,6 +91,8 @@ export declare class VerifyDocumentResponseDto {
     status?: string;
     message: string;
     onchainData?: OnchainDataDto;
+    cid?: string | null;
+    gatewayUrl?: string | null;
     error?: string;
 }
 export declare class QuickVerifyResponseDto {

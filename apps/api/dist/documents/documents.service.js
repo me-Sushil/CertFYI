@@ -17,76 +17,109 @@ const common_1 = require("@nestjs/common");
 const crypto_1 = __importDefault(require("crypto"));
 const blockchain_service_1 = require("../blockchain/blockchain.service");
 const audit_service_1 = require("../audit/audit.service");
+const ipfs_service_1 = require("../ipfs/ipfs.service");
 const prisma_service_1 = require("../prisma/prisma.service");
+const metadata_sidecar_util_1 = require("../common/utils/metadata-sidecar.util");
 let DocumentsService = class DocumentsService {
-    constructor(blockchain, audit, prisma) {
+    constructor(blockchain, audit, ipfs, prisma) {
         this.blockchain = blockchain;
         this.audit = audit;
+        this.ipfs = ipfs;
         this.prisma = prisma;
-        this.anchoredDocuments = new Map();
         this.anchoredBatches = new Map();
     }
-    async anchor(body) {
-        const txHash = '0x' + crypto_1.default.randomBytes(32).toString('hex');
-        const timestamp = new Date().toISOString();
-        await this.prisma.anchoredDocument
-            .create({
-            data: {
-                docHash: body.documentHash,
-                issuerAddress: body.issuerAddress.toLowerCase(),
-                issuerName: body.issuerName ?? null,
-                documentType: body.documentType ?? null,
-                recipientName: body.recipientName ?? null,
-                recipientEmail: body.recipientEmail ?? null,
-                txHash,
-            },
-        })
-            .catch(() => {
+    async anchor(body, issuerAddress) {
+        const verification = await this.blockchain.verifyDocumentAnchor(body.documentHash, body.txHash, issuerAddress);
+        if (!verification.ok) {
+            throw new common_1.BadRequestException(verification.error ?? 'Could not verify the anchoring transaction');
+        }
+        const existing = await this.prisma.anchoredDocument.findUnique({
+            where: { docHash: body.documentHash },
         });
-        await this.audit.record({
-            action: 'DOCUMENT_ANCHORED',
-            actorAddress: body.issuerAddress,
-            targetRef: body.documentHash,
-            txHash,
-            detail: `Document type: ${body.documentType}`,
-        });
-        const anchorRecord = {
+        if (existing && existing.txHash.toLowerCase() !== body.txHash.toLowerCase()) {
+            throw new common_1.ConflictException('This document hash was anchored by a different transaction');
+        }
+        const issuer = await this.prisma.issuer.findUnique({ where: { walletAddress: issuerAddress } });
+        const issuerName = issuer?.organization ?? issuer?.name ?? null;
+        const metadataCid = await this.pinMetadataSidecar({
             documentHash: body.documentHash,
+            issuerAddress,
+            issuerName,
             documentType: body.documentType,
+            txHash: body.txHash,
+            cid: body.cid ?? null,
             recipientEmail: body.recipientEmail,
             recipientName: body.recipientName,
-            issuerAddress: body.issuerAddress,
-            issuerName: body.issuerName,
-            txHash,
-            timestamp,
-            status: 'confirmed',
-            merkleRoot: null,
-            batchId: null,
-        };
-        this.anchoredDocuments.set(body.documentHash, anchorRecord);
-        console.log('[API] Document anchored:', {
-            documentHash: body.documentHash,
-            issuer: body.issuerAddress,
-            txHash,
         });
+        const record = await this.prisma.anchoredDocument.upsert({
+            where: { docHash: body.documentHash },
+            create: {
+                docHash: body.documentHash,
+                issuerAddress,
+                issuerName,
+                documentType: body.documentType,
+                recipientName: body.recipientName ?? null,
+                recipientEmail: body.recipientEmail ?? null,
+                cid: body.cid ?? null,
+                metadataCid,
+                txHash: body.txHash,
+            },
+            update: {},
+        });
+        if (!existing) {
+            await this.audit.record({
+                action: 'DOCUMENT_ANCHORED',
+                actorAddress: issuerAddress,
+                targetRef: body.documentHash,
+                txHash: body.txHash,
+                detail: `Document type: ${body.documentType}`,
+            });
+            if (this.ipfs.isConfigured() && !metadataCid) {
+                await this.audit.record({
+                    action: 'IPFS_PIN_FAILED',
+                    actorAddress: issuerAddress,
+                    targetRef: body.documentHash,
+                    detail: 'Metadata sidecar pin failed',
+                });
+            }
+        }
         return {
             success: true,
-            txHash,
-            documentHash: body.documentHash,
-            timestamp,
+            txHash: record.txHash,
+            documentHash: record.docHash,
+            cid: record.cid,
+            metadataCid: record.metadataCid,
+            timestamp: record.anchoredAt.toISOString(),
             status: 'confirmed',
             message: 'Document successfully anchored on the blockchain',
         };
     }
-    getAnchor(hash) {
+    async getAnchor(hash) {
         if (!hash) {
             throw new common_1.BadRequestException('Missing hash parameter');
         }
-        const record = this.anchoredDocuments.get(hash);
+        const record = await this.prisma.anchoredDocument.findUnique({ where: { docHash: hash } });
         if (!record) {
             throw new common_1.NotFoundException({ error: 'Document not found', hash });
         }
-        return { success: true, document: record };
+        return {
+            success: true,
+            document: {
+                documentHash: record.docHash,
+                documentType: record.documentType ?? '',
+                recipientEmail: record.recipientEmail ?? undefined,
+                recipientName: record.recipientName ?? undefined,
+                issuerAddress: record.issuerAddress,
+                issuerName: record.issuerName ?? undefined,
+                txHash: record.txHash,
+                cid: record.cid,
+                metadataCid: record.metadataCid,
+                timestamp: record.anchoredAt.toISOString(),
+                status: record.revokedAt ? 'revoked' : 'confirmed',
+                merkleRoot: null,
+                batchId: null,
+            },
+        };
     }
     anchorBatch(body) {
         const leaves = body.documents.map((d) => Buffer.from(d.documentHash.slice(2), 'hex'));
@@ -107,13 +140,6 @@ let DocumentsService = class DocumentsService {
             gasEstimate: '0.15',
         };
         this.anchoredBatches.set(body.batchId, batchRecord);
-        console.log('[API] Batch anchored:', {
-            batchId: body.batchId,
-            documentCount: body.documents.length,
-            merkleRoot: merkleRootHex,
-            issuer: body.issuerAddress,
-            txHash,
-        });
         return {
             success: true,
             batchId: body.batchId,
@@ -135,7 +161,7 @@ let DocumentsService = class DocumentsService {
         }
         return { success: true, batch };
     }
-    verify(documentHash, pdfContent) {
+    async verify(documentHash, pdfContent) {
         if (pdfContent) {
             const calculatedHash = this.calculateDocumentHash(Buffer.from(pdfContent, 'base64'));
             if (calculatedHash !== documentHash) {
@@ -147,50 +173,89 @@ let DocumentsService = class DocumentsService {
                 };
             }
         }
-        const mockIsValid = Math.random() > 0.2;
-        if (mockIsValid) {
-            const mockIssuer = ['Stanford University', 'MIT', 'Harvard', 'Yale'][Math.floor(Math.random() * 4)];
-            const daysAgo = Math.floor(Math.random() * 90);
-            const timestamp = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+        const onChain = await this.blockchain.getOnChainDocument(documentHash);
+        if (!onChain) {
             return {
                 success: true,
-                isValid: true,
+                isValid: false,
                 documentHash,
-                issuer: mockIssuer,
-                documentType: 'Certificate',
-                issuedDate: timestamp.toISOString(),
-                status: 'active',
-                message: 'Document verified successfully',
-                onchainData: {
-                    transactionHash: '0x' + crypto_1.default.randomBytes(32).toString('hex'),
-                    blockNumber: Math.floor(Math.random() * 20000000),
-                    network: 'Ethereum Mainnet',
-                },
+                status: 'not_found',
+                message: 'This hash has not been anchored on the blockchain.',
+                error: 'Document not found on-chain',
+            };
+        }
+        const record = await this.prisma.anchoredDocument.findUnique({ where: { docHash: documentHash } });
+        const issuer = await this.prisma.issuer.findUnique({
+            where: { walletAddress: onChain.issuer.toLowerCase() },
+        });
+        const issuerLabel = record?.issuerName ?? issuer?.organization ?? issuer?.name ?? onChain.issuer;
+        const receiptSummary = record ? await this.blockchain.getReceiptSummary(record.txHash) : null;
+        const base = {
+            success: true,
+            documentHash,
+            issuer: issuerLabel,
+            documentType: onChain.documentType,
+            issuedDate: new Date(onChain.timestamp * 1000).toISOString(),
+            cid: record?.cid ?? null,
+            gatewayUrl: record?.cid ? this.ipfs.gatewayUrl(record.cid) : null,
+            onchainData: record
+                ? {
+                    transactionHash: record.txHash,
+                    blockNumber: receiptSummary?.blockNumber ?? 0,
+                    network: this.blockchain.chainName(),
+                }
+                : undefined,
+        };
+        if (onChain.revoked) {
+            return {
+                ...base,
+                isValid: false,
+                status: 'revoked',
+                message: 'This document has been revoked by its issuer.',
+                error: 'Document is revoked',
             };
         }
         return {
-            success: true,
-            isValid: false,
-            documentHash,
-            status: 'revoked',
-            message: 'Document is revoked or no longer valid',
-            error: 'This document has been revoked by the issuer',
+            ...base,
+            isValid: true,
+            status: 'active',
+            message: 'Document verified successfully',
         };
     }
-    quickVerify(hash) {
+    async quickVerify(hash) {
         if (!hash) {
             throw new common_1.BadRequestException('Missing hash parameter');
         }
         if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
             throw new common_1.BadRequestException('Invalid hash format');
         }
-        const isValid = Math.random() > 0.2;
+        const onChain = await this.blockchain.getOnChainDocument(hash);
+        const isValid = !!onChain && !onChain.revoked;
         return {
             success: true,
             hash,
             isValid,
-            status: isValid ? 'active' : 'revoked',
+            status: !onChain ? 'not_found' : onChain.revoked ? 'revoked' : 'active',
         };
+    }
+    async pinMetadataSidecar(input) {
+        if (!this.ipfs.isConfigured())
+            return null;
+        const sidecar = (0, metadata_sidecar_util_1.buildMetadataSidecar)({
+            documentHash: input.documentHash,
+            issuerAddress: input.issuerAddress,
+            issuerName: input.issuerName,
+            documentType: input.documentType,
+            issuedAt: new Date().toISOString(),
+            chainId: this.blockchain.contractChainId,
+            txHash: input.txHash,
+            cid: input.cid,
+            revoked: false,
+            recipientEmail: input.recipientEmail,
+            recipientName: input.recipientName,
+        });
+        const outcome = await this.ipfs.pinJson(sidecar, `${input.documentHash}.metadata`);
+        return outcome.pinned ? outcome.cid : null;
     }
     calculateDocumentHash(data) {
         return '0x' + crypto_1.default.createHash('sha256').update(data).digest('hex');
@@ -201,6 +266,7 @@ exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [blockchain_service_1.BlockchainService,
         audit_service_1.AuditService,
+        ipfs_service_1.IpfsService,
         prisma_service_1.PrismaService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

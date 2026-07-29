@@ -20,7 +20,7 @@ export declare class AuditService {
         limit?: number;
     }): Promise<{
         entries: {
-            actorName: {};
+            actorName: string;
             id: string;
             action: string;
             actorAddress: string;
@@ -29,7 +29,7 @@ export declare class AuditService {
             detail: string | null;
             createdAt: Date;
         }[];
-        nextCursor: any;
+        nextCursor: string | null;
     }>;
     private resolveNames;
     countByAction(action: AuditAction): Promise<number>;

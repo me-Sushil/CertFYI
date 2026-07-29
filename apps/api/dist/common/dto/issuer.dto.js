@@ -9,11 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IssuerActivityResponseDto = exports.IssuerActivityEntryDto = exports.IssuerDocumentsResponseDto = exports.IssuerDocumentDto = exports.IssuerStatsResponseDto = exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
+exports.LogFailedAnchorDto = exports.RetryPinResponseDto = exports.RetryPinDto = exports.IssuerActivityQueryDto = exports.IssuerDocumentsQueryDto = exports.IssuerActivityResponseDto = exports.IssuerActivityEntryDto = exports.IssuerDocumentsResponseDto = exports.IssuerDocumentDto = exports.IssuerStatsResponseDto = exports.RequestStatusResponseDto = exports.AccessRequestDto = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+const HASH_PATTERN = '^0x[a-fA-F0-9]{64}$';
+const TX_REGEX = /^0x[a-fA-F0-9]{64}$/;
+const TX_PATTERN = '^0x[a-fA-F0-9]{64}$';
 const MIN_NAME_LENGTH = 2;
 const MAX_DESCRIPTION_LENGTH = 1000;
 const BlankToUndefined = () => (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value));
@@ -162,7 +166,7 @@ __decorate([
 ], IssuerDocumentsResponseDto.prototype, "nextCursor", void 0);
 class IssuerActivityEntryDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { action: { required: true, type: () => String }, detail: { required: false, type: () => String }, createdAt: { required: true, type: () => String }, txHash: { required: false, type: () => String } };
+        return { action: { required: true, type: () => String }, detail: { required: false, type: () => String }, createdAt: { required: true, type: () => String }, txHash: { required: false, type: () => String }, docHash: { required: false, type: () => String } };
     }
 }
 exports.IssuerActivityEntryDto = IssuerActivityEntryDto;
@@ -182,9 +186,16 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' }),
     __metadata("design:type", String)
 ], IssuerActivityEntryDto.prototype, "txHash", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Document hash the entry relates to, when applicable (e.g. a failed IPFS pin).',
+        example: '0x' + 'e3b0c442'.repeat(8),
+    }),
+    __metadata("design:type", String)
+], IssuerActivityEntryDto.prototype, "docHash", void 0);
 class IssuerActivityResponseDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { entries: { required: true, type: () => [require("./issuer.dto").IssuerActivityEntryDto] } };
+        return { entries: { required: true, type: () => [require("./issuer.dto").IssuerActivityEntryDto] }, nextCursor: { required: true, type: () => String, nullable: true } };
     }
 }
 exports.IssuerActivityResponseDto = IssuerActivityResponseDto;
@@ -192,4 +203,121 @@ __decorate([
     (0, swagger_1.ApiProperty)({ type: [IssuerActivityEntryDto] }),
     __metadata("design:type", Array)
 ], IssuerActivityResponseDto.prototype, "entries", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: null, nullable: true }),
+    __metadata("design:type", Object)
+], IssuerActivityResponseDto.prototype, "nextCursor", void 0);
+class IssuerDocumentsQueryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { status: { required: false, type: () => Object, enum: ['all', 'active', 'revoked'] }, search: { required: false, type: () => String }, cursor: { required: false, type: () => String } };
+    }
+}
+exports.IssuerDocumentsQueryDto = IssuerDocumentsQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: ['all', 'active', 'revoked'], default: 'all' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['all', 'active', 'revoked']),
+    __metadata("design:type", String)
+], IssuerDocumentsQueryDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Matches recipient name/email, document type, or hash.' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuerDocumentsQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Pagination cursor (docHash).' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuerDocumentsQueryDto.prototype, "cursor", void 0);
+class IssuerActivityQueryDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { action: { required: false, type: () => String }, cursor: { required: false, type: () => String } };
+    }
+}
+exports.IssuerActivityQueryDto = IssuerActivityQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'ALL' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuerActivityQueryDto.prototype, "action", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Pagination cursor (entry id).' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IssuerActivityQueryDto.prototype, "cursor", void 0);
+class RetryPinDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { docHash: { required: true, type: () => String, pattern: "HASH_REGEX" } };
+    }
+}
+exports.RetryPinDto = RetryPinDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the previously anchored document whose metadata sidecar failed to pin.',
+        pattern: HASH_PATTERN,
+        example: '0x' + 'e3b0c442'.repeat(8),
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(HASH_REGEX, { message: 'Invalid document hash format' }),
+    __metadata("design:type", String)
+], RetryPinDto.prototype, "docHash", void 0);
+class RetryPinResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { success: { required: true, type: () => Boolean }, metadataCid: { required: true, type: () => String, nullable: true }, message: { required: true, type: () => String } };
+    }
+}
+exports.RetryPinResponseDto = RetryPinResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: true }),
+    __metadata("design:type", Boolean)
+], RetryPinResponseDto.prototype, "success", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi' }),
+    __metadata("design:type", Object)
+], RetryPinResponseDto.prototype, "metadataCid", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Metadata sidecar pinned successfully' }),
+    __metadata("design:type", String)
+], RetryPinResponseDto.prototype, "message", void 0);
+class LogFailedAnchorDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { docHash: { required: true, type: () => String, pattern: "HASH_REGEX" }, txHash: { required: false, type: () => String, pattern: "TX_REGEX" }, reason: { required: true, type: () => String, maxLength: 500 } };
+    }
+}
+exports.LogFailedAnchorDto = LogFailedAnchorDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the document that failed to anchor.',
+        pattern: HASH_PATTERN,
+        example: '0x' + 'e3b0c442'.repeat(8),
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(HASH_REGEX, { message: 'Invalid document hash format' }),
+    __metadata("design:type", String)
+], LogFailedAnchorDto.prototype, "docHash", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Transaction hash, when the failure happened after broadcast (e.g. a revert).',
+        pattern: TX_PATTERN,
+        example: '0x' + 'ab'.repeat(32),
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(TX_REGEX, { message: 'Invalid transaction hash format' }),
+    __metadata("design:type", String)
+], LogFailedAnchorDto.prototype, "txHash", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Human-readable failure reason, shown in the activity feed.',
+        maxLength: 500,
+        example: 'Transaction reverted on-chain',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], LogFailedAnchorDto.prototype, "reason", void 0);
 //# sourceMappingURL=issuer.dto.js.map

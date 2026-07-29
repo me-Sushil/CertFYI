@@ -1,12 +1,15 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common'
 import {
   ApiBadRequestResponse,
+  ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
 import { DocumentsService } from './documents.service'
 import {
@@ -21,7 +24,13 @@ import {
   VerifyDocumentResponseDto,
 } from '../common/dto/documents.dto'
 import { ApiErrorDto, ValidationErrorDto } from '../common/dto/api-error.dto'
-import { API_TAGS } from '../common/swagger/swagger.constants'
+import { API_TAGS, SESSION_COOKIE_AUTH } from '../common/swagger/swagger.constants'
+import { SessionGuard } from '../common/guards/session.guard'
+import { RolesGuard } from '../common/guards/roles.guard'
+import { IssuerActiveGuard } from '../common/guards/issuer-active.guard'
+import { Roles } from '../common/decorators/roles.decorator'
+import { CurrentUser } from '../common/decorators/current-user.decorator'
+import type { SessionPayload } from '../common/constants/roles.constant'
 
 @ApiTags(API_TAGS.DOCUMENTS)
 @Controller('documents')
@@ -30,16 +39,22 @@ export class DocumentsController {
 
   @Post('anchor')
   @HttpCode(201)
+  @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
+  @Roles('ISSUER')
+  @ApiCookieAuth(SESSION_COOKIE_AUTH)
   @ApiOperation({
     summary: 'Anchor a single document hash',
     description:
-      'Commits one document hash on-chain and records its issuer metadata. Only the hash leaves ' +
-      'the issuer - CertFyi never stores the document itself.',
+      'Records a document hash the issuer has already anchored on-chain in their own wallet. ' +
+      'The backend verifies the transaction receipt before persisting anything. Only the hash ' +
+      'leaves the issuer - CertFyi never stores the document itself.',
   })
   @ApiCreatedResponse({ description: 'Document anchored.', type: AnchorResponseDto })
-  @ApiBadRequestResponse({ description: 'Validation failed.', type: ValidationErrorDto })
-  anchor(@Body() body: AnchorDto) {
-    return this.documentsService.anchor(body)
+  @ApiBadRequestResponse({ description: 'Validation failed, or the transaction could not be verified.', type: ValidationErrorDto })
+  @ApiUnauthorizedResponse({ description: 'No valid session cookie.', type: ApiErrorDto })
+  @ApiForbiddenResponse({ description: 'Session is not an active issuer.', type: ApiErrorDto })
+  anchor(@CurrentUser() user: SessionPayload, @Body() body: AnchorDto) {
+    return this.documentsService.anchor(body, user.address)
   }
 
   @Get('anchor')
@@ -62,6 +77,9 @@ export class DocumentsController {
 
   @Post('anchor-batch')
   @HttpCode(201)
+  @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
+  @Roles('ISSUER')
+  @ApiCookieAuth(SESSION_COOKIE_AUTH)
   @ApiOperation({
     summary: 'Anchor many documents in one transaction',
     description:

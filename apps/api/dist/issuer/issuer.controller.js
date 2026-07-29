@@ -35,11 +35,17 @@ let IssuerController = class IssuerController {
     getStats(user) {
         return this.issuerService.getStats(user.address);
     }
-    getDocuments(user, cursor) {
-        return this.issuerService.getDocuments(user.address, cursor);
+    getDocuments(user, query) {
+        return this.issuerService.getDocuments(user.address, query);
     }
-    getActivity(user) {
-        return this.issuerService.getActivity(user.address);
+    getActivity(user, query) {
+        return this.issuerService.getActivity(user.address, query);
+    }
+    retryPin(user, body) {
+        return this.issuerService.retryPin(user.address, body.docHash);
+    }
+    logFailedAnchor(user, body) {
+        return this.issuerService.logFailedAnchor(user.address, body.docHash, body.txHash, body.reason);
     }
 };
 exports.IssuerController = IssuerController;
@@ -94,30 +100,67 @@ __decorate([
     (0, common_1.Get)('documents'),
     (0, swagger_1.ApiOperation)({
         summary: 'List documents issued by the current issuer',
-        description: 'Paginated list of anchored documents with cursor-based pagination.',
+        description: 'Server-side filtered and paginated list of anchored documents. `search` matches ' +
+            'recipient name/email, document type, or hash.',
     }),
-    (0, swagger_1.ApiQuery)({ name: 'cursor', required: false, description: 'Pagination cursor (docHash).' }),
     (0, swagger_1.ApiOkResponse)({ description: 'Documents list.', type: issuer_dto_1.IssuerDocumentsResponseDto }),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
-    __param(1, (0, common_1.Query)('cursor')),
+    __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, issuer_dto_1.IssuerDocumentsQueryDto]),
     __metadata("design:returntype", void 0)
 ], IssuerController.prototype, "getDocuments", null);
 __decorate([
     (0, common_1.Get)('activity'),
     (0, swagger_1.ApiOperation)({
         summary: 'Get recent activity for the current issuer',
-        description: 'Returns recent audit log entries for this issuer.',
+        description: 'Server-side filtered and paginated audit log entries for this issuer.',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Activity entries.', type: issuer_dto_1.IssuerActivityResponseDto }),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, issuer_dto_1.IssuerActivityQueryDto]),
     __metadata("design:returntype", void 0)
 ], IssuerController.prototype, "getActivity", null);
+__decorate([
+    (0, common_1.Post)('retry-pin'),
+    (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Retry pinning a document’s metadata sidecar',
+        description: 'Re-attempts pinning the public, non-identifying metadata sidecar for a document this ' +
+            'issuer owns, when the original pin failed. The PDF itself cannot be retried this way - ' +
+            'its bytes are never stored server-side - only the sidecar, which is rebuilt from data ' +
+            'already in the database.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Retry attempted.', type: issuer_dto_1.RetryPinResponseDto }),
+    openapi.ApiResponse({ status: 200, type: Object }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, issuer_dto_1.RetryPinDto]),
+    __metadata("design:returntype", void 0)
+], IssuerController.prototype, "retryPin", null);
+__decorate([
+    (0, common_1.Post)('log-failed-anchor'),
+    (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Record a failed anchoring attempt',
+        description: 'Writes an audit entry for an anchoring attempt that never produced a document - the ' +
+            'wallet rejected it, or the chain reverted it. Nothing is verified on-chain here (there is ' +
+            'nothing to verify); this exists so the attempt is visible in Activity rather than lost the ' +
+            'moment the browser moves on.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Logged.' }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, issuer_dto_1.LogFailedAnchorDto]),
+    __metadata("design:returntype", void 0)
+], IssuerController.prototype, "logFailedAnchor", null);
 exports.IssuerController = IssuerController = __decorate([
     (0, swagger_1.ApiTags)(swagger_constants_1.API_TAGS.ISSUER),
     (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),

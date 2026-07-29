@@ -7,6 +7,13 @@ export interface RoleGrantVerification {
     error?: string;
     status?: number;
 }
+export interface OnChainDocument {
+    anchored: boolean;
+    issuer: string;
+    timestamp: number;
+    revoked: boolean;
+    documentType: string;
+}
 export declare class BlockchainService implements OnModuleInit {
     private readonly logger;
     private publicClient;
@@ -17,6 +24,12 @@ export declare class BlockchainService implements OnModuleInit {
     verifyIssuerRoleGrant(walletAddress: string, txHash: Hex, adminAddress: string): Promise<RoleGrantVerification>;
     verifyIssuerRoleRevoke(walletAddress: string, txHash: Hex, adminAddress: string): Promise<RoleGrantVerification>;
     private verifyRoleEvent;
+    verifyDocumentAnchor(documentHash: Hex, txHash: Hex, issuerAddress: string): Promise<RoleGrantVerification>;
+    getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null>;
+    getReceiptSummary(txHash: Hex): Promise<{
+        blockNumber: number;
+    } | null>;
+    chainName(chainId?: number): string;
     calculateDocumentHash(data: Buffer | string): string;
     calculateMerkleRoot(leaves: Buffer[]): Buffer;
 }

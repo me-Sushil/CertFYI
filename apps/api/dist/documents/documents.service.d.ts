@@ -1,26 +1,43 @@
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditService } from '../audit/audit.service';
+import { IpfsService } from '../ipfs/ipfs.service';
 import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto';
 import { PrismaService } from '../prisma/prisma.service';
 export declare class DocumentsService {
     private readonly blockchain;
     private readonly audit;
+    private readonly ipfs;
     private readonly prisma;
-    private readonly anchoredDocuments;
     private readonly anchoredBatches;
-    constructor(blockchain: BlockchainService, audit: AuditService, prisma: PrismaService);
-    anchor(body: AnchorDto): Promise<{
+    constructor(blockchain: BlockchainService, audit: AuditService, ipfs: IpfsService, prisma: PrismaService);
+    anchor(body: AnchorDto, issuerAddress: string): Promise<{
         success: boolean;
         txHash: string;
         documentHash: string;
+        cid: string | null;
+        metadataCid: string | null;
         timestamp: string;
         status: string;
         message: string;
     }>;
-    getAnchor(hash?: string): {
+    getAnchor(hash?: string): Promise<{
         success: boolean;
-        document: any;
-    };
+        document: {
+            documentHash: string;
+            documentType: string;
+            recipientEmail: string | undefined;
+            recipientName: string | undefined;
+            issuerAddress: string;
+            issuerName: string | undefined;
+            txHash: string;
+            cid: string | null;
+            metadataCid: string | null;
+            timestamp: string;
+            status: string;
+            merkleRoot: null;
+            batchId: null;
+        };
+    }>;
     anchorBatch(body: BatchAnchorDto): {
         success: boolean;
         batchId: string;
@@ -35,32 +52,13 @@ export declare class DocumentsService {
         success: boolean;
         batch: any;
     };
-    verify(documentHash: string, pdfContent?: string): {
+    verify(documentHash: string, pdfContent?: string): Promise<{
         success: boolean;
         isValid: boolean;
         error: string;
         message: string;
         documentHash?: undefined;
-        issuer?: undefined;
-        documentType?: undefined;
-        issuedDate?: undefined;
         status?: undefined;
-        onchainData?: undefined;
-    } | {
-        success: boolean;
-        isValid: boolean;
-        documentHash: string;
-        issuer: string;
-        documentType: string;
-        issuedDate: string;
-        status: string;
-        message: string;
-        onchainData: {
-            transactionHash: string;
-            blockNumber: number;
-            network: string;
-        };
-        error?: undefined;
     } | {
         success: boolean;
         isValid: boolean;
@@ -68,16 +66,47 @@ export declare class DocumentsService {
         status: string;
         message: string;
         error: string;
-        issuer?: undefined;
-        documentType?: undefined;
-        issuedDate?: undefined;
-        onchainData?: undefined;
-    };
-    quickVerify(hash?: string): {
+    } | {
+        isValid: boolean;
+        status: string;
+        message: string;
+        error: string;
+        success: boolean;
+        documentHash: string;
+        issuer: string;
+        documentType: string;
+        issuedDate: string;
+        cid: string | null;
+        gatewayUrl: string | null;
+        onchainData: {
+            transactionHash: string;
+            blockNumber: number;
+            network: string;
+        } | undefined;
+    } | {
+        isValid: boolean;
+        status: string;
+        message: string;
+        success: boolean;
+        documentHash: string;
+        issuer: string;
+        documentType: string;
+        issuedDate: string;
+        cid: string | null;
+        gatewayUrl: string | null;
+        onchainData: {
+            transactionHash: string;
+            blockNumber: number;
+            network: string;
+        } | undefined;
+        error?: undefined;
+    }>;
+    quickVerify(hash?: string): Promise<{
         success: boolean;
         hash: string;
         isValid: boolean;
         status: string;
-    };
+    }>;
+    private pinMetadataSidecar;
     private calculateDocumentHash;
 }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import {
@@ -59,7 +59,6 @@ function ActivityItem({ action, detail, createdAt, txHash }: { action: string; d
 
 export default function IssuerDashboard() {
   const pathname = usePathname()
-  const router = useRouter()
   const { isConnected } = useAccount()
   const { role, isLoading: sessionLoading, address } = useSession()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -70,10 +69,7 @@ export default function IssuerDashboard() {
   const { data: docsData, isLoading: docsLoading } = useIssuerDocuments(role === 'ISSUER' && isConnected)
   const { data: activityData, isLoading: activityLoading } = useIssuerActivity(isDashboard && role === 'ISSUER' && isConnected)
 
-  useEffect(() => {
-    if (!sessionLoading && role !== 'ISSUER') router.replace('/request-access')
-  }, [sessionLoading, role, router])
-
+  // Connection, session, and wallet-match gating all live in app/issuer/layout.tsx.
   if (sessionLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -82,8 +78,8 @@ export default function IssuerDashboard() {
     )
   }
 
-  const documents = docsData?.documents ?? []
-  const activity = activityData?.entries ?? []
+  const documents = docsData?.pages?.[0]?.documents ?? []
+  const activity = activityData?.pages?.[0]?.entries ?? []
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -258,11 +254,9 @@ export default function IssuerDashboard() {
                   <h3 className="text-lg font-extrabold tracking-[-0.5px] text-foreground sm:text-[22px] sm:leading-[28.6px]">
                     Recent Activity
                   </h3>
-                  {activity.length > 0 && (
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {activity.length} {activity.length === 1 ? 'entry' : 'entries'}
-                    </span>
-                  )}
+                  <Link href="/issuer/activity" className="flex items-center gap-1 text-sm font-semibold text-accent transition-opacity hover:opacity-80">
+                    View All <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
                 {!isConnected ? (
                   <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">

@@ -33,7 +33,31 @@ export declare class IssuerActivityEntryDto {
     detail?: string;
     createdAt: string;
     txHash?: string;
+    docHash?: string;
 }
 export declare class IssuerActivityResponseDto {
     entries: IssuerActivityEntryDto[];
+    nextCursor: string | null;
+}
+export declare class IssuerDocumentsQueryDto {
+    status?: 'all' | 'active' | 'revoked';
+    search?: string;
+    cursor?: string;
+}
+export declare class IssuerActivityQueryDto {
+    action?: string;
+    cursor?: string;
+}
+export declare class RetryPinDto {
+    docHash: string;
+}
+export declare class RetryPinResponseDto {
+    success: boolean;
+    metadataCid: string | null;
+    message: string;
+}
+export declare class LogFailedAnchorDto {
+    docHash: string;
+    txHash?: string;
+    reason: string;
 }

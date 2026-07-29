@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { issuerApi } from '@/lib/api'
-import type { IssuerRequestStatusResponse, IssuerStatsResponse, IssuerDocumentsResponse, IssuerActivityResponse } from '@/lib/api-types'
+import type {
+  IssuerRequestStatusResponse,
+  IssuerStatsResponse,
+  IssuerDocumentsResponse,
+  IssuerActivityResponse,
+} from '@/lib/api-types'
 import { keys } from './keys'
 
 const STATUS_STALE_MS = 10_000
@@ -42,20 +47,55 @@ export function useIssuerStats(enabled: boolean) {
   })
 }
 
-export function useIssuerDocuments(enabled: boolean, cursor?: string) {
-  return useQuery<IssuerDocumentsResponse>({
-    queryKey: keys.issuer.documents.list(cursor),
-    queryFn: () => issuerApi.getDocuments(cursor),
+export function useIssuerDocuments(
+  enabled: boolean,
+  params?: { status?: 'all' | 'active' | 'revoked'; search?: string },
+) {
+  return useInfiniteQuery<IssuerDocumentsResponse>({
+    queryKey: keys.issuer.documents.list(params),
+    queryFn: ({ pageParam }) =>
+      issuerApi.getDocuments({
+        status: params?.status,
+        search: params?.search,
+        cursor: pageParam as string | undefined,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: DOCUMENTS_STALE_MS,
     enabled,
   })
 }
 
-export function useIssuerActivity(enabled: boolean) {
-  return useQuery<IssuerActivityResponse>({
-    queryKey: keys.issuer.activity.all,
-    queryFn: () => issuerApi.getActivity(),
+export function useIssuerActivity(enabled: boolean, params?: { action?: string }) {
+  return useInfiniteQuery<IssuerActivityResponse>({
+    queryKey: keys.issuer.activity.list(params),
+    queryFn: ({ pageParam }) =>
+      issuerApi.getActivity({ action: params?.action, cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: ACTIVITY_STALE_MS,
     enabled,
+  })
+}
+
+export function useRetryPin() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (docHash: string) => issuerApi.retryPin(docHash),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.issuer.activity.all })
+      queryClient.invalidateQueries({ queryKey: keys.issuer.documents.all })
+    },
+  })
+}
+
+export function useLogFailedAnchor() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { docHash: string; txHash?: string; reason: string }) =>
+      issuerApi.logFailedAnchor(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.issuer.activity.all })
+    },
   })
 }

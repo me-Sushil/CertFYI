@@ -6,44 +6,150 @@ export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
     getRequests(query: RequestsQueryDto): Promise<{
-        requests: $Public.PrismaPromise<T>;
+        requests: {
+            walletAddress: string;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            description: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        }[];
     }>;
     approveUser(body: ApproveUserDto, session: SessionPayload): Promise<{
-        accessRequest: $Utils.JsPromise<R>;
+        accessRequest: {
+            walletAddress: string;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            description: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        };
     }>;
     rejectUser(body: RejectUserDto, session: SessionPayload): Promise<{
-        accessRequest: any;
+        accessRequest: {
+            walletAddress: string;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            description: string | null;
+            createdAt: Date;
+            decidedAt: Date | null;
+            rejectionReason: string | null;
+        };
     }>;
     getStats(): Promise<{
-        totalIssuers: any;
-        pendingApprovals: any;
-        documentsAnchored: any;
-        suspendedIssuers: any;
+        totalIssuers: number;
+        pendingApprovals: number;
+        documentsAnchored: number;
+        suspendedIssuers: number;
     }>;
     getIssuers(query: IssuersQueryDto): Promise<{
-        issuers: $Public.PrismaPromise<T>;
-        nextCursor: any;
+        issuers: {
+            walletAddress: string;
+            registerTxHash: string;
+            suspendTxHash: string | null;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            metadataUri: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            registeredAt: Date;
+            suspendedAt: Date | null;
+            documentCount: number;
+        }[];
+        nextCursor: string | null;
     }>;
     getIssuer(address: string): Promise<{
-        issuer: any;
-        recentActivity: $Public.PrismaPromise<T>;
+        issuer: {
+            walletAddress: string;
+            registerTxHash: string;
+            suspendTxHash: string | null;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            metadataUri: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            registeredAt: Date;
+            suspendedAt: Date | null;
+            documentCount: number;
+        };
+        recentActivity: {
+            txHash: string | null;
+            createdAt: Date;
+            action: import("@prisma/client").$Enums.AuditAction;
+            detail: string | null;
+        }[];
     }>;
     suspendIssuer(body: SuspendIssuerDto, session: SessionPayload): Promise<{
-        issuer: $Utils.JsPromise<R>;
+        issuer: {
+            walletAddress: string;
+            registerTxHash: string;
+            suspendTxHash: string | null;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            metadataUri: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            registeredAt: Date;
+            suspendedAt: Date | null;
+            documentCount: number;
+        };
     }>;
     reactivateIssuer(body: ReactivateIssuerDto, session: SessionPayload): Promise<{
-        issuer: $Utils.JsPromise<R>;
+        issuer: {
+            walletAddress: string;
+            registerTxHash: string;
+            suspendTxHash: string | null;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            metadataUri: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            registeredAt: Date;
+            suspendedAt: Date | null;
+            documentCount: number;
+        };
     }>;
     uploadIssuerMetadata(address: string): Promise<{
         metadataUri: string;
         cid: string;
     }>;
     setIssuerMetadata(address: string, body: SetIssuerMetadataDto, session: SessionPayload): Promise<{
-        issuer: any;
+        issuer: {
+            metadataUri: string;
+            walletAddress: string;
+            registerTxHash: string;
+            suspendTxHash: string | null;
+            name: string | null;
+            email: string | null;
+            organization: string | null;
+            website: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            registeredAt: Date;
+            suspendedAt: Date | null;
+            documentCount: number;
+        };
     }>;
     getAuditLog(query: AuditLogQueryDto): Promise<{
         entries: {
-            actorName: {};
+            actorName: string;
             id: string;
             action: string;
             actorAddress: string;
@@ -52,10 +158,10 @@ export declare class AdminController {
             detail: string | null;
             createdAt: Date;
         }[];
-        nextCursor: any;
+        nextCursor: string | null;
     }>;
     exportAuditLog(query: AuditLogQueryDto, res: Response): Promise<void>;
     getIpfsPinFailures(): Promise<{
-        count: $Public.PrismaPromise<T>;
+        count: number;
     }>;
 }

@@ -5,7 +5,6 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
@@ -16,6 +15,11 @@ import {
   IssuerStatsResponseDto,
   IssuerDocumentsResponseDto,
   IssuerActivityResponseDto,
+  IssuerDocumentsQueryDto,
+  IssuerActivityQueryDto,
+  RetryPinDto,
+  RetryPinResponseDto,
+  LogFailedAnchorDto,
 } from '../common/dto/issuer.dto'
 import { ApiErrorDto } from '../common/dto/api-error.dto'
 import { API_TAGS, SESSION_COOKIE_AUTH } from '../common/swagger/swagger.constants'
@@ -72,21 +76,52 @@ export class IssuerController {
   @Get('documents')
   @ApiOperation({
     summary: 'List documents issued by the current issuer',
-    description: 'Paginated list of anchored documents with cursor-based pagination.',
+    description:
+      'Server-side filtered and paginated list of anchored documents. `search` matches ' +
+      'recipient name/email, document type, or hash.',
   })
-  @ApiQuery({ name: 'cursor', required: false, description: 'Pagination cursor (docHash).' })
   @ApiOkResponse({ description: 'Documents list.', type: IssuerDocumentsResponseDto })
-  getDocuments(@CurrentUser() user: SessionPayload, @Query('cursor') cursor?: string) {
-    return this.issuerService.getDocuments(user.address, cursor)
+  getDocuments(@CurrentUser() user: SessionPayload, @Query() query: IssuerDocumentsQueryDto) {
+    return this.issuerService.getDocuments(user.address, query)
   }
 
   @Get('activity')
   @ApiOperation({
     summary: 'Get recent activity for the current issuer',
-    description: 'Returns recent audit log entries for this issuer.',
+    description: 'Server-side filtered and paginated audit log entries for this issuer.',
   })
   @ApiOkResponse({ description: 'Activity entries.', type: IssuerActivityResponseDto })
-  getActivity(@CurrentUser() user: SessionPayload) {
-    return this.issuerService.getActivity(user.address)
+  getActivity(@CurrentUser() user: SessionPayload, @Query() query: IssuerActivityQueryDto) {
+    return this.issuerService.getActivity(user.address, query)
+  }
+
+  @Post('retry-pin')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Retry pinning a document’s metadata sidecar',
+    description:
+      'Re-attempts pinning the public, non-identifying metadata sidecar for a document this ' +
+      'issuer owns, when the original pin failed. The PDF itself cannot be retried this way - ' +
+      'its bytes are never stored server-side - only the sidecar, which is rebuilt from data ' +
+      'already in the database.',
+  })
+  @ApiOkResponse({ description: 'Retry attempted.', type: RetryPinResponseDto })
+  retryPin(@CurrentUser() user: SessionPayload, @Body() body: RetryPinDto) {
+    return this.issuerService.retryPin(user.address, body.docHash)
+  }
+
+  @Post('log-failed-anchor')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Record a failed anchoring attempt',
+    description:
+      'Writes an audit entry for an anchoring attempt that never produced a document - the ' +
+      'wallet rejected it, or the chain reverted it. Nothing is verified on-chain here (there is ' +
+      'nothing to verify); this exists so the attempt is visible in Activity rather than lost the ' +
+      'moment the browser moves on.',
+  })
+  @ApiOkResponse({ description: 'Logged.' })
+  logFailedAnchor(@CurrentUser() user: SessionPayload, @Body() body: LogFailedAnchorDto) {
+    return this.issuerService.logFailedAnchor(user.address, body.docHash, body.txHash, body.reason)
   }
 }

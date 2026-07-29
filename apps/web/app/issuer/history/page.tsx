@@ -3,44 +3,21 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import {
-  Search, FileText, History, Upload, Plus,
-  ExternalLink, Wallet, ChevronDown, RefreshCw, CheckCircle, XCircle,
-  LayoutDashboard, X, Menu, Activity, Loader2,
+  Search, FileText, History, ExternalLink, ChevronDown,
+  X, Menu, Loader2,
 } from 'lucide-react'
 import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { Button } from '@/components/ui/button'
 import { Sidebar } from '@/components/issuer-sidebar'
-import { toast } from 'sonner'
-import { useSession } from '@/lib/auth-context'
-import { useIssuerDocuments, useIssuerActivity } from '@/queries/issuer'
+import { useIssuerDocuments } from '@/queries/issuer'
+import { useDebounce } from 'use-debounce'
 import { cn } from '@/lib/utils'
 import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
-import type { IssuerDocumentRow, IssuerActivityEntry } from '@/lib/api-types'
 
 const STATUS_OPTIONS = ['all', 'active', 'revoked'] as const
-
-const ACTION_FILTERS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'DOCUMENT_ANCHORED', label: 'Anchored' },
-  { value: 'BATCH_ANCHORED', label: 'Batch' },
-  { value: 'IPFS_PIN_FAILED', label: 'IPFS Failed' },
-] as const
-
-const ACTION_TONE: Record<string, string> = {
-  DOCUMENT_ANCHORED: 'text-success',
-  BATCH_ANCHORED: 'text-success',
-  IPFS_PIN_FAILED: 'text-destructive',
-}
-
-const ACTION_DOT: Record<string, string> = {
-  DOCUMENT_ANCHORED: 'bg-success',
-  BATCH_ANCHORED: 'bg-success',
-  IPFS_PIN_FAILED: 'bg-destructive',
-}
 
 function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
   const isActive = status === 'active'
@@ -57,78 +34,26 @@ function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
   )
 }
 
-function ActionBadge({ action }: { action: string }) {
-  const isIPFS = action === 'IPFS_PIN_FAILED'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-        isIPFS ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success',
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', isIPFS ? 'bg-destructive' : 'bg-success')} />
-      {action === 'DOCUMENT_ANCHORED' ? 'Anchored' : action === 'BATCH_ANCHORED' ? 'Batch' : action.replace(/_/g, ' ')}
-    </span>
-  )
-}
-
 export default function IssuanceHistoryPage() {
   const pathname = usePathname()
-  const { isConnected } = useAccount()
-  const { role } = useSession()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch] = useDebounce(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const [actionFilter, setActionFilter] = useState('ALL')
-  const [retrying, setRetrying] = useState<string | null>(null)
+  const docsQuery = useIssuerDocuments(true, { status: statusFilter, search: debouncedSearch || undefined })
 
-  const { data, isLoading: docsLoading } = useIssuerDocuments(role === 'ISSUER' && isConnected)
-  const { data: activityData, isLoading: activityLoading } = useIssuerActivity(role === 'ISSUER' && isConnected)
+  const documents = useMemo(
+    () => docsQuery.data?.pages.flatMap((p) => p.documents) ?? [],
+    [docsQuery.data],
+  )
+  const totalLoaded = documents.length
 
-  const documents = data?.documents ?? []
-  const activityEntries = activityData?.entries ?? []
-
-  const filteredDocs = useMemo(() => {
-    return documents.filter((doc) => {
-      const q = searchTerm.toLowerCase()
-      const matchesSearch =
-        !q ||
-        doc.recipientName?.toLowerCase().includes(q) ||
-        doc.recipientEmail?.toLowerCase().includes(q) ||
-        doc.documentType?.toLowerCase().includes(q) ||
-        doc.docHash.toLowerCase().includes(q)
-      const matchesFilter = statusFilter === 'all' || doc.status === statusFilter
-      return matchesSearch && matchesFilter
-    })
-  }, [documents, searchTerm, statusFilter])
-
-  const filteredActivity = useMemo(() => {
-    if (actionFilter === 'ALL') return activityEntries
-    return activityEntries.filter((e) => e.action === actionFilter)
-  }, [activityEntries, actionFilter])
-
-  const handleRetry = async (entry: IssuerActivityEntry) => {
-    setRetrying(entry.txHash ?? entry.action)
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/issuer/retry-pin`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txHash: entry.txHash }),
-      })
-      if (!res.ok) throw new Error('Retry failed')
-      toast.success('Retrying IPFS pinning')
-    } catch {
-      toast.error('Retry failed. Please try again.')
-    } finally {
-      setRetrying(null)
-    }
-  }
-
-  const isLoading = docsLoading || activityLoading
+  // Search input differs from the debounced value while the user is still typing.
+  const isSearchPending = searchInput !== debouncedSearch
+  const docsLoading = docsQuery.isLoading
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -171,25 +96,35 @@ export default function IssuanceHistoryPage() {
         {/* Content */}
         <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-7xl animate-fade-in space-y-10">
-            {/* ── Documents Section ── */}
             <section>
               {/* Search + Filters */}
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <div className="relative max-w-md flex-1">
+                  {isSearchPending || (docsQuery.isFetching && !docsQuery.isFetchingNextPage) ? (
+                    <Loader2
+                      className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                      aria-hidden
+                    />
+                  ) : (
+                    <Search
+                      className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
+                  )}
                   <input
                     type="text"
                     placeholder="Search by name, email, type, or hash..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
                   {STATUS_OPTIONS.map((opt) => (
                     <button
                       key={opt}
                       onClick={() => setStatusFilter(opt)}
+                      aria-pressed={statusFilter === opt}
                       className={cn(
                         'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
                         statusFilter === opt
@@ -204,12 +139,10 @@ export default function IssuanceHistoryPage() {
               </div>
 
               <p className="mb-5 text-sm font-semibold text-muted-foreground">
-                {isConnected
-                  ? `Showing ${filteredDocs.length} of ${documents.length} document${documents.length !== 1 ? 's' : ''}`
-                  : 'Connect your wallet to view issuance history'}
+                {`Showing ${totalLoaded} document${totalLoaded !== 1 ? 's' : ''}${docsQuery.hasNextPage ? '+' : ''}`}
               </p>
 
-              {isLoading && (
+              {docsLoading && (
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
@@ -217,20 +150,13 @@ export default function IssuanceHistoryPage() {
                 </div>
               )}
 
-              {!isConnected && !isLoading && (
-                <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
-                  <Wallet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
-                  <p className="text-sm font-semibold text-muted-foreground">Connect your wallet to view issuance history</p>
-                </div>
-              )}
-
-              {isConnected && !isLoading && filteredDocs.length === 0 && (
+              {!docsLoading && documents.length === 0 && (
                 <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
                   <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
                   <p className="text-sm font-semibold text-muted-foreground">
-                    {searchTerm || statusFilter !== 'all' ? 'No documents match your search' : 'No documents issued yet'}
+                    {debouncedSearch || statusFilter !== 'all' ? 'No documents match your search' : 'No documents issued yet'}
                   </p>
-                  {!searchTerm && statusFilter === 'all' && (
+                  {!debouncedSearch && statusFilter === 'all' && (
                     <Link href="/issuer/issue" className="mt-3 inline-block text-sm font-semibold text-accent hover:opacity-80">
                       Issue your first document &rarr;
                     </Link>
@@ -238,7 +164,7 @@ export default function IssuanceHistoryPage() {
                 </div>
               )}
 
-              {isConnected && !isLoading && filteredDocs.length > 0 && (
+              {!docsLoading && documents.length > 0 && (
                 <>
                   {/* Desktop table */}
                   <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
@@ -254,7 +180,7 @@ export default function IssuanceHistoryPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredDocs.map((doc) => (
+                        {documents.map((doc) => (
                           <tr
                             key={doc.docHash}
                             className="group border-b border-border/5 transition-colors last:border-b-0 hover:bg-muted/20"
@@ -297,7 +223,7 @@ export default function IssuanceHistoryPage() {
 
                   {/* Mobile cards */}
                   <div className="space-y-3 sm:hidden">
-                    {filteredDocs.map((doc) => {
+                    {documents.map((doc) => {
                       const isOpen = expanded === doc.docHash
                       return (
                         <div key={doc.docHash} className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
@@ -363,120 +289,20 @@ export default function IssuanceHistoryPage() {
                       )
                     })}
                   </div>
-                </>
-              )}
-            </section>
 
-            {/* ── Activity Feed Section ── */}
-            <section>
-              <div className="mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
-                    <Activity className="h-4 w-4 text-accent" aria-hidden />
-                  </div>
-                  <h2 className="text-lg font-extrabold text-foreground">Activity</h2>
-                </div>
-                <div className="flex gap-2">
-                  {ACTION_FILTERS.map((f) => (
-                    <button
-                      key={f.value}
-                      onClick={() => setActionFilter(f.value)}
-                      className={cn(
-                        'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
-                        actionFilter === f.value
-                          ? 'bg-primary text-primary-foreground shadow-button'
-                          : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {activityLoading && (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
-                  ))}
-                </div>
-              )}
-
-              {!isConnected && !activityLoading && (
-                <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
-                  <Wallet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
-                  <p className="text-sm font-semibold text-muted-foreground">Connect your wallet to view activity</p>
-                </div>
-              )}
-
-              {isConnected && !activityLoading && filteredActivity.length === 0 && (
-                <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
-                  <Activity className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    {actionFilter !== 'ALL' ? 'No activity for this filter' : 'No activity yet'}
-                  </p>
-                </div>
-              )}
-
-              {isConnected && !activityLoading && filteredActivity.length > 0 && (
-                <div className="space-y-3">
-                  {filteredActivity.map((entry, idx) => {
-                    const isFailed = entry.action === 'IPFS_PIN_FAILED'
-                    const dotTone = ACTION_DOT[entry.action] ?? 'bg-accent'
-                    return (
-                      <div
-                        key={`${entry.action}-${entry.createdAt}-${idx}`}
-                        className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button"
+                  {docsQuery.hasNextPage && (
+                    <div className="mt-4 flex justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => docsQuery.fetchNextPage()}
+                        disabled={docsQuery.isFetchingNextPage}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="mt-1.5 shrink-0">
-                            <div className={cn('h-2.5 w-2.5 rounded-full', dotTone)} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-                              <div className="flex items-center gap-3">
-                                <ActionBadge action={entry.action} />
-                              </div>
-                              <span className="text-xs font-semibold text-muted-foreground shrink-0">
-                                {formatRelativeTime(entry.createdAt)}
-                              </span>
-                            </div>
-                            {entry.detail && (
-                              <p className="mt-1.5 text-sm text-muted-foreground">{entry.detail}</p>
-                            )}
-                            <div className="mt-3 flex items-center gap-3">
-                              {entry.txHash && (
-                                <a
-                                  href={getExplorerUrl(entry.txHash, CONTRACT_CHAIN_ID) ?? '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent transition-colors hover:opacity-80"
-                                >
-                                  <ExternalLink className="h-3 w-3" aria-hidden />
-                                  Explorer
-                                </a>
-                              )}
-                              {isFailed && entry.txHash && (
-                                <button
-                                  onClick={() => handleRetry(entry)}
-                                  disabled={retrying === (entry.txHash ?? entry.action)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
-                                >
-                                  {retrying === (entry.txHash ?? entry.action) ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                                  ) : (
-                                    <RefreshCw className="h-3 w-3" aria-hidden />
-                                  )}
-                                  Retry
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                        {docsQuery.isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Load more
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </div>

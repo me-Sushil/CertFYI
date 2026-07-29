@@ -12,12 +12,14 @@ const issuer_controller_1 = require("./issuer.controller");
 const issuer_service_1 = require("./issuer.service");
 const prisma_module_1 = require("../prisma/prisma.module");
 const audit_module_1 = require("../audit/audit.module");
+const ipfs_module_1 = require("../ipfs/ipfs.module");
+const blockchain_module_1 = require("../blockchain/blockchain.module");
 let IssuerModule = class IssuerModule {
 };
 exports.IssuerModule = IssuerModule;
 exports.IssuerModule = IssuerModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, audit_module_1.AuditModule],
+        imports: [prisma_module_1.PrismaModule, audit_module_1.AuditModule, ipfs_module_1.IpfsModule, blockchain_module_1.BlockchainModule],
         controllers: [issuer_controller_1.IssuerController],
         providers: [issuer_service_1.IssuerService],
     })

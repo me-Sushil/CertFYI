@@ -12,12 +12,13 @@ const documents_controller_1 = require("./documents.controller");
 const documents_service_1 = require("./documents.service");
 const blockchain_module_1 = require("../blockchain/blockchain.module");
 const audit_module_1 = require("../audit/audit.module");
+const ipfs_module_1 = require("../ipfs/ipfs.module");
 let DocumentsModule = class DocumentsModule {
 };
 exports.DocumentsModule = DocumentsModule;
 exports.DocumentsModule = DocumentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [blockchain_module_1.BlockchainModule, audit_module_1.AuditModule],
+        imports: [blockchain_module_1.BlockchainModule, audit_module_1.AuditModule, ipfs_module_1.IpfsModule],
         controllers: [documents_controller_1.DocumentsController],
         providers: [documents_service_1.DocumentsService],
     })

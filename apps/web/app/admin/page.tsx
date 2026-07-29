@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { OnChainButton } from '@/components/admin/on-chain-button'
 import { StatCard } from '@/components/admin/stat-card'
 import { ChainBanner } from '@/components/admin/chain-banner'
-import { Users, FileText, AlertCircle, CheckCircle, Loader2, Inbox } from 'lucide-react'
+import { Users, FileText, AlertCircle, AlertTriangle, Loader2, Inbox } from 'lucide-react'
 import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
 import {
   useAdminRequests,
@@ -33,8 +33,11 @@ function PendingRequestCard({
   onSettled: () => void
 }) {
   const [rejecting, setRejecting] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
   const approveUser = useApproveUser()
   const rejectUser = useRejectUser()
+
+  const isProcessing = isApproving || rejecting
 
   const handleReject = async () => {
     setRejecting(true)
@@ -63,7 +66,7 @@ function PendingRequestCard({
       <p className="mb-5 text-xs font-semibold text-muted-foreground">
         Applied {formatRelativeTime(request.createdAt)}
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <OnChainButton
           functionName="grantRole"
           args={[ISSUER_ROLE, request.walletAddress as Hex]}
@@ -73,11 +76,12 @@ function PendingRequestCard({
           }}
           successMessage="Issuer approved"
           errorMessage="Approval failed to record"
-          className="flex-1"
+          className="w-full sm:flex-1"
+          onLoadingChange={setIsApproving}
         >
           Approve On-Chain
         </OnChainButton>
-        <Button size="sm" variant="outline" className="flex-1" onClick={handleReject} disabled={rejecting}>
+        <Button size="sm" variant="outline" className="w-full sm:flex-1" onClick={handleReject} disabled={isProcessing}>
           {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           Reject
         </Button>
@@ -127,7 +131,7 @@ export default function AdminDashboard() {
     { label: 'Total Issuers', value: stats?.totalIssuers, icon: Users, tone: 'default' as const, loading: statsLoading },
     { label: 'Pending Approvals', value: String(pendingApplications.length), icon: AlertCircle, tone: 'accent' as const, loading: requestsQuery.isLoading },
     { label: 'Documents Anchored', value: stats?.documentsAnchored?.toLocaleString(), icon: FileText, tone: 'success' as const, loading: statsLoading },
-    { label: 'Suspended Issuers', value: stats?.suspendedIssuers, icon: CheckCircle, tone: 'accent' as const, loading: statsLoading },
+    { label: 'Suspended Issuers', value: stats?.suspendedIssuers, icon: AlertTriangle, tone: 'default' as const, loading: statsLoading },
   ]
 
   return (
@@ -151,7 +155,7 @@ export default function AdminDashboard() {
         </div>
 
         {requestsQuery.isLoading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="space-y-3 rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <Skeleton className="h-5 w-3/4" />
@@ -170,7 +174,7 @@ export default function AdminDashboard() {
             <p className="text-sm font-semibold text-muted-foreground">No pending applications</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {pendingApplications.map((request) => (
               <PendingRequestCard
                 key={request.id}

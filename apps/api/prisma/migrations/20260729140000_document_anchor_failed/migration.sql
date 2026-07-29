@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "AuditAction" ADD VALUE 'DOCUMENT_ANCHOR_FAILED';
+

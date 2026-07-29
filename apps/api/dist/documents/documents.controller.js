@@ -20,12 +20,17 @@ const documents_service_1 = require("./documents.service");
 const documents_dto_1 = require("../common/dto/documents.dto");
 const api_error_dto_1 = require("../common/dto/api-error.dto");
 const swagger_constants_1 = require("../common/swagger/swagger.constants");
+const session_guard_1 = require("../common/guards/session.guard");
+const roles_guard_1 = require("../common/guards/roles.guard");
+const issuer_active_guard_1 = require("../common/guards/issuer-active.guard");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let DocumentsController = class DocumentsController {
     constructor(documentsService) {
         this.documentsService = documentsService;
     }
-    anchor(body) {
-        return this.documentsService.anchor(body);
+    anchor(user, body) {
+        return this.documentsService.anchor(body, user.address);
     }
     getAnchor(hash) {
         return this.documentsService.getAnchor(hash);
@@ -47,17 +52,24 @@ exports.DocumentsController = DocumentsController;
 __decorate([
     (0, common_1.Post)('anchor'),
     (0, common_1.HttpCode)(201),
+    (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
+    (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiOperation)({
         summary: 'Anchor a single document hash',
-        description: 'Commits one document hash on-chain and records its issuer metadata. Only the hash leaves ' +
-            'the issuer - CertFyi never stores the document itself.',
+        description: 'Records a document hash the issuer has already anchored on-chain in their own wallet. ' +
+            'The backend verifies the transaction receipt before persisting anything. Only the hash ' +
+            'leaves the issuer - CertFyi never stores the document itself.',
     }),
     (0, swagger_1.ApiCreatedResponse)({ description: 'Document anchored.', type: documents_dto_1.AnchorResponseDto }),
-    (0, swagger_1.ApiBadRequestResponse)({ description: 'Validation failed.', type: api_error_dto_1.ValidationErrorDto }),
+    (0, swagger_1.ApiBadRequestResponse)({ description: 'Validation failed, or the transaction could not be verified.', type: api_error_dto_1.ValidationErrorDto }),
+    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'No valid session cookie.', type: api_error_dto_1.ApiErrorDto }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Session is not an active issuer.', type: api_error_dto_1.ApiErrorDto }),
     openapi.ApiResponse({ status: 201 }),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [documents_dto_1.AnchorDto]),
+    __metadata("design:paramtypes", [Object, documents_dto_1.AnchorDto]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "anchor", null);
 __decorate([
@@ -84,6 +96,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)('anchor-batch'),
     (0, common_1.HttpCode)(201),
+    (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
+    (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
     (0, swagger_1.ApiOperation)({
         summary: 'Anchor many documents in one transaction',
         description: 'Builds a Merkle tree over the supplied hashes and commits only the root, so gas cost is ' +

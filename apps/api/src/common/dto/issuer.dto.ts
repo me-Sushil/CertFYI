@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { IsEmail, IsOptional, IsString, IsUrl, MaxLength, MinLength } from 'class-validator'
+import { IsEmail, IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator'
+
+const HASH_REGEX = /^0x[a-fA-F0-9]{64}$/
+const HASH_PATTERN = '^0x[a-fA-F0-9]{64}$'
+const TX_REGEX = /^0x[a-fA-F0-9]{64}$/
+const TX_PATTERN = '^0x[a-fA-F0-9]{64}$'
 
 // Mirrors the original zod AccessRequestSchema:
 //   name (>= MIN_NAME_LENGTH), email, organization, website (url | ''), description (<= MAX)
@@ -142,9 +147,106 @@ export class IssuerActivityEntryDto {
 
   @ApiPropertyOptional({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' })
   txHash?: string
+
+  @ApiPropertyOptional({
+    description: 'Document hash the entry relates to, when applicable (e.g. a failed IPFS pin).',
+    example: '0x' + 'e3b0c442'.repeat(8),
+  })
+  docHash?: string
 }
 
 export class IssuerActivityResponseDto {
   @ApiProperty({ type: [IssuerActivityEntryDto] })
   entries!: IssuerActivityEntryDto[]
+
+  @ApiProperty({ example: null, nullable: true })
+  nextCursor!: string | null
+}
+
+export class IssuerDocumentsQueryDto {
+  @ApiPropertyOptional({ enum: ['all', 'active', 'revoked'], default: 'all' })
+  @IsOptional()
+  @IsIn(['all', 'active', 'revoked'])
+  status?: 'all' | 'active' | 'revoked'
+
+  @ApiPropertyOptional({ description: 'Matches recipient name/email, document type, or hash.' })
+  @IsOptional()
+  @IsString()
+  search?: string
+
+  @ApiPropertyOptional({ description: 'Pagination cursor (docHash).' })
+  @IsOptional()
+  @IsString()
+  cursor?: string
+}
+
+export class IssuerActivityQueryDto {
+  @ApiPropertyOptional({ example: 'ALL' })
+  @IsOptional()
+  @IsString()
+  action?: string
+
+  @ApiPropertyOptional({ description: 'Pagination cursor (entry id).' })
+  @IsOptional()
+  @IsString()
+  cursor?: string
+}
+
+export class RetryPinDto {
+  @ApiProperty({
+    description: 'Hash of the previously anchored document whose metadata sidecar failed to pin.',
+    pattern: HASH_PATTERN,
+    example: '0x' + 'e3b0c442'.repeat(8),
+  })
+  @IsString()
+  @Matches(HASH_REGEX, { message: 'Invalid document hash format' })
+  docHash!: string
+}
+
+export class RetryPinResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean
+
+  @ApiProperty({ nullable: true, type: String, example: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi' })
+  metadataCid!: string | null
+
+  @ApiProperty({ example: 'Metadata sidecar pinned successfully' })
+  message!: string
+}
+
+/**
+ * Records an anchoring attempt that never made it into `AnchoredDocument` -
+ * the wallet rejected it, or the chain reverted it. Nothing was anchored, so
+ * there is no document row to write; this is audit trail only, so a failed
+ * attempt is still visible on the issuer's Activity page instead of vanishing
+ * silently in the browser.
+ */
+export class LogFailedAnchorDto {
+  @ApiProperty({
+    description: 'Hash of the document that failed to anchor.',
+    pattern: HASH_PATTERN,
+    example: '0x' + 'e3b0c442'.repeat(8),
+  })
+  @IsString()
+  @Matches(HASH_REGEX, { message: 'Invalid document hash format' })
+  docHash!: string
+
+  @ApiPropertyOptional({
+    description: 'Transaction hash, when the failure happened after broadcast (e.g. a revert).',
+    pattern: TX_PATTERN,
+    example: '0x' + 'ab'.repeat(32),
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(TX_REGEX, { message: 'Invalid transaction hash format' })
+  txHash?: string
+
+  @ApiProperty({
+    description: 'Human-readable failure reason, shown in the activity feed.',
+    maxLength: 500,
+    example: 'Transaction reverted on-chain',
+  })
+  @IsString()
+  @MaxLength(500)
+  reason!: string
 }

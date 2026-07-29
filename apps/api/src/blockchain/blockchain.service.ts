@@ -38,10 +38,64 @@ const HasRoleFn = {
   outputs: [{ type: 'bool' }],
 } as const
 
+const DocumentAnchoredEvent = {
+  type: 'event',
+  name: 'DocumentAnchored',
+  inputs: [
+    { indexed: true, name: 'documentHash', type: 'bytes32' },
+    { indexed: true, name: 'issuer', type: 'address' },
+    { indexed: false, name: 'documentType', type: 'string' },
+    { indexed: false, name: 'timestamp', type: 'uint256' },
+  ],
+} as const
+
+const DocumentRevokedEvent = {
+  type: 'event',
+  name: 'DocumentRevoked',
+  inputs: [
+    { indexed: true, name: 'documentHash', type: 'bytes32' },
+    { indexed: true, name: 'issuer', type: 'address' },
+    { indexed: false, name: 'timestamp', type: 'uint256' },
+  ],
+} as const
+
+const DOCUMENT_EVENTS = [DocumentAnchoredEvent, DocumentRevokedEvent]
+
+const GetDocumentFn = {
+  type: 'function',
+  name: 'getDocument',
+  stateMutability: 'view',
+  inputs: [{ name: '_documentHash', type: 'bytes32' }],
+  outputs: [
+    { name: 'issuer', type: 'address' },
+    { name: 'timestamp', type: 'uint256' },
+    { name: 'revoked', type: 'bool' },
+    { name: 'documentType', type: 'string' },
+  ],
+} as const
+
+/** SRS-scoped chain list (§10.1) - matches the frontend's CHAIN_CONFIG. */
+const CHAIN_NAMES: Record<number, string> = {
+  1: 'Ethereum Mainnet',
+  137: 'Polygon',
+  42161: 'Arbitrum',
+  8453: 'Base',
+  10: 'Optimism',
+  11155111: 'Sepolia',
+}
+
 export interface RoleGrantVerification {
   ok: boolean
   error?: string
   status?: number
+}
+
+export interface OnChainDocument {
+  anchored: boolean
+  issuer: string
+  timestamp: number
+  revoked: boolean
+  documentType: string
 }
 
 @Injectable()
@@ -200,6 +254,104 @@ export class BlockchainService implements OnModuleInit {
         `wallet's current on-chain role state does not match either.`,
       status: 400,
     }
+  }
+
+  /**
+   * Verifies that `txHash` really anchored `documentHash` for `issuerAddress`.
+   *
+   * Mirrors `verifyRoleEvent`: fetch the receipt, check it targets our contract
+   * and was sent by the claimed issuer, then confirm the `DocumentAnchored`
+   * event fired for this hash. Falls back to a live `getDocument` read so a
+   * retried recording call (network blip after a real, successful anchor)
+   * is not permanently stuck on a stale event lookup.
+   */
+  async verifyDocumentAnchor(
+    documentHash: Hex,
+    txHash: Hex,
+    issuerAddress: string,
+  ): Promise<RoleGrantVerification> {
+    let receipt
+    try {
+      receipt = await this.publicClient.getTransactionReceipt({ hash: txHash })
+    } catch {
+      return { ok: false, error: 'Transaction not found', status: 400 }
+    }
+
+    if (receipt.status !== 'success') {
+      return { ok: false, error: 'On-chain transaction did not succeed', status: 400 }
+    }
+
+    if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
+      return { ok: false, error: 'Transaction does not target the document contract', status: 400 }
+    }
+
+    if (receipt.from.toLowerCase() !== issuerAddress.toLowerCase()) {
+      return {
+        ok: false,
+        error: 'Transaction was sent by a different wallet than the current session.',
+        status: 403,
+      }
+    }
+
+    const events = parseEventLogs({ abi: DOCUMENT_EVENTS, logs: receipt.logs })
+    const matched = events.some(
+      (event) =>
+        event.eventName === 'DocumentAnchored' &&
+        event.args.documentHash.toLowerCase() === documentHash.toLowerCase() &&
+        event.args.issuer.toLowerCase() === issuerAddress.toLowerCase(),
+    )
+
+    if (matched) {
+      return { ok: true }
+    }
+
+    const onChain = await this.getOnChainDocument(documentHash)
+    if (onChain?.anchored && onChain.issuer.toLowerCase() === issuerAddress.toLowerCase()) {
+      return { ok: true }
+    }
+
+    return {
+      ok: false,
+      error: 'Transaction did not emit DocumentAnchored for this hash, and the hash is not ' +
+        'anchored on-chain for this issuer.',
+      status: 400,
+    }
+  }
+
+  /** Reads a document's current on-chain state directly from the contract. */
+  async getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null> {
+    const [issuer, timestamp, revoked, documentType] = await this.publicClient.readContract({
+      address: this.contractAddress as Hex,
+      abi: [GetDocumentFn],
+      functionName: 'getDocument',
+      args: [documentHash],
+    })
+
+    if (timestamp === 0n) {
+      return null
+    }
+
+    return {
+      anchored: true,
+      issuer,
+      timestamp: Number(timestamp),
+      revoked,
+      documentType,
+    }
+  }
+
+  /** Block number and confirmation for a known-good anchoring tx, for display. */
+  async getReceiptSummary(txHash: Hex): Promise<{ blockNumber: number } | null> {
+    try {
+      const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash })
+      return { blockNumber: Number(receipt.blockNumber) }
+    } catch {
+      return null
+    }
+  }
+
+  chainName(chainId: number = this.contractChainId): string {
+    return CHAIN_NAMES[chainId] ?? `Chain ID ${chainId}`
   }
 
   calculateDocumentHash(data: Buffer | string): string {

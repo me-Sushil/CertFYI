@@ -3,6 +3,7 @@ import type {
   AdminRequestsResponse,
   AdminStatsResponse,
   AnchorDocumentRequest,
+  AnchorDocumentResponse,
   ApiErrorBody,
   ApproveUserRequest,
   AuditLogResponse,
@@ -15,7 +16,10 @@ import type {
   IssuerRequestStatusResponse,
   IssuerStatsResponse,
   IssuerDocumentsResponse,
+  IssuerDocumentsQuery,
   IssuerActivityResponse,
+  IssuerActivityQuery,
+  RetryPinResponse,
   LogoutResponse,
   NonceResponse,
   PdfHashRequest,
@@ -25,6 +29,7 @@ import type {
   SessionResponse,
   SuspendIssuerRequest,
   VerifyDocumentRequest,
+  VerifyDocumentResponse,
   VerifyRequest,
   VerifyResponse,
 } from './api-types'
@@ -123,27 +128,51 @@ export const adminApi = {
 }
 
 /** Issuer */
+function toQueryString(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value) search.set(key, value)
+  }
+  const qs = search.toString()
+  return qs ? `?${qs}` : ''
+}
+
 export const issuerApi = {
   getRequestStatus: () => request<IssuerRequestStatusResponse>('/issuer/request'),
   submitRequest: (body: IssuerAccessRequestBody) =>
     request('/issuer/request', { method: 'POST', body: JSON.stringify(body) }),
   getStats: () => request<IssuerStatsResponse>('/issuer/stats'),
-  getDocuments: (cursor?: string) =>
-    request<IssuerDocumentsResponse>(`/issuer/documents${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
-  getActivity: () => request<IssuerActivityResponse>('/issuer/activity'),
+  getDocuments: (query: IssuerDocumentsQuery = {}) =>
+    request<IssuerDocumentsResponse>(
+      `/issuer/documents${toQueryString({ status: query.status, search: query.search, cursor: query.cursor })}`,
+    ),
+  getActivity: (query: IssuerActivityQuery = {}) =>
+    request<IssuerActivityResponse>(
+      `/issuer/activity${toQueryString({ action: query.action, cursor: query.cursor })}`,
+    ),
+  retryPin: (docHash: string) =>
+    request<RetryPinResponse>('/issuer/retry-pin', {
+      method: 'POST',
+      body: JSON.stringify({ docHash }),
+    }),
+  logFailedAnchor: (body: { docHash: string; txHash?: string; reason: string }) =>
+    request<{ success: boolean }>('/issuer/log-failed-anchor', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }
 
 /** Documents */
 export const documentsApi = {
   anchor: (body: AnchorDocumentRequest) =>
-    request('/documents/anchor', { method: 'POST', body: JSON.stringify(body) }),
+    request<AnchorDocumentResponse>('/documents/anchor', { method: 'POST', body: JSON.stringify(body) }),
   getAnchor: (hash: string) => request(`/documents/anchor?hash=${encodeURIComponent(hash)}`),
   anchorBatch: (body: BatchAnchorRequest) =>
     request('/documents/anchor-batch', { method: 'POST', body: JSON.stringify(body) }),
   getBatch: (batchId: string) =>
     request(`/documents/anchor-batch?batchId=${encodeURIComponent(batchId)}`),
   verify: (body: VerifyDocumentRequest) =>
-    request('/documents/verify', { method: 'POST', body: JSON.stringify(body) }),
+    request<VerifyDocumentResponse>('/documents/verify', { method: 'POST', body: JSON.stringify(body) }),
   quickVerify: (hash: string) => request(`/documents/verify?hash=${encodeURIComponent(hash)}`),
 }
 

@@ -48,6 +48,46 @@ const HasRoleFn = {
     ],
     outputs: [{ type: 'bool' }],
 };
+const DocumentAnchoredEvent = {
+    type: 'event',
+    name: 'DocumentAnchored',
+    inputs: [
+        { indexed: true, name: 'documentHash', type: 'bytes32' },
+        { indexed: true, name: 'issuer', type: 'address' },
+        { indexed: false, name: 'documentType', type: 'string' },
+        { indexed: false, name: 'timestamp', type: 'uint256' },
+    ],
+};
+const DocumentRevokedEvent = {
+    type: 'event',
+    name: 'DocumentRevoked',
+    inputs: [
+        { indexed: true, name: 'documentHash', type: 'bytes32' },
+        { indexed: true, name: 'issuer', type: 'address' },
+        { indexed: false, name: 'timestamp', type: 'uint256' },
+    ],
+};
+const DOCUMENT_EVENTS = [DocumentAnchoredEvent, DocumentRevokedEvent];
+const GetDocumentFn = {
+    type: 'function',
+    name: 'getDocument',
+    stateMutability: 'view',
+    inputs: [{ name: '_documentHash', type: 'bytes32' }],
+    outputs: [
+        { name: 'issuer', type: 'address' },
+        { name: 'timestamp', type: 'uint256' },
+        { name: 'revoked', type: 'bool' },
+        { name: 'documentType', type: 'string' },
+    ],
+};
+const CHAIN_NAMES = {
+    1: 'Ethereum Mainnet',
+    137: 'Polygon',
+    42161: 'Arbitrum',
+    8453: 'Base',
+    10: 'Optimism',
+    11155111: 'Sepolia',
+};
 let BlockchainService = BlockchainService_1 = class BlockchainService {
     constructor() {
         this.logger = new common_1.Logger(BlockchainService_1.name);
@@ -145,6 +185,75 @@ let BlockchainService = BlockchainService_1 = class BlockchainService {
                 `wallet's current on-chain role state does not match either.`,
             status: 400,
         };
+    }
+    async verifyDocumentAnchor(documentHash, txHash, issuerAddress) {
+        let receipt;
+        try {
+            receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
+        }
+        catch {
+            return { ok: false, error: 'Transaction not found', status: 400 };
+        }
+        if (receipt.status !== 'success') {
+            return { ok: false, error: 'On-chain transaction did not succeed', status: 400 };
+        }
+        if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
+            return { ok: false, error: 'Transaction does not target the document contract', status: 400 };
+        }
+        if (receipt.from.toLowerCase() !== issuerAddress.toLowerCase()) {
+            return {
+                ok: false,
+                error: 'Transaction was sent by a different wallet than the current session.',
+                status: 403,
+            };
+        }
+        const events = (0, viem_1.parseEventLogs)({ abi: DOCUMENT_EVENTS, logs: receipt.logs });
+        const matched = events.some((event) => event.eventName === 'DocumentAnchored' &&
+            event.args.documentHash.toLowerCase() === documentHash.toLowerCase() &&
+            event.args.issuer.toLowerCase() === issuerAddress.toLowerCase());
+        if (matched) {
+            return { ok: true };
+        }
+        const onChain = await this.getOnChainDocument(documentHash);
+        if (onChain?.anchored && onChain.issuer.toLowerCase() === issuerAddress.toLowerCase()) {
+            return { ok: true };
+        }
+        return {
+            ok: false,
+            error: 'Transaction did not emit DocumentAnchored for this hash, and the hash is not ' +
+                'anchored on-chain for this issuer.',
+            status: 400,
+        };
+    }
+    async getOnChainDocument(documentHash) {
+        const [issuer, timestamp, revoked, documentType] = await this.publicClient.readContract({
+            address: this.contractAddress,
+            abi: [GetDocumentFn],
+            functionName: 'getDocument',
+            args: [documentHash],
+        });
+        if (timestamp === 0n) {
+            return null;
+        }
+        return {
+            anchored: true,
+            issuer,
+            timestamp: Number(timestamp),
+            revoked,
+            documentType,
+        };
+    }
+    async getReceiptSummary(txHash) {
+        try {
+            const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
+            return { blockNumber: Number(receipt.blockNumber) };
+        }
+        catch {
+            return null;
+        }
+    }
+    chainName(chainId = this.contractChainId) {
+        return CHAIN_NAMES[chainId] ?? `Chain ID ${chainId}`;
     }
     calculateDocumentHash(data) {
         const buffer = typeof data === 'string' ? Buffer.from(data) : data;

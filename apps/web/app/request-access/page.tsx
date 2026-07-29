@@ -24,7 +24,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <HeaderWrapper />
-      <div className="mx-auto max-w-7xl px-6 py-16">{children}</div>
+      <div className="mx-auto max-w-7xl px-4 pt-24 pb-16 sm:px-6 sm:pt-28 sm:pb-20 lg:px-8">
+        {children}
+      </div>
     </div>
   )
 }
