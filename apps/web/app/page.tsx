@@ -55,15 +55,6 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 mx-auto max-w-5xl text-center">
-          <div className="stagger-1 mb-8 inline-flex animate-fade-in-up items-center gap-2 rounded-full bg-card px-3 py-1.5 opacity-0 shadow-soft">
-            <span className="text-[15px] font-semibold leading-[19.5px] text-foreground">
-              v2.0.1
-            </span>
-            <span className="flex items-center gap-1 text-[15px] font-semibold leading-[19.5px] text-accent">
-              See what&apos;s new
-              <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-          </div>
 
           <h1 className="stagger-2 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
             The productivity app{" "}
