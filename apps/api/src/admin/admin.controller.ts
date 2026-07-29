@@ -16,6 +16,8 @@ import { AdminService } from './admin.service'
 import {
   AccessRequestDecisionResponseDto,
   AccessRequestListResponseDto,
+  AdminDocumentsListResponseDto,
+  AdminDocumentsQueryDto,
   AdminStatsResponseDto,
   ApproveUserDto,
   AuditLogQueryDto,
@@ -105,6 +107,21 @@ export class AdminController {
   @ApiOkResponse({ description: 'Issuer list.', type: IssuerListResponseDto })
   getIssuers(@Query() query: IssuersQueryDto) {
     return this.adminService.getIssuers({
+      status: query.status,
+      search: query.search,
+      cursor: query.cursor,
+      limit: query.limit ? parseInt(query.limit, 10) : undefined,
+    })
+  }
+
+  @Get('documents')
+  @ApiOperation({
+    summary: 'List all anchored documents',
+    description: 'Paginated, filterable by status and search term. Results newest-first.',
+  })
+  @ApiOkResponse({ description: 'Document list.', type: AdminDocumentsListResponseDto })
+  getDocuments(@Query() query: AdminDocumentsQueryDto) {
+    return this.adminService.getDocuments({
       status: query.status,
       search: query.search,
       cursor: query.cursor,

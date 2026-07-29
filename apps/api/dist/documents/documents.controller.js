@@ -32,6 +32,9 @@ let DocumentsController = class DocumentsController {
     anchor(user, body) {
         return this.documentsService.anchor(body, user.address);
     }
+    revoke(user, body) {
+        return this.documentsService.revoke(body, user.address);
+    }
     getAnchor(hash) {
         return this.documentsService.getAnchor(hash);
     }
@@ -72,6 +75,31 @@ __decorate([
     __metadata("design:paramtypes", [Object, documents_dto_1.AnchorDto]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "anchor", null);
+__decorate([
+    (0, common_1.Post)('revoke'),
+    (0, common_1.HttpCode)(200),
+    (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard, issuer_active_guard_1.IssuerActiveGuard),
+    (0, roles_decorator_1.Roles)('ISSUER'),
+    (0, swagger_1.ApiCookieAuth)(swagger_constants_1.SESSION_COOKIE_AUTH),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Revoke a previously anchored document',
+        description: 'Records a revocation the issuer has already confirmed on-chain in their own wallet, for ' +
+            'a document they issued. The backend verifies the transaction receipt before persisting ' +
+            'anything. Revocation does not invalidate documents that were valid while the issuer was ' +
+            'in good standing - the chain anchor itself is untouched, only its status changes.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Document revoked.', type: documents_dto_1.RevokeDocumentResponseDto }),
+    (0, swagger_1.ApiBadRequestResponse)({ description: 'Validation failed, or the transaction could not be verified.', type: api_error_dto_1.ValidationErrorDto }),
+    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'No valid session cookie.', type: api_error_dto_1.ApiErrorDto }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Session is not an active issuer, or does not own this document.', type: api_error_dto_1.ApiErrorDto }),
+    (0, swagger_1.ApiNotFoundResponse)({ description: 'No document anchored for that hash.', type: api_error_dto_1.ApiErrorDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, documents_dto_1.RevokeDocumentDto]),
+    __metadata("design:returntype", void 0)
+], DocumentsController.prototype, "revoke", null);
 __decorate([
     (0, common_1.Get)('anchor'),
     (0, swagger_1.ApiOperation)({

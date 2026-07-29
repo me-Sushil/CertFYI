@@ -1,7 +1,7 @@
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { AuditService } from '../audit/audit.service';
 import { IpfsService } from '../ipfs/ipfs.service';
-import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto';
+import type { AnchorDto, BatchAnchorDto, RevokeDocumentDto } from '../common/dto/documents.dto';
 import { PrismaService } from '../prisma/prisma.service';
 export declare class DocumentsService {
     private readonly blockchain;
@@ -18,6 +18,13 @@ export declare class DocumentsService {
         metadataCid: string | null;
         timestamp: string;
         status: string;
+        message: string;
+    }>;
+    revoke(body: RevokeDocumentDto, issuerAddress: string): Promise<{
+        success: boolean;
+        documentHash: string;
+        txHash: string;
+        revokedAt: string;
         message: string;
     }>;
     getAnchor(hash?: string): Promise<{

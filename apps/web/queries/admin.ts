@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { adminApi } from '@/lib/api'
-import type { AccessRequestRow, AuditLogEntry, IssuerRow } from '@/lib/api-types'
+import type { AccessRequestRow, AdminDocumentRow, AuditLogEntry, IssuerRow } from '@/lib/api-types'
 import { keys } from './keys'
 
 const LISTS_STALE_MS = 15_000
@@ -69,6 +69,25 @@ export function useIssuers(enabled: boolean, params?: { status?: string; search?
   })
 }
 
+export function useAdminDocuments(enabled: boolean, params?: { status?: string; search?: string }) {
+  return useInfiniteQuery<{ documents: AdminDocumentRow[]; nextCursor: string | null }>({
+    queryKey: keys.admin.documents.list(params),
+    queryFn: async ({ pageParam }) => {
+      const cursor = pageParam as string | undefined
+      return adminApi.getDocuments({
+        status: params?.status,
+        search: params?.search,
+        cursor,
+        limit: 20,
+      })
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    staleTime: LISTS_STALE_MS,
+    enabled,
+  })
+}
+
 export function useSuspendIssuer() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -87,6 +106,23 @@ export function useReactivateIssuer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.admin.issuers.lists() })
       queryClient.invalidateQueries({ queryKey: keys.admin.stats.all })
+    },
+  })
+}
+
+export function useUploadIssuerMetadata() {
+  return useMutation({
+    mutationFn: (address: string) => adminApi.uploadIssuerMetadata(address),
+  })
+}
+
+export function useConfirmIssuerMetadata() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ address, txHash }: { address: string; txHash: string }) =>
+      adminApi.setIssuerMetadata(address, { txHash }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.admin.issuers.lists() })
     },
   })
 }

@@ -4,20 +4,47 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import type { Hex } from 'viem'
 import {
   Search, FileText, History, ExternalLink, ChevronDown,
-  X, Menu, Loader2,
+  X, Menu, Loader2, Ban, MoreVertical, Copy, Check,
 } from 'lucide-react'
 import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { Button } from '@/components/ui/button'
 import { Sidebar } from '@/components/issuer-sidebar'
+import { OnChainButton } from '@/components/admin/on-chain-button'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useIssuerDocuments } from '@/queries/issuer'
+import { useRevokeDocumentMutation } from '@/queries/documents'
 import { useDebounce } from 'use-debounce'
 import { cn } from '@/lib/utils'
 import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
+import type { IssuerDocumentRow } from '@/lib/api-types'
 
 const STATUS_OPTIONS = ['all', 'active', 'revoked'] as const
+// Fixed gas limit for revokeDocument - a single SSTORE plus an event emit,
+// comfortably under 200k gas. See the same fix on the anchor flow: some
+// wallets' auto-estimation has returned values that exceed the RPC
+// provider's hard per-tx cap.
+const REVOKE_GAS_LIMIT = BigInt(300_000)
 
 function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
   const isActive = status === 'active'
@@ -34,6 +61,57 @@ function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
   )
 }
 
+function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (doc: IssuerDocumentRow) => void }) {
+  const [copied, setCopied] = useState(false)
+
+  const copyHash = async () => {
+    try {
+      await navigator.clipboard.writeText(doc.docHash)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard unavailable over plain HTTP on some browsers - not worth surfacing.
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        aria-label="Document actions"
+      >
+        <MoreVertical className="h-4 w-4" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Document Hash</DropdownMenuLabel>
+          <DropdownMenuItem onClick={copyHash} className="justify-between font-mono text-xs">
+            {formatAddress(doc.docHash, 8)}
+            {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        {doc.txHash && (
+          <DropdownMenuItem
+            render={
+              <a href={getExplorerUrl(doc.txHash, CONTRACT_CHAIN_ID) ?? '#'} target="_blank" rel="noopener noreferrer" />
+            }
+          >
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            View on Explorer
+          </DropdownMenuItem>
+        )}
+        {doc.status === 'active' && (
+          <DropdownMenuItem variant="destructive" onClick={() => onRevoke(doc)}>
+            <Ban className="h-3.5 w-3.5" aria-hidden />
+            Revoke
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export default function IssuanceHistoryPage() {
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -42,8 +120,15 @@ export default function IssuanceHistoryPage() {
   const [debouncedSearch] = useDebounce(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [confirmRevoke, setConfirmRevoke] = useState<IssuerDocumentRow | null>(null)
 
   const docsQuery = useIssuerDocuments(true, { status: statusFilter, search: debouncedSearch || undefined })
+  const revokeDocument = useRevokeDocumentMutation()
+
+  const handleRevokeConfirmed = async (doc: IssuerDocumentRow, txHash: Hex) => {
+    await revokeDocument.mutateAsync({ documentHash: doc.docHash, txHash })
+    setConfirmRevoke(null)
+  }
 
   const documents = useMemo(
     () => docsQuery.data?.pages.flatMap((p) => p.documents) ?? [],
@@ -168,15 +253,14 @@ export default function IssuanceHistoryPage() {
                 <>
                   {/* Desktop table */}
                   <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
-                    <table className="w-full">
+                    <table className="w-full table-fixed">
                       <thead>
                         <tr className="border-b border-border/10">
-                          <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Recipient</th>
-                          <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Type</th>
-                          <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Document Hash</th>
-                          <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Issued</th>
-                          <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
-                          <th className="px-6 py-4 text-right text-sm font-extrabold text-foreground">Action</th>
+                          <th className="w-[32%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Recipient</th>
+                          <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Type</th>
+                          <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Issued</th>
+                          <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
+                          <th className="w-[14%] px-6 py-4 text-right text-sm font-extrabold text-foreground">Details</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -186,15 +270,12 @@ export default function IssuanceHistoryPage() {
                             className="group border-b border-border/5 transition-colors last:border-b-0 hover:bg-muted/20"
                           >
                             <td className="px-6 py-4">
-                              <p className="font-semibold text-foreground">{doc.recipientName || '—'}</p>
+                              <p className="truncate font-semibold text-foreground">{doc.recipientName || '—'}</p>
                               {doc.recipientEmail && (
-                                <p className="mt-0.5 text-xs text-muted-foreground">{doc.recipientEmail}</p>
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">{doc.recipientEmail}</p>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
-                            <td className="px-6 py-4">
-                              <span className="font-mono text-xs text-muted-foreground">{formatAddress(doc.docHash, 6)}</span>
-                            </td>
+                            <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                             </td>
@@ -202,18 +283,7 @@ export default function IssuanceHistoryPage() {
                               <StatusBadge status={doc.status} />
                             </td>
                             <td className="px-6 py-4 text-right">
-                              {doc.txHash ? (
-                                <a
-                                  href={getExplorerUrl(doc.txHash, CONTRACT_CHAIN_ID) ?? '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/10"
-                                >
-                                  Explorer <ExternalLink className="h-3 w-3" />
-                                </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
+                              <RowActionsMenu doc={doc} onRevoke={setConfirmRevoke} />
                             </td>
                           </tr>
                         ))}
@@ -283,6 +353,15 @@ export default function IssuanceHistoryPage() {
                                   View on Explorer
                                 </a>
                               )}
+                              {doc.status === 'active' && (
+                                <button
+                                  onClick={() => setConfirmRevoke(doc)}
+                                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20"
+                                >
+                                  <Ban className="h-4 w-4" aria-hidden />
+                                  Revoke
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -327,6 +406,37 @@ export default function IssuanceHistoryPage() {
           </div>
         </div>
       )}
+
+      {/* Revoke confirmation */}
+      <AlertDialog open={!!confirmRevoke} onOpenChange={(open) => !open && setConfirmRevoke(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark{' '}
+              <strong>{confirmRevoke?.recipientName || confirmRevoke?.documentType || 'this document'}</strong>{' '}
+              as revoked on-chain. This cannot be undone, and it costs gas. Verification will show
+              it as revoked, but the anchor record itself remains permanently on the blockchain.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {confirmRevoke && (
+              <OnChainButton
+                functionName="revokeDocument"
+                args={[confirmRevoke.docHash as Hex]}
+                gas={REVOKE_GAS_LIMIT}
+                onConfirmed={(txHash) => handleRevokeConfirmed(confirmRevoke, txHash)}
+                successMessage="Document revoked"
+                errorMessage="Revocation failed"
+                variant="destructive"
+              >
+                Confirm Revocation
+              </OnChainButton>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

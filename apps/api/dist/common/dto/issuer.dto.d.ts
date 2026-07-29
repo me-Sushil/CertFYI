@@ -22,6 +22,7 @@ export declare class IssuerDocumentDto {
     txHash: string;
     anchoredAt: string;
     revokedAt: string | null;
+    revokeTxHash?: string;
     status: 'active' | 'revoked';
 }
 export declare class IssuerDocumentsResponseDto {

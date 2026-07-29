@@ -123,6 +123,9 @@ export class IssuerDocumentDto {
   @ApiProperty({ example: null, nullable: true })
   revokedAt!: string | null
 
+  @ApiPropertyOptional({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' })
+  revokeTxHash?: string
+
   @ApiProperty({ enum: ['active', 'revoked'], example: 'active' })
   status!: 'active' | 'revoked'
 }

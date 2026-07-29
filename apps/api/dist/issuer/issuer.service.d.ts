@@ -36,6 +36,7 @@ export declare class IssuerService {
             metadataCid: string | null;
             anchoredAt: string;
             revokedAt: string | null;
+            revokeTxHash: string | undefined;
             status: "revoked" | "active";
         }[];
         nextCursor: string | null;

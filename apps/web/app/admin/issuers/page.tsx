@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import type { Hex } from 'viem'
 import { Button } from '@/components/ui/button'
 import { OnChainButton } from '@/components/admin/on-chain-button'
 import { ChainBanner } from '@/components/admin/chain-banner'
+import { IssuerMetadataPanel } from '@/components/admin/issuer-metadata-panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ export default function IssuerManagementPage() {
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [confirmSuspend, setConfirmSuspend] = useState<IssuerRow | null>(null)
+  const reactivateUser = useReactivateIssuer()
 
   const {
     data: pagesData,
@@ -53,19 +55,6 @@ export default function IssuerManagementPage() {
     isFetchingNextPage,
   } = useIssuers(true, { status: filterStatus, search: searchTerm || undefined })
   const issuers = pagesData?.pages.flatMap((p) => p.issuers) ?? []
-
-  const filtered = useMemo(() => {
-    const q = searchTerm.toLowerCase()
-    return issuers.filter((issuer) => {
-      if (!q) return true
-      return (
-        issuer.organization?.toLowerCase().includes(q) ||
-        issuer.name?.toLowerCase().includes(q) ||
-        issuer.email?.toLowerCase().includes(q) ||
-        issuer.walletAddress.toLowerCase().includes(q)
-      )
-    })
-  }, [issuers, searchTerm])
 
   return (
     <div>
@@ -209,8 +198,7 @@ export default function IssuerManagementPage() {
                             functionName="grantRole"
                             args={[ISSUER_ROLE, issuer.walletAddress as Hex]}
                             onConfirmed={async (txHash) => {
-                              const { useReactivateIssuer } = await import('@/queries/admin')
-                              // handled via parent re-render
+                              await reactivateUser.mutateAsync({ walletAddress: issuer.walletAddress, txHash })
                             }}
                             successMessage="Issuer reactivated"
                             errorMessage="Reactivation failed"
@@ -220,6 +208,12 @@ export default function IssuerManagementPage() {
                           </OnChainButton>
                         )}
                       </div>
+                      {issuer.status === 'ACTIVE' && (
+                        <div className="border-t border-border/10 pt-3">
+                          <p className="mb-2 text-xs font-semibold text-muted-foreground">Off-Chain Profile</p>
+                          <IssuerMetadataPanel issuer={issuer} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -327,6 +321,12 @@ function IssuerRowComponent({
                 </OnChainButton>
               )}
             </div>
+            {issuer.status === 'ACTIVE' && (
+              <div className="mt-4 border-t border-border/10 pt-4">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">Off-Chain Profile</p>
+                <IssuerMetadataPanel issuer={issuer} />
+              </div>
+            )}
           </td>
         </tr>
       )}

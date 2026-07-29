@@ -16,6 +16,12 @@ export const keys = {
       list: (filters?: { status?: string; search?: string }) =>
         ['admin', 'issuers', 'list', filters?.status ?? 'ALL', filters?.search ?? ''] as const,
     },
+    documents: {
+      all: ['admin', 'documents'] as const,
+      lists: () => [...keys.admin.documents.all, 'list'] as const,
+      list: (filters?: { status?: string; search?: string }) =>
+        ['admin', 'documents', 'list', filters?.status ?? 'ALL', filters?.search ?? ''] as const,
+    },
     auditLog: {
       all: ['admin', 'audit-log'] as const,
       lists: () => [...keys.admin.auditLog.all, 'list'] as const,

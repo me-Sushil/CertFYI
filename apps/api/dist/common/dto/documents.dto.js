@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.QuickVerifyResponseDto = exports.VerifyDocumentResponseDto = exports.OnchainDataDto = exports.BatchLookupResponseDto = exports.BatchRecordDto = exports.BatchAnchorResponseDto = exports.AnchorLookupResponseDto = exports.AnchorRecordDto = exports.AnchorResponseDto = exports.VerifyDocumentDto = exports.BatchAnchorDto = exports.BatchDocumentDto = exports.AnchorDto = void 0;
+exports.QuickVerifyResponseDto = exports.VerifyDocumentResponseDto = exports.OnchainDataDto = exports.BatchLookupResponseDto = exports.BatchRecordDto = exports.BatchAnchorResponseDto = exports.AnchorLookupResponseDto = exports.AnchorRecordDto = exports.AnchorResponseDto = exports.VerifyDocumentDto = exports.BatchAnchorDto = exports.BatchDocumentDto = exports.RevokeDocumentResponseDto = exports.RevokeDocumentDto = exports.AnchorDto = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -81,6 +81,58 @@ __decorate([
     (0, class_validator_1.Matches)(CID_REGEX, { message: 'Invalid CID format' }),
     __metadata("design:type", String)
 ], AnchorDto.prototype, "cid", void 0);
+class RevokeDocumentDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { documentHash: { required: true, type: () => String, pattern: "HASH_REGEX" }, txHash: { required: true, type: () => String, pattern: "TX_REGEX" } };
+    }
+}
+exports.RevokeDocumentDto = RevokeDocumentDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the document to revoke.',
+        pattern: HASH_PATTERN,
+        example: EXAMPLE_HASH,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(HASH_REGEX, { message: 'Invalid document hash format' }),
+    __metadata("design:type", String)
+], RevokeDocumentDto.prototype, "documentHash", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Hash of the confirmed `revokeDocument` transaction, signed by the issuer’s own wallet.',
+        pattern: TX_PATTERN,
+        example: EXAMPLE_TX,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(TX_REGEX, { message: 'Invalid transaction hash format' }),
+    __metadata("design:type", String)
+], RevokeDocumentDto.prototype, "txHash", void 0);
+class RevokeDocumentResponseDto {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { success: { required: true, type: () => Boolean }, documentHash: { required: true, type: () => String }, txHash: { required: true, type: () => String }, revokedAt: { required: true, type: () => String }, message: { required: true, type: () => String } };
+    }
+}
+exports.RevokeDocumentResponseDto = RevokeDocumentResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: true }),
+    __metadata("design:type", Boolean)
+], RevokeDocumentResponseDto.prototype, "success", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: EXAMPLE_HASH }),
+    __metadata("design:type", String)
+], RevokeDocumentResponseDto.prototype, "documentHash", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Revocation transaction hash.', example: EXAMPLE_TX }),
+    __metadata("design:type", String)
+], RevokeDocumentResponseDto.prototype, "txHash", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' }),
+    __metadata("design:type", String)
+], RevokeDocumentResponseDto.prototype, "revokedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Document revoked' }),
+    __metadata("design:type", String)
+], RevokeDocumentResponseDto.prototype, "message", void 0);
 class BatchDocumentDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { documentHash: { required: true, type: () => String, pattern: "HASH_REGEX" }, recipientEmail: { required: false, type: () => String }, recipientName: { required: false, type: () => String } };

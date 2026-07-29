@@ -376,6 +376,57 @@ export class AdminService {
     return { issuer: { ...issuer, metadataUri: issuer.metadataUri } }
   }
 
+  // --- Documents ---
+
+  async getDocuments(params: {
+    status?: string
+    search?: string
+    cursor?: string
+    limit?: number
+  }) {
+    const limit = Math.min(params.limit ?? 20, 100)
+    const where: Record<string, unknown> = {}
+
+    if (params.status === 'ACTIVE') {
+      where.revokedAt = null
+    } else if (params.status === 'REVOKED') {
+      where.revokedAt = { not: null }
+    }
+
+    if (params.search) {
+      where.OR = [
+        { recipientName: { contains: params.search, mode: 'insensitive' } },
+        { recipientEmail: { contains: params.search, mode: 'insensitive' } },
+        { documentType: { contains: params.search, mode: 'insensitive' } },
+        { docHash: { contains: params.search, mode: 'insensitive' } },
+        { issuerName: { contains: params.search, mode: 'insensitive' } },
+        { issuerAddress: { contains: params.search, mode: 'insensitive' } },
+      ]
+    }
+
+    const cursorObj = params.cursor ? { docHash: params.cursor } : undefined
+
+    const docs = await this.prisma.anchoredDocument.findMany({
+      where,
+      orderBy: { anchoredAt: 'desc' },
+      take: limit + 1,
+      ...(cursorObj ? { skip: 1, cursor: cursorObj } : {}),
+    })
+
+    const hasMore = docs.length > limit
+    if (hasMore) docs.pop()
+
+    const documents = docs.map((doc) => ({
+      ...doc,
+      status: doc.revokedAt ? 'revoked' : 'active',
+    }))
+
+    return {
+      documents,
+      nextCursor: hasMore ? documents[documents.length - 1]?.docHash ?? null : null,
+    }
+  }
+
   // --- Audit log ---
 
   async getAuditLog(params: {

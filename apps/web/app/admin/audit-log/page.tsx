@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChainBanner } from '@/components/admin/chain-banner'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
 import { useAuditLog } from '@/queries/admin'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
@@ -19,15 +17,23 @@ const ACTION_FILTERS = [
   { value: 'ISSUER_REACTIVATED', label: 'Reactivated' },
   { value: 'ISSUER_METADATA_SET', label: 'Metadata Set' },
   { value: 'DOCUMENT_ANCHORED', label: 'Anchored' },
+  { value: 'DOCUMENT_ANCHOR_FAILED', label: 'Anchor Failed' },
+  { value: 'DOCUMENT_REVOKED', label: 'Revoked' },
+  { value: 'BATCH_ANCHORED', label: 'Batch' },
   { value: 'IPFS_PIN_FAILED', label: 'IPFS Failed' },
+  { value: 'IPFS_PIN_RETRIED', label: 'IPFS Retried' },
 ] as const
 
 const ACTION_DOT: Record<string, string> = {
   ISSUER_APPROVED: 'bg-success',
   ISSUER_REACTIVATED: 'bg-success',
   DOCUMENT_ANCHORED: 'bg-success',
+  BATCH_ANCHORED: 'bg-success',
+  IPFS_PIN_RETRIED: 'bg-success',
   ISSUER_REJECTED: 'bg-destructive',
   ISSUER_SUSPENDED: 'bg-destructive',
+  DOCUMENT_REVOKED: 'bg-destructive',
+  DOCUMENT_ANCHOR_FAILED: 'bg-destructive',
   IPFS_PIN_FAILED: 'bg-destructive',
 }
 
@@ -52,8 +58,6 @@ export default function AuditLogPage() {
 
   return (
     <div>
-      <ChainBanner />
-
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {ACTION_FILTERS.map((action) => (

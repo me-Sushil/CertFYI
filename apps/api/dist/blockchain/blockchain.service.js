@@ -225,6 +225,44 @@ let BlockchainService = BlockchainService_1 = class BlockchainService {
             status: 400,
         };
     }
+    async verifyDocumentRevoke(documentHash, txHash, revokerAddress) {
+        let receipt;
+        try {
+            receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
+        }
+        catch {
+            return { ok: false, error: 'Transaction not found', status: 400 };
+        }
+        if (receipt.status !== 'success') {
+            return { ok: false, error: 'On-chain transaction did not succeed', status: 400 };
+        }
+        if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
+            return { ok: false, error: 'Transaction does not target the document contract', status: 400 };
+        }
+        if (receipt.from.toLowerCase() !== revokerAddress.toLowerCase()) {
+            return {
+                ok: false,
+                error: 'Transaction was sent by a different wallet than the current session.',
+                status: 403,
+            };
+        }
+        const events = (0, viem_1.parseEventLogs)({ abi: DOCUMENT_EVENTS, logs: receipt.logs });
+        const matched = events.some((event) => event.eventName === 'DocumentRevoked' &&
+            event.args.documentHash.toLowerCase() === documentHash.toLowerCase());
+        if (matched) {
+            return { ok: true };
+        }
+        const onChain = await this.getOnChainDocument(documentHash);
+        if (onChain?.revoked) {
+            return { ok: true };
+        }
+        return {
+            ok: false,
+            error: 'Transaction did not emit DocumentRevoked for this hash, and the hash is not ' +
+                'revoked on-chain.',
+            status: 400,
+        };
+    }
     async getOnChainDocument(documentHash) {
         const [issuer, timestamp, revoked, documentType] = await this.publicClient.readContract({
             address: this.contractAddress,

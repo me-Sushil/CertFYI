@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { documentsApi, pdfApi } from '@/lib/api'
 import { keys } from './keys'
 
@@ -16,6 +16,18 @@ export function useDocumentAnchorQuery(hash: string, enabled: boolean) {
 export function useAnchorDocumentMutation() {
   return useMutation({
     mutationFn: documentsApi.anchor,
+  })
+}
+
+export function useRevokeDocumentMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: documentsApi.revoke,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.issuer.documents.all })
+      queryClient.invalidateQueries({ queryKey: keys.issuer.activity.all })
+      queryClient.invalidateQueries({ queryKey: keys.issuer.stats.all })
+    },
   })
 }
 

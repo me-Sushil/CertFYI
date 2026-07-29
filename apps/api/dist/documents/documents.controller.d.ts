@@ -1,5 +1,5 @@
 import { DocumentsService } from './documents.service';
-import { AnchorDto, BatchAnchorDto, VerifyDocumentDto } from '../common/dto/documents.dto';
+import { AnchorDto, BatchAnchorDto, RevokeDocumentDto, VerifyDocumentDto } from '../common/dto/documents.dto';
 import type { SessionPayload } from '../common/constants/roles.constant';
 export declare class DocumentsController {
     private readonly documentsService;
@@ -12,6 +12,13 @@ export declare class DocumentsController {
         metadataCid: string | null;
         timestamp: string;
         status: string;
+        message: string;
+    }>;
+    revoke(user: SessionPayload, body: RevokeDocumentDto): Promise<{
+        success: boolean;
+        documentHash: string;
+        txHash: string;
+        revokedAt: string;
         message: string;
     }>;
     getAnchor(hash?: string): Promise<{

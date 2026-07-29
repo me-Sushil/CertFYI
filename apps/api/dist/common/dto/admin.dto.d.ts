@@ -89,6 +89,31 @@ export declare class AdminStatsResponseDto {
     documentsAnchored: number;
     suspendedIssuers: number;
 }
+export declare const DOCUMENT_STATUS_FILTERS: readonly ["ALL", "ACTIVE", "REVOKED"];
+export declare class AdminDocumentsQueryDto {
+    status?: string;
+    search?: string;
+    cursor?: string;
+    limit?: string;
+}
+export declare class AdminDocumentEntityDto {
+    docHash: string;
+    issuerAddress: string;
+    issuerName: string | null;
+    documentType: string | null;
+    recipientName: string | null;
+    recipientEmail: string | null;
+    cid: string | null;
+    txHash: string;
+    anchoredAt: Date;
+    revokedAt: Date | null;
+    revokeTxHash: string | null;
+    status: string;
+}
+export declare class AdminDocumentsListResponseDto {
+    documents: AdminDocumentEntityDto[];
+    nextCursor: string | null;
+}
 export declare class AuditLogEntryDto {
     id: string;
     action: string;

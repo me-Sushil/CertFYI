@@ -94,6 +94,47 @@ let DocumentsService = class DocumentsService {
             message: 'Document successfully anchored on the blockchain',
         };
     }
+    async revoke(body, issuerAddress) {
+        const record = await this.prisma.anchoredDocument.findUnique({
+            where: { docHash: body.documentHash },
+        });
+        if (!record) {
+            throw new common_1.NotFoundException({ error: 'Document not found', hash: body.documentHash });
+        }
+        if (record.issuerAddress !== issuerAddress) {
+            throw new common_1.ForbiddenException('This document was not issued by the current session');
+        }
+        if (record.revokedAt) {
+            return {
+                success: true,
+                documentHash: record.docHash,
+                txHash: record.revokeTxHash ?? record.txHash,
+                revokedAt: record.revokedAt.toISOString(),
+                message: 'Document already revoked',
+            };
+        }
+        const verification = await this.blockchain.verifyDocumentRevoke(body.documentHash, body.txHash, issuerAddress);
+        if (!verification.ok) {
+            throw new common_1.BadRequestException(verification.error ?? 'Could not verify the revocation transaction');
+        }
+        const updated = await this.prisma.anchoredDocument.update({
+            where: { docHash: body.documentHash },
+            data: { revokedAt: new Date(), revokeTxHash: body.txHash },
+        });
+        await this.audit.record({
+            action: 'DOCUMENT_REVOKED',
+            actorAddress: issuerAddress,
+            targetRef: body.documentHash,
+            txHash: body.txHash,
+        });
+        return {
+            success: true,
+            documentHash: updated.docHash,
+            txHash: body.txHash,
+            revokedAt: updated.revokedAt.toISOString(),
+            message: 'Document revoked',
+        };
+    }
     async getAnchor(hash) {
         if (!hash) {
             throw new common_1.BadRequestException('Missing hash parameter');

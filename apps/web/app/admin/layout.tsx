@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { LayoutDashboard, Users, FileText, Loader2, ShieldAlert, Wallet, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, FileSpreadsheet, ScrollText, Loader2, ShieldAlert, Wallet, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggleInline } from '@/components/theme-toggle-inline'
 import { useSession } from '@/lib/auth-context'
@@ -14,8 +14,9 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/documents', label: 'Documents', icon: FileSpreadsheet },
   { href: '/admin/issuers', label: 'Issuers', icon: Users },
-  { href: '/admin/audit-log', label: 'Audit Log', icon: FileText },
+  { href: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
 ]
 
 function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
@@ -144,14 +145,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
                 {pathname === '/admin' ? (
                   <LayoutDashboard className="h-4 w-4 text-accent" aria-hidden />
+                ) : pathname === '/admin/documents' ? (
+                  <FileSpreadsheet className="h-4 w-4 text-accent" aria-hidden />
                 ) : pathname === '/admin/issuers' ? (
                   <Users className="h-4 w-4 text-accent" aria-hidden />
                 ) : (
-                  <FileText className="h-4 w-4 text-accent" aria-hidden />
+                  <ScrollText className="h-4 w-4 text-accent" aria-hidden />
                 )}
               </div>
               <h1 className="text-base font-extrabold text-foreground">
-                {pathname === '/admin' ? 'Dashboard' : pathname === '/admin/issuers' ? 'Issuer Management' : 'Audit Log'}
+                {pathname === '/admin' ? 'Dashboard' : pathname === '/admin/documents' ? 'All Documents' : pathname === '/admin/issuers' ? 'Issuer Management' : 'Audit Log'}
               </h1>
             </div>
             <div className="flex-1 lg:hidden" />

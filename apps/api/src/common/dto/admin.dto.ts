@@ -330,6 +330,91 @@ export class AdminStatsResponseDto {
   suspendedIssuers!: number
 }
 
+// --- Admin Documents DTOs ---
+
+export const DOCUMENT_STATUS_FILTERS = ['ALL', 'ACTIVE', 'REVOKED'] as const
+
+export class AdminDocumentsQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by document status. Defaults to `ALL`.',
+    enum: DOCUMENT_STATUS_FILTERS,
+    default: 'ALL',
+  })
+  @IsOptional()
+  @IsIn(DOCUMENT_STATUS_FILTERS as unknown as string[])
+  status?: string
+
+  @ApiPropertyOptional({
+    description: 'Search term matching recipient name, email, type, or doc hash.',
+    example: 'Stanford',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string
+
+  @ApiPropertyOptional({
+    description: 'Cursor for cursor-based pagination.',
+    example: '0xabc...',
+  })
+  @IsOptional()
+  @IsString()
+  cursor?: string
+
+  @ApiPropertyOptional({
+    description: 'Page size (max 100).',
+    example: 20,
+  })
+  @IsOptional()
+  @IsString()
+  limit?: string
+}
+
+export class AdminDocumentEntityDto {
+  @ApiProperty({ example: '0x' + 'ab'.repeat(32) })
+  docHash!: string
+
+  @ApiProperty({ example: '0x1234567890abcdef1234567890abcdef12345678' })
+  issuerAddress!: string
+
+  @ApiProperty({ nullable: true, type: String, example: 'Example University' })
+  issuerName!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'DEGREE' })
+  documentType!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'Ada Lovelace' })
+  recipientName!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'ada@university.edu' })
+  recipientEmail!: string | null
+
+  @ApiProperty({ nullable: true, type: String, example: 'ipfs://...' })
+  cid!: string | null
+
+  @ApiProperty({ example: '0x' + 'ab'.repeat(32) })
+  txHash!: string
+
+  @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
+  anchoredAt!: Date
+
+  @ApiProperty({ format: 'date-time', nullable: true, type: String, example: null })
+  revokedAt!: Date | null
+
+  @ApiProperty({ nullable: true, type: String, example: null })
+  revokeTxHash!: string | null
+
+  @ApiProperty({ example: 'active' })
+  status!: string
+}
+
+export class AdminDocumentsListResponseDto {
+  @ApiProperty({ type: [AdminDocumentEntityDto] })
+  documents!: AdminDocumentEntityDto[]
+
+  @ApiProperty({ nullable: true, type: String, example: '0xnext...' })
+  nextCursor!: string | null
+}
+
 // --- Audit Log DTOs ---
 
 export class AuditLogEntryDto {

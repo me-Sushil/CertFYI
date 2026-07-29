@@ -114,7 +114,7 @@ __decorate([
 ], IssuerStatsResponseDto.prototype, "recentActivityCount", void 0);
 class IssuerDocumentDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => Object } };
+        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, revokeTxHash: { required: false, type: () => String }, status: { required: true, type: () => Object } };
     }
 }
 exports.IssuerDocumentDto = IssuerDocumentDto;
@@ -146,6 +146,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: null, nullable: true }),
     __metadata("design:type", Object)
 ], IssuerDocumentDto.prototype, "revokedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' }),
+    __metadata("design:type", String)
+], IssuerDocumentDto.prototype, "revokeTxHash", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: ['active', 'revoked'], example: 'active' }),
     __metadata("design:type", String)

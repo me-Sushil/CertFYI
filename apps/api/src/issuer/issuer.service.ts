@@ -106,6 +106,7 @@ export class IssuerService {
       metadataCid: d.metadataCid,
       anchoredAt: d.anchoredAt.toISOString(),
       revokedAt: d.revokedAt?.toISOString() ?? null,
+      revokeTxHash: d.revokeTxHash ?? undefined,
       status: d.revokedAt ? 'revoked' as const : 'active' as const,
     }))
 

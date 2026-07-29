@@ -318,6 +318,66 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  /**
+   * Verifies that `txHash` really revoked `documentHash`, sent by `revokerAddress`.
+   *
+   * The contract allows the document's own issuer *or* an ADMIN_ROLE holder to
+   * revoke - this only confirms the transaction itself; the caller decides
+   * whether `revokerAddress` was entitled to send it (e.g. "is this the
+   * document's issuer").
+   */
+  async verifyDocumentRevoke(
+    documentHash: Hex,
+    txHash: Hex,
+    revokerAddress: string,
+  ): Promise<RoleGrantVerification> {
+    let receipt
+    try {
+      receipt = await this.publicClient.getTransactionReceipt({ hash: txHash })
+    } catch {
+      return { ok: false, error: 'Transaction not found', status: 400 }
+    }
+
+    if (receipt.status !== 'success') {
+      return { ok: false, error: 'On-chain transaction did not succeed', status: 400 }
+    }
+
+    if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
+      return { ok: false, error: 'Transaction does not target the document contract', status: 400 }
+    }
+
+    if (receipt.from.toLowerCase() !== revokerAddress.toLowerCase()) {
+      return {
+        ok: false,
+        error: 'Transaction was sent by a different wallet than the current session.',
+        status: 403,
+      }
+    }
+
+    const events = parseEventLogs({ abi: DOCUMENT_EVENTS, logs: receipt.logs })
+    const matched = events.some(
+      (event) =>
+        event.eventName === 'DocumentRevoked' &&
+        event.args.documentHash.toLowerCase() === documentHash.toLowerCase(),
+    )
+
+    if (matched) {
+      return { ok: true }
+    }
+
+    const onChain = await this.getOnChainDocument(documentHash)
+    if (onChain?.revoked) {
+      return { ok: true }
+    }
+
+    return {
+      ok: false,
+      error: 'Transaction did not emit DocumentRevoked for this hash, and the hash is not ' +
+        'revoked on-chain.',
+      status: 400,
+    }
+  }
+
   /** Reads a document's current on-chain state directly from the contract. */
   async getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null> {
     const [issuer, timestamp, revoked, documentType] = await this.publicClient.readContract({

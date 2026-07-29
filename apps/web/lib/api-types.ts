@@ -83,6 +83,7 @@ export interface IssuerDocumentRow {
   metadataCid?: string | null
   anchoredAt: string
   revokedAt: string | null
+  revokeTxHash?: string
   status: 'active' | 'revoked'
 }
 
@@ -148,6 +149,20 @@ export interface AnchorDocumentResponse {
   metadataCid: string | null
   timestamp: string
   status: string
+  message: string
+}
+
+export interface RevokeDocumentRequest {
+  documentHash: string
+  /** Hash of the confirmed `revokeDocument` tx, signed by the issuer's own wallet. */
+  txHash: string
+}
+
+export interface RevokeDocumentResponse {
+  success: boolean
+  documentHash: string
+  txHash: string
+  revokedAt: string
   message: string
 }
 
@@ -276,6 +291,39 @@ export interface SuspendIssuerRequest {
 export interface ReactivateIssuerRequest {
   walletAddress: string
   txHash: string
+}
+
+export interface UploadIssuerMetadataResponse {
+  metadataUri: string
+  cid: string
+}
+
+export interface SetIssuerMetadataRequest {
+  txHash: string
+}
+
+export interface SetIssuerMetadataResponse {
+  issuer: IssuerRow
+}
+
+export interface AdminDocumentRow {
+  docHash: string
+  issuerAddress: string
+  issuerName: string | null
+  documentType: string | null
+  recipientName: string | null
+  recipientEmail: string | null
+  cid: string | null
+  txHash: string
+  anchoredAt: string
+  revokedAt: string | null
+  revokeTxHash: string | null
+  status: 'active' | 'revoked'
+}
+
+export interface AdminDocumentsResponse {
+  documents: AdminDocumentRow[]
+  nextCursor: string | null
 }
 
 export interface AuditLogEntry {

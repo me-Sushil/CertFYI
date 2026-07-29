@@ -48,6 +48,14 @@ let AdminController = class AdminController {
             limit: query.limit ? parseInt(query.limit, 10) : undefined,
         });
     }
+    getDocuments(query) {
+        return this.adminService.getDocuments({
+            status: query.status,
+            search: query.search,
+            cursor: query.cursor,
+            limit: query.limit ? parseInt(query.limit, 10) : undefined,
+        });
+    }
     getIssuer(address) {
         return this.adminService.getIssuerDetail(address);
     }
@@ -161,6 +169,19 @@ __decorate([
     __metadata("design:paramtypes", [admin_dto_1.IssuersQueryDto]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getIssuers", null);
+__decorate([
+    (0, common_1.Get)('documents'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'List all anchored documents',
+        description: 'Paginated, filterable by status and search term. Results newest-first.',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Document list.', type: admin_dto_1.AdminDocumentsListResponseDto }),
+    openapi.ApiResponse({ status: 200 }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [admin_dto_1.AdminDocumentsQueryDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getDocuments", null);
 __decorate([
     (0, common_1.Get)('issuers/:address'),
     (0, swagger_1.ApiOperation)({

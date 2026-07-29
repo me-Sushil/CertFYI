@@ -97,6 +97,7 @@ model AnchoredDocument {
   txHash          String    @map("tx_hash")
   anchoredAt      DateTime  @default(now()) @map("anchored_at")
   revokedAt       DateTime? @map("revoked_at")
+  revokeTxHash    String?   @map("revoke_tx_hash")
 
   @@index([issuerAddress])
   @@map("anchored_documents")

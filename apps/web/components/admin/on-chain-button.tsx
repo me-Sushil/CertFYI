@@ -20,6 +20,13 @@ interface OnChainButtonProps {
   disabled?: boolean
   className?: string
   onLoadingChange?: (loading: boolean) => void
+  /**
+   * Fixed gas limit, bypassing wallet auto-estimation. Some wallets have
+   * returned wildly wrong estimates (e.g. 21,000,000 for a simple SSTORE)
+   * that exceed the RPC provider's hard cap - pass this for any call where
+   * that's been observed rather than trusting the wallet.
+   */
+  gas?: bigint
 }
 
 export function OnChainButton({
@@ -33,6 +40,7 @@ export function OnChainButton({
   disabled,
   className,
   onLoadingChange,
+  gas,
 }: OnChainButtonProps) {
   const { isCorrectChain, switchToCorrectChain } = useRequiredChain()
   const { writeContract, data: txHash, isPending, error } = useWriteContract()
@@ -75,6 +83,7 @@ export function OnChainButton({
       abi: CONTRACT_ABI as unknown as Abi,
       functionName,
       args,
+      ...(gas !== undefined ? { gas } : {}),
     })
   }
 

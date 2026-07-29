@@ -1,5 +1,6 @@
 import type {
   AccessRequestStatus,
+  AdminDocumentsResponse,
   AdminRequestsResponse,
   AdminStatsResponse,
   AnchorDocumentRequest,
@@ -26,8 +27,13 @@ import type {
   PdfUploadResponse,
   ReactivateIssuerRequest,
   RejectUserRequest,
+  RevokeDocumentRequest,
+  RevokeDocumentResponse,
   SessionResponse,
+  SetIssuerMetadataRequest,
+  SetIssuerMetadataResponse,
   SuspendIssuerRequest,
+  UploadIssuerMetadataResponse,
   VerifyDocumentRequest,
   VerifyDocumentResponse,
   VerifyRequest,
@@ -114,6 +120,24 @@ export const adminApi = {
     request('/admin/suspend-issuer', { method: 'POST', body: JSON.stringify(body) }),
   reactivateIssuer: (body: ReactivateIssuerRequest) =>
     request('/admin/reactivate-issuer', { method: 'POST', body: JSON.stringify(body) }),
+  uploadIssuerMetadata: (address: string) =>
+    request<UploadIssuerMetadataResponse>(`/admin/issuers/${encodeURIComponent(address)}/metadata-upload`, {
+      method: 'POST',
+    }),
+  setIssuerMetadata: (address: string, body: SetIssuerMetadataRequest) =>
+    request<SetIssuerMetadataResponse>(`/admin/issuers/${encodeURIComponent(address)}/metadata`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getDocuments: (params?: { status?: string; search?: string; cursor?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.cursor) searchParams.set('cursor', params.cursor)
+    if (params?.limit) searchParams.set('limit', String(params.limit))
+    const qs = searchParams.toString()
+    return request<AdminDocumentsResponse>(`/admin/documents${qs ? `?${qs}` : ''}`)
+  },
   getAuditLog: (params?: { action?: string; actor?: string; from?: string; to?: string; cursor?: string; limit?: number }) => {
     const searchParams = new URLSearchParams()
     if (params?.action) searchParams.set('action', params.action)
@@ -166,6 +190,8 @@ export const issuerApi = {
 export const documentsApi = {
   anchor: (body: AnchorDocumentRequest) =>
     request<AnchorDocumentResponse>('/documents/anchor', { method: 'POST', body: JSON.stringify(body) }),
+  revoke: (body: RevokeDocumentRequest) =>
+    request<RevokeDocumentResponse>('/documents/revoke', { method: 'POST', body: JSON.stringify(body) }),
   getAnchor: (hash: string) => request(`/documents/anchor?hash=${encodeURIComponent(hash)}`),
   anchorBatch: (body: BatchAnchorRequest) =>
     request('/documents/anchor-batch', { method: 'POST', body: JSON.stringify(body) }),
