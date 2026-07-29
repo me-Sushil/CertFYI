@@ -1,31 +1,34 @@
-import Link from 'next/link'
-import { HeaderWrapper } from '@/components/header-wrapper'
-import { Features } from '@/components/features'
-import { Check, ArrowRight, FileCheck, Zap, Shield } from 'lucide-react'
+import Link from "next/link";
+import { HeaderWrapper } from "@/components/header-wrapper";
+import { Features } from "@/components/features";
+import { Check, ArrowRight, FileCheck, Zap, Shield } from "lucide-react";
 
 const STEPS = [
   {
-    step: '01',
-    title: 'Upload Your PDF',
-    description: 'Drag and drop any PDF file into the verification portal. It takes just seconds.',
+    step: "01",
+    title: "Upload Your PDF",
+    description:
+      "Drag and drop any PDF file into the verification portal. It takes just seconds.",
   },
   {
-    step: '02',
-    title: 'Instant Verification',
-    description: 'Our system calculates the document hash and checks it against the blockchain in real-time.',
+    step: "02",
+    title: "Instant Verification",
+    description:
+      "Our system calculates the document hash and checks it against the blockchain in real-time.",
   },
   {
-    step: '03',
-    title: 'View Results',
-    description: 'See the issuer identity, issuance date, and proof on the blockchain explorer.',
+    step: "03",
+    title: "View Results",
+    description:
+      "See the issuer identity, issuance date, and proof on the blockchain explorer.",
   },
-]
+];
 
 const heroCta =
-  'inline-flex items-center gap-3 rounded-full bg-card px-[38px] py-[22px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0'
+  "inline-flex items-center gap-3 rounded-full bg-card px-[38px] py-[22px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0";
 
 const heroCtaSecondary =
-  'inline-flex items-center gap-3 rounded-full border border-border/15 px-[38px] py-[22px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0'
+  "inline-flex items-center gap-3 rounded-full border border-border/15 px-[38px] py-[22px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0";
 
 export default function HomePage() {
   return (
@@ -37,17 +40,25 @@ export default function HomePage() {
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
             className="absolute -top-1/2 -right-1/4 h-[800px] w-[800px] rounded-full opacity-[0.08]"
-            style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
+            style={{
+              background:
+                "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+            }}
           />
           <div
             className="absolute -bottom-1/2 -left-1/4 h-[600px] w-[600px] rounded-full opacity-[0.05]"
-            style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
+            style={{
+              background:
+                "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+            }}
           />
         </div>
 
         <div className="relative z-10 mx-auto max-w-5xl text-center">
           <div className="stagger-1 mb-8 inline-flex animate-fade-in-up items-center gap-2 rounded-full bg-card px-3 py-1.5 opacity-0 shadow-soft">
-            <span className="text-[15px] font-semibold leading-[19.5px] text-foreground">v2.0.1</span>
+            <span className="text-[15px] font-semibold leading-[19.5px] text-foreground">
+              v2.0.1
+            </span>
             <span className="flex items-center gap-1 text-[15px] font-semibold leading-[19.5px] text-accent">
               See what&apos;s new
               <ArrowRight className="h-3.5 w-3.5" />
@@ -55,17 +66,17 @@ export default function HomePage() {
           </div>
 
           <h1 className="stagger-2 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
-            The productivity app{' '}
+            The productivity app{" "}
             <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
               you&apos;ll actually
-            </span>{' '}
+            </span>{" "}
             enjoy using
           </h1>
 
           <p className="stagger-3 mx-auto mb-12 max-w-2xl animate-fade-in-up text-base leading-relaxed text-muted-foreground opacity-0 sm:text-lg">
-            CertFyi anchors PDF document fingerprints on the blockchain, enabling anyone to verify
-            document authenticity, issuer identity, and issuance timestamp without a central
-            authority.
+            CertFyi anchors PDF document fingerprints on the blockchain,
+            enabling anyone to verify document authenticity, issuer identity,
+            and issuance timestamp without a central authority.
           </p>
 
           <div className="stagger-4 mb-20 flex animate-fade-in-up flex-col justify-center gap-4 opacity-0 sm:flex-row">
@@ -80,7 +91,11 @@ export default function HomePage() {
           </div>
 
           <div className="stagger-5 mx-auto grid max-w-2xl animate-fade-in-up grid-cols-1 gap-6 opacity-0 sm:grid-cols-3">
-            {['Decentralized & Trustless', 'Instant Verification', 'Zero Hidden Fees'].map((text) => (
+            {[
+              "Decentralized & Trustless",
+              "Instant Verification",
+              "Zero Hidden Fees",
+            ].map((text) => (
               <div
                 key={text}
                 className="flex items-center justify-center gap-2.5 text-lg text-muted-foreground"
@@ -96,11 +111,17 @@ export default function HomePage() {
       <Features />
 
       {/* How it works */}
-      <section id="how-it-works" className="relative px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
+      <section
+        id="how-it-works"
+        className="relative px-6 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
             className="absolute top-1/2 left-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.03]"
-            style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
+            style={{
+              background:
+                "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+            }}
           />
         </div>
 
@@ -116,7 +137,10 @@ export default function HomePage() {
 
           <div className="space-y-10">
             {STEPS.map((item) => (
-              <div key={item.step} className="group flex items-start gap-6 sm:gap-10">
+              <div
+                key={item.step}
+                className="group flex items-start gap-6 sm:gap-10"
+              >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-card text-base font-extrabold text-accent shadow-soft transition-all duration-300 ease-[var(--ease-premium)] group-hover:-translate-y-0.5 group-hover:shadow-button sm:h-14 sm:w-14 sm:text-lg">
                   {item.step}
                 </div>
@@ -138,16 +162,20 @@ export default function HomePage() {
       <section className="px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-3xl leading-tight font-extrabold tracking-[-1px] text-foreground sm:text-4xl md:text-5xl lg:text-[60px] lg:leading-[1.12]">
-            Ready to{' '}
+            Ready to{" "}
             <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
               Verify
             </span>
             ?
           </h2>
           <p className="mb-10 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Start verifying documents instantly with CertFyi. No signup required.
+            Start verifying documents instantly with CertFyi. No signup
+            required.
           </p>
-          <Link href="/verify" className={`${heroCta} w-full justify-center sm:w-auto`}>
+          <Link
+            href="/verify"
+            className={`${heroCta} w-full justify-center sm:w-auto`}
+          >
             <Zap className="h-5 w-5" />
             Verify Your First PDF
           </Link>
@@ -158,16 +186,19 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-card shadow-button">
-                <Shield className="h-5 w-5 text-foreground" aria-hidden />
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/certFYI-logo.png"
+                  alt="CertFyi Logo"
+                  className="h-10 w-auto"
+                />
               </div>
-              <span className="text-lg font-bold text-foreground">CertFyi</span>
             </div>
             <p className="text-center text-sm font-semibold text-muted-foreground">
               &copy; 2026 CertFyi. Blockchain-powered PDF verification platform.
             </p>
             <div className="flex gap-8 text-sm">
-              {['Privacy', 'Terms', 'Docs'].map((item) => (
+              {["Privacy", "Terms", "Docs"].map((item) => (
                 <Link
                   key={item}
                   href="#"
@@ -181,5 +212,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
