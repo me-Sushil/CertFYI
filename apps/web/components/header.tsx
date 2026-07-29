@@ -11,7 +11,7 @@ import { useSession } from '@/lib/auth-context'
 function roleDestination(role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED' | null) {
   if (role === 'ADMIN') return { href: '/admin', label: 'Admin Dashboard', short: 'Admin' }
   if (role === 'ISSUER') return { href: '/issuer', label: 'Issuer Dashboard', short: 'Issuer' }
-  return { href: '/request-access', label: 'Request Access', short: 'Access' }
+  return { href: '/request-access', label: 'Issue Certificate', short: 'Access' }
 }
 
 export function Header() {
