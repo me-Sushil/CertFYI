@@ -69,11 +69,11 @@ export default function IssuerManagementPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+            <div key={i} className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
           ))}
         </div>
       ) : issuers.length === 0 ? (
-        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+        <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
           <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-sm font-semibold text-muted-foreground">
             {searchTerm ? 'No issuers match your search' : 'No issuers found'}
@@ -81,8 +81,9 @@ export default function IssuerManagementPage() {
         </div>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
-            <table className="w-full">
+          <div className="hidden overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5 sm:block">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-border/10">
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Organization</th>
@@ -106,13 +107,14 @@ export default function IssuerManagementPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="space-y-3 sm:hidden">
             {issuers.map((issuer) => {
               const isOpen = expandedRow === issuer.walletAddress
               return (
-                <div key={issuer.walletAddress} className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
+                <div key={issuer.walletAddress} className="rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
                   <button
                     onClick={() => setExpandedRow(isOpen ? null : issuer.walletAddress)}
                     className="flex w-full items-center justify-between p-4 text-left"
@@ -311,10 +313,9 @@ function SuspendConfirmDialog({ issuer, onClose }: { issuer: IssuerRow | null; o
         <AlertDialogHeader>
           <AlertDialogTitle>Suspend Issuer</AlertDialogTitle>
           <AlertDialogDescription>
-            This will revoke <strong>{issuer.organization || issuer.name || 'this issuer'}</strong>&apos;s
-            ISSUER_ROLE on-chain ({formatAddress(issuer.walletAddress)}). They have{' '}
-            <strong>{issuer.documentCount}</strong> documents anchored, which remain valid after
-            suspension.
+            This removes issuing rights on-chain for{' '}
+            <strong>{issuer.organization || issuer.name || 'this issuer'}</strong> ({formatAddress(issuer.walletAddress)}).
+            Their <strong>{issuer.documentCount}</strong> already anchored documents stay valid.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

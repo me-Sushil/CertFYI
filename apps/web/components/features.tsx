@@ -80,13 +80,13 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   return (
     <div
       ref={ref}
-      className={`group relative rounded-[20px] bg-card p-[var(--spacing-lg-3)] shadow-card transition-all duration-700 ease-[var(--ease-premium)] hover:-translate-y-1 hover:shadow-button sm:p-8 ${
+      className={`group relative rounded-lg bg-card p-[var(--spacing-lg-3)] shadow-card transition-all duration-700 ease-[var(--ease-premium)] hover:-translate-y-1 hover:shadow-button sm:p-8 ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
       }`}
       style={{ transitionDelay: `${index * 100}ms` }}
     >
       <div
-        className="pointer-events-none absolute inset-0 rounded-[20px] opacity-0 transition-opacity duration-500 ease-[var(--ease-premium)] group-hover:opacity-100"
+        className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-500 ease-[var(--ease-premium)] group-hover:opacity-100"
         style={{
           background: `linear-gradient(135deg, color-mix(in srgb, var(${feature.color}) 12%, transparent), transparent)`,
         }}

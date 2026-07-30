@@ -26,10 +26,10 @@ const STEPS = [
 ];
 
 const heroCta =
-  "inline-flex items-center gap-3 rounded-full bg-card px-[28px] py-[16px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0";
+  "inline-flex items-center gap-3 rounded-lg bg-card px-[28px] py-[16px] text-lg font-semibold text-foreground shadow-button transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0";
 
 const heroCtaSecondary =
-  "inline-flex items-center gap-3 rounded-full border border-border/15 px-[28px] py-[16px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0";
+  "inline-flex items-center gap-3 rounded-lg border border-border/15 px-[28px] py-[16px] text-lg font-semibold text-foreground transition-all duration-300 ease-[var(--ease-premium)] hover:bg-muted/50 hover:-translate-y-0.5 active:translate-y-0";
 
 export default function HomePage() {
   return (

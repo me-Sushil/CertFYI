@@ -113,7 +113,7 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
         aria-label="Document actions"
       >
         <MoreVertical className="h-4 w-4" aria-hidden />
@@ -164,7 +164,7 @@ function DocumentMobileCard({
   return (
     <div
       className={cn(
-        'rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200',
+        'rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-200',
         nested && 'bg-muted/10 shadow-none ring-border/10',
       )}
     >
@@ -190,7 +190,7 @@ function DocumentMobileCard({
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <p className="font-semibold text-muted-foreground mb-0.5">Type</p>
-              <p className="text-foreground">{doc.documentType || '—'}</p>
+              <p className="text-foreground">{doc.documentType || '-'}</p>
             </div>
             <div>
               <p className="font-semibold text-muted-foreground mb-0.5">Issued</p>
@@ -361,13 +361,13 @@ export default function IssuanceHistoryPage() {
               {docsLoading && (
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+                    <div key={i} className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
                   ))}
                 </div>
               )}
 
               {!docsLoading && documents.length === 0 && (
-                <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+                <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
                   <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
                   <p className="text-sm font-semibold text-muted-foreground">
                     {debouncedSearch || statusFilter !== 'all' ? 'No documents match your search' : 'No documents issued yet'}
@@ -383,8 +383,9 @@ export default function IssuanceHistoryPage() {
               {!docsLoading && documents.length > 0 && (
                 <>
                   {/* Desktop table */}
-                  <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
-                    <table className="w-full table-fixed">
+                  <div className="hidden overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5 sm:block">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] table-fixed">
                       <thead>
                         <tr className="border-b border-border/10">
                           <th className="w-[32%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Recipient</th>
@@ -404,12 +405,12 @@ export default function IssuanceHistoryPage() {
                                 className="group border-b border-border/5 transition-colors last:border-b-0 hover:bg-muted/20"
                               >
                                 <td className="px-6 py-4">
-                                  <p className="truncate font-semibold text-foreground">{doc.recipientName || '—'}</p>
+                                  <p className="truncate font-semibold text-foreground">{doc.recipientName || '-'}</p>
                                   {doc.recipientEmail && (
                                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{doc.recipientEmail}</p>
                                   )}
                                 </td>
-                                <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
+                                <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                                 <td className="px-6 py-4 text-sm text-muted-foreground">
                                   <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                                 </td>
@@ -425,8 +426,8 @@ export default function IssuanceHistoryPage() {
 
                           const isBatchOpen = expandedBatches.has(item.batchId)
                           const sharedType = item.docs.every((d) => d.documentType === item.docs[0].documentType)
-                            ? item.docs[0].documentType || '—'
-                            : '—'
+                            ? item.docs[0].documentType || '-'
+                            : '-'
                           const latestAnchoredAt = item.docs[0].anchoredAt
                           return (
                             <Fragment key={`batch-${item.batchId}`}>
@@ -467,12 +468,12 @@ export default function IssuanceHistoryPage() {
                                     className="group border-b border-border/5 bg-muted/10 transition-colors last:border-b-0 hover:bg-muted/20"
                                   >
                                     <td className="py-4 pl-12 pr-6">
-                                      <p className="truncate font-semibold text-foreground">{doc.recipientName || '—'}</p>
+                                      <p className="truncate font-semibold text-foreground">{doc.recipientName || '-'}</p>
                                       {doc.recipientEmail && (
                                         <p className="mt-0.5 truncate text-xs text-muted-foreground">{doc.recipientEmail}</p>
                                       )}
                                     </td>
-                                    <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
+                                    <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                                     <td className="px-6 py-4 text-sm text-muted-foreground">
                                       <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                                     </td>
@@ -489,6 +490,7 @@ export default function IssuanceHistoryPage() {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
 
                   {/* Mobile cards */}
@@ -508,7 +510,7 @@ export default function IssuanceHistoryPage() {
 
                       const isBatchOpen = expandedBatches.has(item.batchId)
                       return (
-                        <div key={`batch-${item.batchId}`} className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
+                        <div key={`batch-${item.batchId}`} className="rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
                           <button
                             onClick={() => toggleBatch(item.batchId)}
                             className="flex w-full items-center justify-between p-4 text-left"

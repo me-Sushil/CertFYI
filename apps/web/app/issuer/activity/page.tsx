@@ -153,13 +153,13 @@ export default function IssuerActivityPage() {
             {activityLoading && (
               <div className="space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+                  <div key={i} className="h-16 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
                 ))}
               </div>
             )}
 
             {!activityLoading && activityEntries.length === 0 && (
-              <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+              <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
                 <Wallet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
                 <p className="text-sm font-semibold text-muted-foreground">
                   {actionFilter !== 'ALL' ? 'No activity for this filter' : 'No activity yet'}
@@ -176,7 +176,7 @@ export default function IssuerActivityPage() {
                     return (
                       <div
                         key={`${entry.action}-${entry.createdAt}-${idx}`}
-                        className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button"
+                        className="rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button sm:p-6"
                       >
                         <div className="flex items-start gap-4">
                           <div className="mt-1.5 shrink-0">

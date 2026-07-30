@@ -18,7 +18,7 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon: Icon, tone = 'default', loading }: StatCardProps) {
   return (
-    <div className="group rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button">
+    <div className="group rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
       <div className="mb-5 flex items-start justify-between">
         <div className={cn('flex size-11 items-center justify-center rounded-xl', TONE_CLASSES[tone])}>
           <Icon className="h-5 w-5" aria-hidden />
@@ -28,7 +28,7 @@ export function StatCard({ label, value, icon: Icon, tone = 'default', loading }
       {loading ? (
         <Skeleton className="h-9 w-20" />
       ) : (
-        <p className="text-4xl font-extrabold tabular-nums text-foreground">{value ?? '—'}</p>
+        <p className="text-4xl font-extrabold tabular-nums text-foreground">{value ?? '-'}</p>
       )}
     </div>
   )

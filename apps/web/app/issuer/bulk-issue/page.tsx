@@ -502,14 +502,14 @@ export default function BulkIssuancePage() {
             </div>
 
             {!isConnected && (
-              <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+              <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
                 <Wallet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
                 <p className="text-sm font-semibold text-muted-foreground">Connect your wallet to issue documents in bulk</p>
               </div>
             )}
 
             {isConnected && !isCorrectChain && step !== 'success' && (
-              <div className="mb-6 flex items-center gap-3 rounded-[20px] border border-accent/20 bg-accent/5 p-4 shadow-card ring-1 ring-accent/5">
+              <div className="mb-6 flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 p-4 shadow-card ring-1 ring-accent/5">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-accent" aria-hidden />
                 <p className="flex-1 text-sm text-foreground">
                   Wrong network. Switch to <strong>{requiredChainName ?? 'the required chain'}</strong> to issue documents.
@@ -533,12 +533,12 @@ export default function BulkIssuancePage() {
                   </p>
                 </div>
 
-                <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+                <div className="rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                   <label className="mb-4 block text-sm font-extrabold text-foreground">Document Type</label>
                   <select
                     value={documentType}
                     onChange={(e) => setDocumentType(e.target.value)}
-                    className="h-12 w-full rounded-full border border-border/15 bg-background px-5 text-sm text-foreground outline-none transition-all duration-150 ease-[var(--ease-premium)] focus:border-primary focus:ring-3 focus:ring-primary/15"
+                    className="h-12 w-full rounded-lg border border-border/15 bg-background px-5 text-sm text-foreground outline-none transition-all duration-150 ease-[var(--ease-premium)] focus:border-primary focus:ring-3 focus:ring-primary/15"
                   >
                     <option>Certificate</option>
                     <option>Diploma</option>
@@ -548,7 +548,7 @@ export default function BulkIssuancePage() {
                   <p className="mt-2 text-xs text-muted-foreground">Applies to every document in this batch.</p>
                 </div>
 
-                <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+                <div className="rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                   <label className="mb-4 block text-sm font-extrabold text-foreground">PDF Documents</label>
                   <div
                     onClick={() => pdfInputRef.current?.click()}
@@ -649,7 +649,7 @@ export default function BulkIssuancePage() {
                   </p>
                 </div>
 
-                <div className="rounded-[20px] bg-accent/5 p-5 shadow-card ring-1 ring-border/5">
+                <div className="rounded-lg bg-accent/5 p-5 shadow-card ring-1 ring-border/5">
                   <p className="text-sm font-semibold text-accent">
                     Open the CSV, fill in a <strong>Name</strong> and <strong>Email</strong> for every row
                     (document type is already set for the whole batch), save it, then upload the completed
@@ -657,7 +657,7 @@ export default function BulkIssuancePage() {
                   </p>
                 </div>
 
-                <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+                <div className="rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                   <div className="mb-4 flex items-center justify-between">
                     <label className="block text-sm font-extrabold text-foreground">Upload Completed CSV</label>
                     <Button
@@ -730,7 +730,7 @@ export default function BulkIssuancePage() {
                   </p>
                 </div>
 
-                <div className="overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5">
+                <div className="overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5">
                   <div className="max-h-96 overflow-y-auto">
                     <table className="w-full table-fixed">
                       <thead className="sticky top-0 bg-card">
@@ -755,15 +755,15 @@ export default function BulkIssuancePage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 rounded-[20px] bg-accent/5 p-5 shadow-card ring-1 ring-border/5">
+                <div className="flex gap-3 rounded-lg bg-accent/5 p-5 shadow-card ring-1 ring-border/5">
                   <p className="text-sm font-semibold text-accent">
-                    This document will always be stored on IPFS in addition to being anchored on-chain under
-                    one Merkle root. This action cannot be undone.
+                    Every document is stored on IPFS and anchored on-chain together under one
+                    Merkle root. This action cannot be undone.
                   </p>
                 </div>
 
                 {(phase === 'error' || phase === 'reverted') && phaseError && (
-                  <div className="rounded-[20px] border border-destructive/20 bg-destructive/10 p-5">
+                  <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-5">
                     <p className="mb-1 text-sm font-semibold text-destructive">
                       {phase === 'reverted' ? 'Transaction reverted on-chain' : 'Something went wrong'}
                     </p>
@@ -812,7 +812,7 @@ export default function BulkIssuancePage() {
                     {result.documentCount} documents were anchored under one Merkle root in a single transaction.
                   </p>
                 </div>
-                <div className="mx-auto max-w-md space-y-4 rounded-[20px] bg-card p-6 text-left text-sm shadow-card ring-1 ring-border/5">
+                <div className="mx-auto max-w-md space-y-4 rounded-lg bg-card p-6 text-left text-sm shadow-card ring-1 ring-border/5">
                   <div>
                     <p className="mb-2 font-semibold text-muted-foreground">Batch ID</p>
                     <p className="font-mono text-xs break-all text-foreground">{result.batchId}</p>

@@ -20,7 +20,7 @@ import { formatAddress, formatRelativeTime } from '@/lib/format'
 
 function StatCard({ label, value, icon: IconComponent, tone }: { label: string; value: string | number; icon: typeof FileText; tone: 'accent' | 'success' | 'default' }) {
   return (
-    <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-6">
+    <div className="rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-6">
       <div className={cn(
         'mb-4 flex h-10 w-10 items-center justify-center rounded-xl',
         tone === 'accent' ? 'bg-accent/10' : tone === 'success' ? 'bg-success/10' : 'bg-muted',
@@ -39,7 +39,7 @@ function StatCard({ label, value, icon: IconComponent, tone }: { label: string; 
 function ActivityItem({ action, detail, createdAt, txHash }: { action: string; detail?: string; createdAt: string; txHash?: string }) {
   const IconComp = action === 'DOCUMENT_ANCHORED' || action === 'BATCH_ANCHORED' ? CheckCircle : Activity
   return (
-    <div className="flex items-start gap-3 rounded-[20px] bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button sm:gap-4 sm:p-5">
+    <div className="flex items-start gap-3 rounded-lg bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button sm:gap-4 sm:p-5">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10">
         <IconComp className="h-4 w-4 text-accent" aria-hidden />
       </div>
@@ -129,7 +129,7 @@ export default function IssuerDashboard() {
         <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-7xl animate-fade-in space-y-8 sm:space-y-10">
             {/* Welcome banner */}
-            <div className="rounded-[20px] bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-6 shadow-card ring-1 ring-accent/5 sm:p-8">
+            <div className="rounded-lg bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-6 shadow-card ring-1 ring-accent/5 sm:p-8">
               <h2 className="mb-2 text-2xl font-extrabold tracking-[-0.8px] text-foreground sm:text-[30px] sm:leading-[36px]">
                 Welcome back
               </h2>
@@ -196,18 +196,18 @@ export default function IssuerDashboard() {
                   </Link>
                 </div>
                 {!isConnected ? (
-                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                  <div className="rounded-lg bg-card p-8 text-center shadow-card ring-1 ring-border/5">
                     <Wallet className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
                     <p className="text-sm font-semibold text-muted-foreground">Connect wallet to see documents</p>
                   </div>
                 ) : docsLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-[72px] animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+                      <div key={i} className="h-[72px] animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
                     ))}
                   </div>
                 ) : documents.length === 0 ? (
-                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                  <div className="rounded-lg bg-card p-8 text-center shadow-card ring-1 ring-border/5">
                     <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
                     <p className="text-sm font-semibold text-muted-foreground">No documents issued yet</p>
                     <Link href="/issuer/issue" className="mt-3 inline-block text-sm font-semibold text-accent hover:opacity-80">
@@ -217,7 +217,7 @@ export default function IssuerDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {documents.slice(0, 5).map((doc) => (
-                      <div key={doc.docHash} className="flex items-center justify-between rounded-[20px] bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button">
+                      <div key={doc.docHash} className="flex items-center justify-between rounded-lg bg-card p-4 shadow-card ring-1 ring-border/5 transition-all duration-200 hover:shadow-button">
                         <div className="min-w-0 flex-1 pr-3">
                           <p className="truncate text-sm font-semibold text-foreground">
                             {doc.recipientName || doc.documentType || 'Document'}
@@ -239,7 +239,7 @@ export default function IssuerDashboard() {
                       </div>
                     ))}
                     {documents.length > 5 && (
-                      <Link href="/issuer/history" className="flex items-center justify-center gap-1 rounded-[20px] bg-card/50 py-3 text-sm font-semibold text-muted-foreground shadow-soft ring-1 ring-border/5 transition-all hover:bg-card hover:text-foreground hover:shadow-button">
+                      <Link href="/issuer/history" className="flex items-center justify-center gap-1 rounded-lg bg-card/50 py-3 text-sm font-semibold text-muted-foreground shadow-soft ring-1 ring-border/5 transition-all hover:bg-card hover:text-foreground hover:shadow-button">
                         View all {documents.length} documents <ChevronRight className="h-3.5 w-3.5" />
                       </Link>
                     )}
@@ -258,18 +258,18 @@ export default function IssuerDashboard() {
                   </Link>
                 </div>
                 {!isConnected ? (
-                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                  <div className="rounded-lg bg-card p-8 text-center shadow-card ring-1 ring-border/5">
                     <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
                     <p className="text-sm font-semibold text-muted-foreground">Connect wallet to see activity</p>
                   </div>
                 ) : activityLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-[72px] animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+                      <div key={i} className="h-[72px] animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
                     ))}
                   </div>
                 ) : activity.length === 0 ? (
-                  <div className="rounded-[20px] bg-card p-8 text-center shadow-card ring-1 ring-border/5">
+                  <div className="rounded-lg bg-card p-8 text-center shadow-card ring-1 ring-border/5">
                     <Activity className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" aria-hidden />
                     <p className="text-sm font-semibold text-muted-foreground">No activity yet</p>
                   </div>

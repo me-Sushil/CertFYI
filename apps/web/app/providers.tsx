@@ -145,8 +145,8 @@ function AuthedRainbowKit({ children }: { children: ReactNode }) {
     },
     radii: {
       ...lightTheme().radii,
-      modal: '20px',
-      modalMobile: '20px',
+      modal: '16px',
+      modalMobile: '16px',
       actionButton: '12px',
       connectButton: '12px',
       menuButton: '12px',

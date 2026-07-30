@@ -75,7 +75,7 @@ function DocumentMobileCard({
   return (
     <div
       className={cn(
-        'rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200',
+        'rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-200',
         nested && 'bg-muted/10 shadow-none ring-border/10',
       )}
     >
@@ -105,11 +105,11 @@ function DocumentMobileCard({
             </div>
             <div>
               <p className="font-semibold text-muted-foreground mb-0.5">Type</p>
-              <p className="text-foreground">{doc.documentType || '—'}</p>
+              <p className="text-foreground">{doc.documentType || '-'}</p>
             </div>
             <div>
               <p className="font-semibold text-muted-foreground mb-0.5">Recipient</p>
-              <p className="text-foreground">{doc.recipientName || '—'}</p>
+              <p className="text-foreground">{doc.recipientName || '-'}</p>
             </div>
             <div>
               <p className="font-semibold text-muted-foreground mb-0.5">Anchored</p>
@@ -191,13 +191,13 @@ export default function AdminDocumentsPage() {
       {docsLoading && (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+            <div key={i} className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
           ))}
         </div>
       )}
 
       {!docsLoading && documents.length === 0 && (
-        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+        <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
           <FileSpreadsheet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-sm font-semibold text-muted-foreground">
             {debouncedSearch || statusFilter !== 'ALL' ? 'No documents match your search' : 'No documents anchored yet'}
@@ -207,8 +207,9 @@ export default function AdminDocumentsPage() {
 
       {!docsLoading && documents.length > 0 && (
         <>
-          <div className="hidden overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5 sm:block">
-            <table className="w-full">
+          <div className="hidden overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5 sm:block">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-border/10">
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Issuer</th>
@@ -238,13 +239,13 @@ export default function AdminDocumentsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <p className="truncate text-sm font-semibold text-foreground">
-                            {doc.recipientName || '—'}
+                            {doc.recipientName || '-'}
                           </p>
                           {doc.recipientEmail && (
                             <p className="mt-0.5 truncate text-xs text-muted-foreground">{doc.recipientEmail}</p>
                           )}
                         </td>
-                        <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
+                        <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                         </td>
@@ -271,8 +272,8 @@ export default function AdminDocumentsPage() {
                   const isBatchOpen = expandedBatches.has(item.batchId)
                   const first = item.docs[0]
                   const sharedType = item.docs.every((d) => d.documentType === first.documentType)
-                    ? first.documentType || '—'
-                    : '—'
+                    ? first.documentType || '-'
+                    : '-'
                   return (
                     <Fragment key={`batch-${item.batchId}`}>
                       <tr
@@ -326,13 +327,13 @@ export default function AdminDocumentsPage() {
                             </td>
                             <td className="py-4 pl-12 pr-6">
                               <p className="truncate text-sm font-semibold text-foreground">
-                                {doc.recipientName || '—'}
+                                {doc.recipientName || '-'}
                               </p>
                               {doc.recipientEmail && (
                                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{doc.recipientEmail}</p>
                               )}
                             </td>
-                            <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '—'}</td>
+                            <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                             </td>
@@ -359,6 +360,7 @@ export default function AdminDocumentsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="space-y-3 sm:hidden">
@@ -376,7 +378,7 @@ export default function AdminDocumentsPage() {
 
               const isBatchOpen = expandedBatches.has(item.batchId)
               return (
-                <div key={`batch-${item.batchId}`} className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
+                <div key={`batch-${item.batchId}`} className="rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-200">
                   <button
                     onClick={() => toggleBatch(item.batchId)}
                     className="flex w-full items-center justify-between p-4 text-left"

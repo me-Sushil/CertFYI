@@ -88,13 +88,13 @@ export function OnChainButton({
   }
 
   return (
-    <div>
+    <div className={className}>
       <Button
         size="sm"
         variant={variant}
         onClick={handleClick}
         disabled={disabled || isLoading}
-        className={className}
+        className="w-full"
       >
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
         {isConfirming ? 'Confirming...' : isHandling ? 'Recording...' : children}

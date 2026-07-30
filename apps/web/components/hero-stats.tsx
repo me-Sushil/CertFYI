@@ -17,7 +17,7 @@ function StatTile({ value, isLoading, isError, label }: { value?: number; isLoad
         <Skeleton className="h-9 w-16" />
       ) : (
         <span className="text-3xl font-extrabold tracking-tight text-foreground">
-          {isError || value === undefined ? '—' : formatCount(value)}
+          {isError || value === undefined ? '-' : formatCount(value)}
         </span>
       )}
       <span className="flex items-center gap-2 text-sm text-muted-foreground">

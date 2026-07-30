@@ -36,9 +36,14 @@ export const NONCE_COOKIE_OPTIONS: CookieOptions = {
   maxAge: NONCE_MAX_AGE_SECONDS * 1000,
 }
 
-/** Strict, lowercase-normalized comparison against the .env-bootstrapped admin wallet. */
+/** Strict, lowercase-normalized comparison against the .env-bootstrapped admin wallet(s). */
 export function isAdminWallet(address: string): boolean {
-  const adminWallet = process.env.ADMIN_WALLET_ADDRESS
-  if (!adminWallet) return false
-  return address.toLowerCase() === adminWallet.toLowerCase()
+  const adminWallets = process.env.ADMIN_WALLET_ADDRESS
+  if (!adminWallets) return false
+  const normalized = address.toLowerCase()
+  return adminWallets
+    .split(',')
+    .map((w) => w.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(normalized)
 }

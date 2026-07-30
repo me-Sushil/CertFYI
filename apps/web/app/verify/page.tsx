@@ -193,7 +193,7 @@ export default function VerifierPortal() {
                 if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
               }}
               className={cn(
-                'cursor-pointer rounded-[20px] border-2 border-dashed bg-card/50 p-10 text-center shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] sm:p-16 md:p-20',
+                'cursor-pointer rounded-lg border-2 border-dashed bg-card/50 p-10 text-center shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] sm:p-16 md:p-20',
                 isDragging
                   ? 'border-foreground/40 bg-card'
                   : 'border-border/15 hover:-translate-y-0.5 hover:border-foreground/25 hover:bg-card/80 hover:shadow-button',
@@ -237,7 +237,7 @@ export default function VerifierPortal() {
                 return (
                   <div
                     key={info.title}
-                    className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+                    className="rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
                   >
                     <Icon className={cn('mb-3 h-5 w-5', info.tone)} aria-hidden />
                     <p className="mb-1 text-sm font-extrabold text-foreground">{info.title}</p>
@@ -261,7 +261,7 @@ export default function VerifierPortal() {
               </p>
             </div>
             {file && (
-              <div className="flex items-center gap-2 rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
+              <div className="flex items-center gap-2 rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5">
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <p className="truncate text-sm font-semibold text-muted-foreground">{file.name}</p>
               </div>
@@ -285,7 +285,7 @@ export default function VerifierPortal() {
             </div>
 
             {file && (
-              <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
+              <div className="rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5">
                 <p className="mb-1 text-sm font-extrabold text-foreground">File</p>
                 <p className="text-sm text-muted-foreground">{file.name}</p>
                 <p className="mt-2 font-mono text-xs font-semibold text-muted-foreground">
@@ -296,7 +296,7 @@ export default function VerifierPortal() {
 
             <div
               className={cn(
-                'rounded-[20px] bg-card p-8 shadow-card ring-1 ring-border/5',
+                'rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8',
                 result.status === 'verified' && 'animate-scale-in',
               )}
             >
@@ -336,7 +336,7 @@ export default function VerifierPortal() {
             </div>
 
             {(result.status === 'verified' || result.status === 'revoked') && (
-              <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+              <div className="rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <dl className="space-y-5 text-sm">
                   <div className="flex flex-col sm:flex-row sm:gap-4">
                     <dt className="w-36 shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground sm:pt-0.5">Issuer</dt>

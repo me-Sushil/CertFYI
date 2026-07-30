@@ -34,7 +34,7 @@ export function IssuerMetadataPanel({ issuer }: { issuer: IssuerRow }) {
       const result = await uploadMetadata.mutateAsync(issuer.walletAddress)
       setPendingUri(result.metadataUri)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to pin profile metadata')
+      toast.error(err instanceof Error ? err.message : 'Failed to pin profile')
     }
   }
 
@@ -50,11 +50,11 @@ export function IssuerMetadataPanel({ issuer }: { issuer: IssuerRow }) {
             await confirmMetadata.mutateAsync({ address: issuer.walletAddress, txHash })
             setPendingUri(null)
           }}
-          successMessage="Issuer metadata set"
-          errorMessage="Failed to confirm metadata"
+          successMessage="Issuer profile set"
+          errorMessage="Failed to confirm profile"
           variant="outline"
         >
-          Confirm Metadata On-Chain
+          Confirm Profile On-Chain
         </OnChainButton>
         <Button size="sm" variant="ghost" onClick={() => setPendingUri(null)}>
           Cancel
@@ -78,7 +78,7 @@ export function IssuerMetadataPanel({ issuer }: { issuer: IssuerRow }) {
       )}
       <Button size="sm" variant="outline" onClick={handleUpload} disabled={uploadMetadata.isPending}>
         {uploadMetadata.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />}
-        {issuer.metadataUri ? 'Update Metadata' : 'Set Metadata'}
+        {issuer.metadataUri ? 'Update Profile' : 'Set Profile'}
       </Button>
     </div>
   )

@@ -21,7 +21,11 @@ export function Header() {
   const { isConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
   const { role } = useSession()
-  const dashboard = roleDestination(role)
+  // The session cookie can outlive the wallet connection in this tab (e.g.
+  // the wallet was disconnected after logging in) - only show the role-based
+  // label once a wallet is actually connected, otherwise fall back to the
+  // generic CTA regardless of what the stale session says.
+  const dashboard = roleDestination(isConnected ? role : null)
   const setPendingRedirect = usePostConnectRedirect((s) => s.setPendingRedirect)
 
   const handleIssueCertificateClick = () => {
@@ -35,7 +39,7 @@ export function Header() {
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 px-4 py-4 sm:px-[35px] sm:py-[22px]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-card/90 px-4 py-2.5 shadow-button ring-1 ring-border/10 backdrop-blur-md sm:px-8 sm:py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-2xl bg-card/90 px-4 py-2.5 shadow-button ring-1 ring-border/10 backdrop-blur-md sm:px-8 sm:py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 outline-none">
           <Logo />

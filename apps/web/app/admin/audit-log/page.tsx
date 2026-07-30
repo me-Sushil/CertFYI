@@ -105,11 +105,11 @@ export default function AuditLogPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-[20px] bg-card/50 shadow-soft ring-1 ring-border/5" />
+            <div key={i} className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
           ))}
         </div>
       ) : entries.length === 0 ? (
-        <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+        <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
           <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-sm font-semibold text-muted-foreground">
             {searchTerm || filterAction !== 'ALL' ? 'No entries match your filters' : 'No audit entries yet'}
@@ -117,7 +117,7 @@ export default function AuditLogPage() {
         </div>
       ) : (
         <>
-          <div className="overflow-hidden rounded-[20px] bg-card shadow-card ring-1 ring-border/5">
+          <div className="overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5">
             {entries.map((entry, idx) => (
               <AuditLogEntryRow key={entry.id} entry={entry} isLast={idx === entries.length - 1} />
             ))}

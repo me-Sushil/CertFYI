@@ -54,7 +54,7 @@ function PendingRequestCard({
   }
 
   return (
-    <div className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:shadow-button">
+    <div className="rounded-lg bg-card shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:shadow-button">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-6 text-left sm:p-8"
@@ -81,15 +81,15 @@ function PendingRequestCard({
           <dl className="space-y-4 text-sm">
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Full Name</dt>
-              <dd className="text-foreground">{request.name || '—'}</dd>
+              <dd className="text-foreground">{request.name || '-'}</dd>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Email</dt>
-              <dd className="text-foreground">{request.email || '—'}</dd>
+              <dd className="text-foreground">{request.email || '-'}</dd>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Organization</dt>
-              <dd className="text-foreground">{request.organization || '—'}</dd>
+              <dd className="text-foreground">{request.organization || '-'}</dd>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Website</dt>
@@ -105,13 +105,13 @@ function PendingRequestCard({
                     <ExternalLink className="h-3 w-3" aria-hidden />
                   </a>
                 ) : (
-                  '—'
+                  '-'
                 )}
               </dd>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Description</dt>
-              <dd className="text-foreground leading-relaxed">{request.description || '—'}</dd>
+              <dd className="text-foreground leading-relaxed">{request.description || '-'}</dd>
             </div>
             <div className="flex flex-col sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Wallet</dt>
@@ -171,7 +171,7 @@ function QuickLinkCard({
 }) {
   return (
     <Link href={href}>
-      <div className="cursor-pointer rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
+      <div className="cursor-pointer rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
         <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10">
           <Icon className="h-5 w-5 text-accent" aria-hidden />
         </div>
@@ -225,14 +225,14 @@ export default function AdminDashboard() {
         {requestsQuery.isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-3 rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+              <div key={i} className="space-y-3 rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
               </div>
             ))}
           </div>
         ) : pendingApplications.length === 0 ? (
-          <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+          <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
             <Inbox className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
             <p className="text-sm font-semibold text-muted-foreground">No pending applications</p>
           </div>
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
           Recent Activity
         </h2>
         {recentActivity.length === 0 ? (
-          <div className="rounded-[20px] bg-card p-12 text-center shadow-card ring-1 ring-border/5">
+          <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
             <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
             <p className="text-sm font-semibold text-muted-foreground">No recent activity</p>
           </div>
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
             {recentActivity.map((activity: AuditLogEntry) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button"
+                className="flex items-center justify-between rounded-lg bg-card p-5 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-6"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />

@@ -22,9 +22,14 @@ exports.NONCE_COOKIE_OPTIONS = {
     maxAge: exports.NONCE_MAX_AGE_SECONDS * 1000,
 };
 function isAdminWallet(address) {
-    const adminWallet = process.env.ADMIN_WALLET_ADDRESS;
-    if (!adminWallet)
+    const adminWallets = process.env.ADMIN_WALLET_ADDRESS;
+    if (!adminWallets)
         return false;
-    return address.toLowerCase() === adminWallet.toLowerCase();
+    const normalized = address.toLowerCase();
+    return adminWallets
+        .split(',')
+        .map((w) => w.trim().toLowerCase())
+        .filter(Boolean)
+        .includes(normalized);
 }
 //# sourceMappingURL=roles.constant.js.map

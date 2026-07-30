@@ -30,7 +30,7 @@ type IssuerRequestFormData = z.infer<typeof issuerRequestSchema>
 const HOW_IT_WORKS = [
   { num: '1', title: 'Submit Request', desc: 'Tell us about your organization' },
   { num: '2', title: 'Admin Review', desc: 'An admin verifies your request' },
-  { num: '3', title: 'On-Chain Approval', desc: 'ISSUER_ROLE is granted to your wallet on-chain' },
+  { num: '3', title: 'On-Chain Approval', desc: 'Your wallet is approved to issue documents on-chain' },
 ]
 
 function Shell({ children }: { children: React.ReactNode }) {
