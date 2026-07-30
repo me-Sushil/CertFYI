@@ -378,3 +378,24 @@
 @utility stagger-4 { animation-delay: 0.4s; }
 @utility stagger-5 { animation-delay: 0.5s; }
 @utility stagger-6 { animation-delay: 0.6s; }
+
+/* RainbowKit modal overrides for CertFyi brand polish */
+[data-rk] [aria-modal="true"] {
+  backdrop-filter: blur(8px) saturate(1.2);
+  animation: scale-in 0.25s var(--ease-premium) forwards;
+}
+
+[data-rk] button[data-testid="rk-connect-button"] {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: transform 150ms var(--ease-premium), box-shadow 150ms var(--ease-premium);
+}
+
+[data-rk] button[data-testid="rk-connect-button"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 6px 16px rgba(108, 76, 245, 0.3);
+}
+
+[data-rk] button[data-testid="rk-connect-button"]:active {
+  transform: translateY(0);
+}

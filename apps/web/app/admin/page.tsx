@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { OnChainButton } from '@/components/admin/on-chain-button'
 import { StatCard } from '@/components/admin/stat-card'
 import { ChainBanner } from '@/components/admin/chain-banner'
-import { Users, FileText, AlertCircle, AlertTriangle, Loader2, Inbox } from 'lucide-react'
+import { Users, FileText, AlertCircle, AlertTriangle, Loader2, Inbox, ChevronDown, ExternalLink } from 'lucide-react'
 import { ISSUER_ROLE } from '@/lib/contracts/document-anchor'
 import {
   useAdminRequests,
@@ -21,7 +21,7 @@ import {
   useAuditLog,
 } from '@/queries/admin'
 import { keys } from '@/queries/keys'
-import { formatRelativeTime, formatAddress } from '@/lib/format'
+import { formatRelativeTime, formatAddress, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AccessRequestRow, AuditLogEntry } from '@/lib/api-types'
 
@@ -34,6 +34,7 @@ function PendingRequestCard({
 }) {
   const [rejecting, setRejecting] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const approveUser = useApproveUser()
   const rejectUser = useRejectUser()
 
@@ -53,39 +54,106 @@ function PendingRequestCard({
   }
 
   return (
-    <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-0.5 hover:shadow-button sm:p-8">
-      <h3 className="mb-1 text-[22px] leading-[28.6px] font-extrabold tracking-[-0.5px] text-foreground">
-        {request.organization || request.name || 'Unnamed Applicant'}
-      </h3>
-      <p className="mb-2 text-sm font-semibold text-muted-foreground">
-        {request.email || 'No email provided'}
-      </p>
-      <p className="mb-4 font-mono text-xs break-all text-muted-foreground">
-        {formatAddress(request.walletAddress, 8)}
-      </p>
-      <p className="mb-5 text-xs font-semibold text-muted-foreground">
-        Applied {formatRelativeTime(request.createdAt)}
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <OnChainButton
-          functionName="grantRole"
-          args={[ISSUER_ROLE, request.walletAddress as Hex]}
-          onConfirmed={async (txHash) => {
-            await approveUser.mutateAsync({ walletAddress: request.walletAddress, txHash })
-            onSettled()
-          }}
-          successMessage="Issuer approved"
-          errorMessage="Approval failed to record"
-          className="w-full sm:flex-1"
-          onLoadingChange={setIsApproving}
-        >
-          Approve On-Chain
-        </OnChainButton>
-        <Button size="sm" variant="outline" className="w-full sm:flex-1" onClick={handleReject} disabled={isProcessing}>
-          {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-          Reject
-        </Button>
-      </div>
+    <div className="rounded-[20px] bg-card shadow-card ring-1 ring-border/5 transition-all duration-300 ease-[var(--ease-premium)] hover:shadow-button">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between p-6 text-left sm:p-8"
+      >
+        <div className="min-w-0 flex-1">
+          <h3 className="text-lg font-extrabold tracking-[-0.3px] text-foreground">
+            {request.organization || request.name || 'Unnamed Applicant'}
+          </h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {request.email || 'No email provided'} &middot; {formatRelativeTime(request.createdAt)}
+          </p>
+        </div>
+        <ChevronDown
+          className={cn(
+            'ml-4 h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200',
+            expanded && 'rotate-180',
+          )}
+          aria-hidden
+        />
+      </button>
+
+      {expanded && (
+        <div className="border-t border-border/10 px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+          <dl className="space-y-4 text-sm">
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Full Name</dt>
+              <dd className="text-foreground">{request.name || '—'}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Email</dt>
+              <dd className="text-foreground">{request.email || '—'}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Organization</dt>
+              <dd className="text-foreground">{request.organization || '—'}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Website</dt>
+              <dd className="text-foreground">
+                {request.website ? (
+                  <a
+                    href={request.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-accent hover:opacity-80"
+                  >
+                    {request.website}
+                    <ExternalLink className="h-3 w-3" aria-hidden />
+                  </a>
+                ) : (
+                  '—'
+                )}
+              </dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Description</dt>
+              <dd className="text-foreground leading-relaxed">{request.description || '—'}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Wallet</dt>
+              <dd className="font-mono text-xs text-foreground break-all">{request.walletAddress}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Applied</dt>
+              <dd className="text-foreground">{formatDate(request.createdAt)}</dd>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:gap-4">
+              <dt className="w-32 shrink-0 font-semibold text-muted-foreground">Status</dt>
+              <dd>
+                <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                  {request.status}
+                </span>
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-6 flex flex-col gap-2 border-t border-border/10 pt-5 sm:flex-row">
+            <OnChainButton
+              functionName="grantRole"
+              args={[ISSUER_ROLE, request.walletAddress as Hex]}
+              gas={BigInt(300_000)}
+              onConfirmed={async (txHash) => {
+                await approveUser.mutateAsync({ walletAddress: request.walletAddress, txHash })
+                onSettled()
+              }}
+              successMessage="Issuer approved"
+              errorMessage="Approval failed to record"
+              className="w-full sm:flex-1"
+              onLoadingChange={setIsApproving}
+            >
+              Approve On-Chain
+            </OnChainButton>
+            <Button size="sm" variant="outline" className="w-full sm:flex-1" onClick={handleReject} disabled={isProcessing}>
+              {rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+              Reject
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -155,16 +223,11 @@ export default function AdminDashboard() {
         </div>
 
         {requestsQuery.isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="space-y-3 rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-full" />
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-8 flex-1 rounded-full" />
-                  <Skeleton className="h-8 flex-1 rounded-full" />
-                </div>
               </div>
             ))}
           </div>
@@ -174,7 +237,7 @@ export default function AdminDashboard() {
             <p className="text-sm font-semibold text-muted-foreground">No pending applications</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          <div className="space-y-4">
             {pendingApplications.map((request) => (
               <PendingRequestCard
                 key={request.id}
