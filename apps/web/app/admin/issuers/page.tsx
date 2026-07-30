@@ -170,6 +170,7 @@ export default function IssuerManagementPage() {
                           <OnChainButton
                             functionName="grantRole"
                             args={[ISSUER_ROLE, issuer.walletAddress as Hex]}
+                            gas={BigInt(300_000)}
                             onConfirmed={async (txHash) => {
                               await reactivateUser.mutateAsync({ walletAddress: issuer.walletAddress, txHash })
                             }}
@@ -275,6 +276,7 @@ function IssuerRowComponent({
                 <OnChainButton
                   functionName="grantRole"
                   args={[ISSUER_ROLE, issuer.walletAddress as Hex]}
+                  gas={BigInt(300_000)}
                   onConfirmed={async (txHash) => {
                     await reactivateUser.mutateAsync({ walletAddress: issuer.walletAddress, txHash })
                   }}
@@ -320,6 +322,7 @@ function SuspendConfirmDialog({ issuer, onClose }: { issuer: IssuerRow | null; o
           <OnChainButton
             functionName="revokeRole"
             args={[ISSUER_ROLE, issuer.walletAddress as Hex]}
+            gas={BigInt(300_000)}
             onConfirmed={async (txHash) => {
               await suspendUser.mutateAsync({ walletAddress: issuer.walletAddress, txHash })
               onClose()

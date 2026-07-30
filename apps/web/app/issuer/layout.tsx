@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { Loader2, ShieldAlert, Wallet, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Loader2, ShieldAlert, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSession } from '@/lib/auth-context'
 import { formatAddress } from '@/lib/format'
@@ -26,25 +28,19 @@ function GateScreen({ children }: { children: React.ReactNode }) {
  * actually in control of the page.
  */
 export default function IssuerLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const { isConnected, address: connectedAddress } = useAccount()
   const { openConnectModal } = useConnectModal()
   const { address: sessionAddress, role, isLoading } = useSession()
 
+  useEffect(() => {
+    if (!isConnected) {
+      router.replace('/')
+    }
+  }, [isConnected, router])
+
   if (!isConnected) {
-    return (
-      <GateScreen>
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent/10">
-          <Wallet className="h-7 w-7 text-accent" aria-hidden />
-        </div>
-        <h1 className="text-xl font-extrabold text-foreground">Connect your wallet</h1>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Connect the wallet approved as an issuer to access this dashboard.
-        </p>
-        <Button onClick={openConnectModal} className="mt-2 bg-accent text-accent-foreground">
-          Connect Wallet
-        </Button>
-      </GateScreen>
-    )
+    return null
   }
 
   if (isLoading) {

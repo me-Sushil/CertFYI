@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { HeaderWrapper } from '@/components/header-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +15,17 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/lib/auth-context'
 import { useIssuerRequestStatus, useSubmitIssuerRequest } from '@/queries/issuer'
-import { Loader2, Wallet, Clock, Shield } from 'lucide-react'
+import { Loader2, Clock, Shield } from 'lucide-react'
+
+const issuerRequestSchema = z.object({
+  name: z.string().min(2, 'Full name is required'),
+  email: z.string().email('Please enter a valid email address'),
+  organization: z.string().min(2, 'Organization name is required'),
+  description: z.string().min(10, 'Please describe your organization (at least 10 characters)'),
+  website: z.string().url('Please enter a valid URL').or(z.literal('')),
+})
+
+type IssuerRequestFormData = z.infer<typeof issuerRequestSchema>
 
 const HOW_IT_WORKS = [
   { num: '1', title: 'Submit Request', desc: 'Tell us about your organization' },
@@ -39,6 +52,11 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
   )
 }
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="mt-1.5 text-xs font-medium text-destructive">{message}</p>
+}
+
 export default function RequestAccessPage() {
   const router = useRouter()
   const { isConnected } = useAccount()
@@ -47,40 +65,35 @@ export default function RequestAccessPage() {
   const requestQuery = useIssuerRequestStatus(role === 'UNAPPROVED')
   const submitRequest = useSubmitIssuerRequest()
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    organization: '',
-    description: '',
-    website: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError: setFormError,
+  } = useForm<IssuerRequestFormData>({
+    resolver: zodResolver(issuerRequestSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      organization: '',
+      description: '',
+      website: '',
+    },
   })
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (role === 'ADMIN') router.replace('/admin')
     else if (role === 'ISSUER') router.replace('/issuer')
   }, [role, router])
 
+  useEffect(() => {
+    if (!isConnected) {
+      router.replace('/')
+    }
+  }, [isConnected, router])
+
   if (!isConnected) {
-    return (
-      <Shell>
-        <Card className="mx-auto max-w-md animate-fade-in-up">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-accent" aria-hidden />
-              Wallet Connection Required
-            </CardTitle>
-            <CardDescription>Connect your wallet to request issuer access</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Click the connect button in the header to connect and sign in with your wallet.
-            </p>
-          </CardContent>
-        </Card>
-      </Shell>
-    )
+    return null
   }
 
   if (sessionLoading || role === 'ADMIN' || role === 'ISSUER') {
@@ -169,18 +182,15 @@ export default function RequestAccessPage() {
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
+  const onSubmit = async (data: IssuerRequestFormData) => {
     try {
-      await submitRequest.mutateAsync(formData)
+      await submitRequest.mutateAsync(data)
       queryClient.invalidateQueries({ queryKey: ['issuer-request-status'] })
     } catch (err) {
       console.error('Access request error:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred while submitting your request')
-    } finally {
-      setSubmitting(false)
+      setFormError('root', {
+        message: err instanceof Error ? err.message : 'An error occurred while submitting your request',
+      })
     }
   }
 
@@ -200,7 +210,7 @@ export default function RequestAccessPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="rounded-lg bg-muted/40 p-5">
                   <p className="mb-1 text-sm font-semibold text-muted-foreground">
                     Connected Wallet Address
@@ -211,41 +221,44 @@ export default function RequestAccessPage() {
                 {requestStatus === 'REJECTED' && (
                   <ErrorBanner>Your previous request was rejected.</ErrorBanner>
                 )}
-                {error && <ErrorBanner>{error}</ErrorBanner>}
+                {errors.root && <ErrorBanner>{errors.root.message}</ErrorBanner>}
 
                 <div>
                   <Label htmlFor="name" className="mb-2 block">
-                    Full Name
+                    Full Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
                     placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    aria-invalid={!!errors.name}
+                    {...register('name')}
                   />
+                  <FieldError message={errors.name?.message} />
                 </div>
                 <div>
                   <Label htmlFor="email" className="mb-2 block">
-                    Email Address
+                    Email Address <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    aria-invalid={!!errors.email}
+                    {...register('email')}
                   />
+                  <FieldError message={errors.email?.message} />
                 </div>
                 <div>
                   <Label htmlFor="organization" className="mb-2 block">
-                    Organization Name
+                    Organization Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="organization"
                     placeholder="Acme Corp"
-                    value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                    aria-invalid={!!errors.organization}
+                    {...register('organization')}
                   />
+                  <FieldError message={errors.organization?.message} />
                 </div>
                 <div>
                   <Label htmlFor="website" className="mb-2 block">
@@ -255,26 +268,28 @@ export default function RequestAccessPage() {
                     id="website"
                     type="url"
                     placeholder="https://example.com"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    aria-invalid={!!errors.website}
+                    {...register('website')}
                   />
+                  <FieldError message={errors.website?.message} />
                 </div>
                 <div>
                   <Label htmlFor="description" className="mb-2 block">
-                    Organization Description
+                    Organization Description <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="description"
                     placeholder="Describe your organization and why you want to issue certificates..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="h-24"
+                    aria-invalid={!!errors.description}
+                    {...register('description')}
                   />
+                  <FieldError message={errors.description?.message} />
                 </div>
 
-                <Button type="submit" disabled={submitting} className="h-12 w-full">
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                  {submitting ? 'Submitting...' : 'Submit Request'}
+                <Button type="submit" disabled={isSubmitting} className="h-12 w-full">
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                  {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </Button>
               </form>
             </CardContent>
