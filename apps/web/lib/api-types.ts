@@ -44,8 +44,12 @@ export interface AccessRequestRow {
   name: string | null
   email: string | null
   organization: string | null
+  website: string | null
+  description: string | null
   createdAt: string
   status: AccessRequestStatus
+  decidedAt: string | null
+  rejectionReason: string | null
 }
 
 export interface AdminRequestsResponse {
