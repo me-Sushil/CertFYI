@@ -1,11 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { useAccount } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-context'
+import { usePostConnectRedirect } from '@/lib/post-connect-redirect'
 
 function roleDestination(role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED' | null) {
   if (role === 'ADMIN') return { href: '/admin', label: 'Admin Dashboard', short: 'Admin' }
@@ -15,8 +18,20 @@ function roleDestination(role: 'ADMIN' | 'ISSUER' | 'UNAPPROVED' | null) {
 
 export function Header() {
   const router = useRouter()
+  const { isConnected } = useAccount()
+  const { openConnectModal } = useConnectModal()
   const { role } = useSession()
   const dashboard = roleDestination(role)
+  const setPendingRedirect = usePostConnectRedirect((s) => s.setPendingRedirect)
+
+  const handleIssueCertificateClick = () => {
+    if (!isConnected) {
+      setPendingRedirect(dashboard.href)
+      openConnectModal?.()
+      return
+    }
+    router.push(dashboard.href)
+  }
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 px-4 py-4 sm:px-[35px] sm:py-[22px]">
@@ -34,7 +49,7 @@ export function Header() {
           >
             Verify PDF
           </Link>
-          <Button onClick={() => router.push(dashboard.href)} size="lg" className="h-auto py-3">
+          <Button onClick={handleIssueCertificateClick} size="lg" className="h-auto py-3">
             {dashboard.label}
           </Button>
         </nav>
@@ -49,7 +64,7 @@ export function Header() {
             >
               Verify
             </Link>
-            <Button onClick={() => router.push(dashboard.href)} size="sm">
+            <Button onClick={handleIssueCertificateClick} size="sm">
               {dashboard.short}
             </Button>
           </div>

@@ -336,58 +336,61 @@ export default function VerifierPortal() {
             </div>
 
             {(result.status === 'verified' || result.status === 'revoked') && (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
-                  <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
-                    Issuer
-                  </label>
-                  <p className="mb-1 font-extrabold text-foreground">{result.issuerName}</p>
-                  {result.documentType && (
-                    <p className="text-xs font-semibold text-muted-foreground">{result.documentType}</p>
-                  )}
-                </div>
-                <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5">
-                  <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
-                    Issued On
-                  </label>
-                  <p className="font-extrabold text-foreground">
-                    {new Date(result.issuanceDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs font-semibold text-muted-foreground">
-                    {new Date(result.issuanceDate).toLocaleTimeString()}
-                  </p>
-                </div>
-                {result.transactionHash && (
-                  <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 sm:col-span-2">
-                    <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
-                      Transaction Hash
-                    </label>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-mono text-sm break-all text-accent">
-                        {result.transactionHash}
-                      </p>
-                      {result.explorerUrl && (
-                        <a
-                          href={result.explorerUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="View on block explorer"
-                          className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
-                        >
-                          <ExternalLink className="h-4 w-4" aria-hidden />
-                        </a>
+              <div className="rounded-[20px] bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
+                <dl className="space-y-5 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:gap-4">
+                    <dt className="w-36 shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground sm:pt-0.5">Issuer</dt>
+                    <dd>
+                      <p className="font-extrabold text-foreground">{result.issuerName}</p>
+                      {result.documentType && (
+                        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{result.documentType}</p>
                       )}
-                    </div>
+                    </dd>
                   </div>
-                )}
-                {result.cid && (
-                  <div className="rounded-[20px] bg-card p-5 shadow-card ring-1 ring-border/5 sm:col-span-2">
-                    <label className="mb-2 block text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
-                      Stored Copy (IPFS)
-                    </label>
-                    <CidBadge cid={result.cid} />
+                  <div className="h-px bg-border/10" />
+                  <div className="flex flex-col sm:flex-row sm:gap-4">
+                    <dt className="w-36 shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground sm:pt-0.5">Issued On</dt>
+                    <dd>
+                      <p className="font-extrabold text-foreground">
+                        {new Date(result.issuanceDate).toLocaleDateString()}
+                      </p>
+                      <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                        {new Date(result.issuanceDate).toLocaleTimeString()}
+                      </p>
+                    </dd>
                   </div>
-                )}
+                  {result.transactionHash && (
+                    <>
+                      <div className="h-px bg-border/10" />
+                      <div className="flex flex-col sm:flex-row sm:gap-4">
+                        <dt className="w-36 shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground sm:pt-0.5">Tx Hash</dt>
+                        <dd className="flex min-w-0 flex-1 items-center gap-2">
+                          <p className="min-w-0 font-mono text-xs break-all text-accent">{result.transactionHash}</p>
+                          {result.explorerUrl && (
+                            <a
+                              href={result.explorerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="View on block explorer"
+                              className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                            </a>
+                          )}
+                        </dd>
+                      </div>
+                    </>
+                  )}
+                  {result.cid && (
+                    <>
+                      <div className="h-px bg-border/10" />
+                      <div className="flex flex-col sm:flex-row sm:gap-4">
+                        <dt className="w-36 shrink-0 text-xs font-extrabold uppercase tracking-wide text-muted-foreground sm:pt-0.5">IPFS Copy</dt>
+                        <dd><CidBadge cid={result.cid} /></dd>
+                      </div>
+                    </>
+                  )}
+                </dl>
               </div>
             )}
 
