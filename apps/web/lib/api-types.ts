@@ -72,8 +72,6 @@ export interface IssuerRequestStatusResponse {
 
 export interface IssuerStatsResponse {
   totalIssued: number
-  activeDocuments: number
-  revokedCount: number
   recentActivityCount: number
 }
 
@@ -86,9 +84,6 @@ export interface IssuerDocumentRow {
   cid?: string | null
   metadataCid?: string | null
   anchoredAt: string
-  revokedAt: string | null
-  revokeTxHash?: string
-  status: 'active' | 'revoked'
   batchId: string | null
 }
 
@@ -98,7 +93,6 @@ export interface IssuerDocumentsResponse {
 }
 
 export interface IssuerDocumentsQuery {
-  status?: 'all' | 'active' | 'revoked'
   search?: string
   cursor?: string
 }
@@ -157,20 +151,6 @@ export interface AnchorDocumentResponse {
   message: string
 }
 
-export interface RevokeDocumentRequest {
-  documentHash: string
-  /** Hash of the confirmed `revokeDocument` tx, signed by the issuer's own wallet. */
-  txHash: string
-}
-
-export interface RevokeDocumentResponse {
-  success: boolean
-  documentHash: string
-  txHash: string
-  revokedAt: string
-  message: string
-}
-
 export interface BatchAnchorDocumentEntry {
   documentHash: string
   recipientEmail: string
@@ -216,7 +196,7 @@ export interface VerifyDocumentResponse {
   issuer?: string
   documentType?: string
   issuedDate?: string
-  status?: 'active' | 'revoked' | 'not_found'
+  status?: 'active' | 'not_found'
   message: string
   onchainData?: VerifyOnchainData
   cid?: string | null
@@ -335,9 +315,6 @@ export interface AdminDocumentRow {
   cid: string | null
   txHash: string
   anchoredAt: string
-  revokedAt: string | null
-  revokeTxHash: string | null
-  status: 'active' | 'revoked'
   batchId: string | null
 }
 

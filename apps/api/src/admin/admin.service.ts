@@ -379,19 +379,12 @@ export class AdminService {
   // --- Documents ---
 
   async getDocuments(params: {
-    status?: string
     search?: string
     cursor?: string
     limit?: number
   }) {
     const limit = Math.min(params.limit ?? 20, 100)
     const where: Record<string, unknown> = {}
-
-    if (params.status === 'ACTIVE') {
-      where.revokedAt = null
-    } else if (params.status === 'REVOKED') {
-      where.revokedAt = { not: null }
-    }
 
     if (params.search) {
       where.OR = [
@@ -416,10 +409,7 @@ export class AdminService {
     const hasMore = docs.length > limit
     if (hasMore) docs.pop()
 
-    const documents = docs.map((doc) => ({
-      ...doc,
-      status: doc.revokedAt ? 'revoked' : 'active',
-    }))
+    const documents = docs
 
     return {
       documents,

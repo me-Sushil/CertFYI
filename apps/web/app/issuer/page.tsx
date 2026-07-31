@@ -7,7 +7,7 @@ import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import {
   FileText, Upload, History, Wallet,
-  Plus, Loader2, ShieldAlert, CheckCircle, Clock, Activity,
+  Plus, Loader2, CheckCircle, Clock, Activity,
   ArrowUpRight, Menu, X, ChevronRight, LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -142,10 +142,8 @@ export default function IssuerDashboard() {
 
             {/* Stats grid */}
             {isConnected && (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <StatCard label="Total Issued" value={statsLoading ? '...' : (stats?.totalIssued ?? 0).toLocaleString()} icon={FileText} tone="accent" />
-                <StatCard label="Active" value={statsLoading ? '...' : (stats?.activeDocuments ?? 0).toLocaleString()} icon={CheckCircle} tone="success" />
-                <StatCard label="Revoked" value={statsLoading ? '...' : (stats?.revokedCount ?? 0).toLocaleString()} icon={ShieldAlert} tone="default" />
                 <StatCard label="Activities" value={statsLoading ? '...' : (stats?.recentActivityCount ?? 0).toLocaleString()} icon={Activity} tone="accent" />
               </div>
             )}
@@ -229,13 +227,6 @@ export default function IssuerDashboard() {
                             {formatRelativeTime(doc.anchoredAt)}
                           </p>
                         </div>
-                        <span className={cn(
-                          'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-                          doc.status === 'active' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-                        )}>
-                          <span className={cn('h-1.5 w-1.5 rounded-full', doc.status === 'active' ? 'bg-success' : 'bg-destructive')} />
-                          {doc.status === 'active' ? 'Active' : 'Revoked'}
-                        </span>
                       </div>
                     ))}
                     {documents.length > 5 && (

@@ -10,8 +10,6 @@ export declare class RequestStatusResponseDto {
 }
 export declare class IssuerStatsResponseDto {
     totalIssued: number;
-    activeDocuments: number;
-    revokedCount: number;
     recentActivityCount: number;
 }
 export declare class IssuerDocumentDto {
@@ -21,9 +19,6 @@ export declare class IssuerDocumentDto {
     recipientEmail?: string;
     txHash: string;
     anchoredAt: string;
-    revokedAt: string | null;
-    revokeTxHash?: string;
-    status: 'active' | 'revoked';
     batchId: string | null;
 }
 export declare class IssuerDocumentsResponseDto {
@@ -42,7 +37,6 @@ export declare class IssuerActivityResponseDto {
     nextCursor: string | null;
 }
 export declare class IssuerDocumentsQueryDto {
-    status?: 'all' | 'active' | 'revoked';
     search?: string;
     cursor?: string;
 }

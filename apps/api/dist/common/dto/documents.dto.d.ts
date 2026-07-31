@@ -6,17 +6,6 @@ export declare class AnchorDto {
     recipientName?: string;
     cid?: string;
 }
-export declare class RevokeDocumentDto {
-    documentHash: string;
-    txHash: string;
-}
-export declare class RevokeDocumentResponseDto {
-    success: boolean;
-    documentHash: string;
-    txHash: string;
-    revokedAt: string;
-    message: string;
-}
 export declare class BatchDocumentDto {
     documentHash: string;
     recipientEmail: string;

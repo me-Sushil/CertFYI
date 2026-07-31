@@ -332,18 +332,7 @@ export class AdminStatsResponseDto {
 
 // --- Admin Documents DTOs ---
 
-export const DOCUMENT_STATUS_FILTERS = ['ALL', 'ACTIVE', 'REVOKED'] as const
-
 export class AdminDocumentsQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by document status. Defaults to `ALL`.',
-    enum: DOCUMENT_STATUS_FILTERS,
-    default: 'ALL',
-  })
-  @IsOptional()
-  @IsIn(DOCUMENT_STATUS_FILTERS as unknown as string[])
-  status?: string
-
   @ApiPropertyOptional({
     description: 'Search term matching recipient name, email, type, or doc hash.',
     example: 'Stanford',
@@ -396,15 +385,6 @@ export class AdminDocumentEntityDto {
 
   @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
   anchoredAt!: Date
-
-  @ApiProperty({ format: 'date-time', nullable: true, type: String, example: null })
-  revokedAt!: Date | null
-
-  @ApiProperty({ nullable: true, type: String, example: null })
-  revokeTxHash!: string | null
-
-  @ApiProperty({ example: 'active' })
-  status!: string
 
   @ApiProperty({ nullable: true, type: String, example: null, description: 'Set when issued as part of a bulk batch anchor.' })
   batchId!: string | null

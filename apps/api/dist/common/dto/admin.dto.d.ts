@@ -89,9 +89,7 @@ export declare class AdminStatsResponseDto {
     documentsAnchored: number;
     suspendedIssuers: number;
 }
-export declare const DOCUMENT_STATUS_FILTERS: readonly ["ALL", "ACTIVE", "REVOKED"];
 export declare class AdminDocumentsQueryDto {
-    status?: string;
     search?: string;
     cursor?: string;
     limit?: string;
@@ -106,9 +104,6 @@ export declare class AdminDocumentEntityDto {
     cid: string | null;
     txHash: string;
     anchoredAt: Date;
-    revokedAt: Date | null;
-    revokeTxHash: string | null;
-    status: string;
     batchId: string | null;
 }
 export declare class AdminDocumentsListResponseDto {

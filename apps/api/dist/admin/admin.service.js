@@ -332,12 +332,6 @@ let AdminService = class AdminService {
     async getDocuments(params) {
         const limit = Math.min(params.limit ?? 20, 100);
         const where = {};
-        if (params.status === 'ACTIVE') {
-            where.revokedAt = null;
-        }
-        else if (params.status === 'REVOKED') {
-            where.revokedAt = { not: null };
-        }
         if (params.search) {
             where.OR = [
                 { recipientName: { contains: params.search, mode: 'insensitive' } },
@@ -358,10 +352,7 @@ let AdminService = class AdminService {
         const hasMore = docs.length > limit;
         if (hasMore)
             docs.pop();
-        const documents = docs.map((doc) => ({
-            ...doc,
-            status: doc.revokedAt ? 'revoked' : 'active',
-        }));
+        const documents = docs;
         return {
             documents,
             nextCursor: hasMore ? documents[documents.length - 1]?.docHash ?? null : null,

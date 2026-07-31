@@ -17,12 +17,9 @@ export declare class IssuerService {
     }>;
     getStats(address: string): Promise<{
         totalIssued: number;
-        activeDocuments: number;
-        revokedCount: number;
         recentActivityCount: number;
     }>;
     getDocuments(address: string, params?: {
-        status?: 'all' | 'active' | 'revoked';
         search?: string;
         cursor?: string;
     }): Promise<{
@@ -35,9 +32,6 @@ export declare class IssuerService {
             cid: string | null;
             metadataCid: string | null;
             anchoredAt: string;
-            revokedAt: string | null;
-            revokeTxHash: string | undefined;
-            status: "revoked" | "active";
             batchId: string | null;
         }[];
         nextCursor: string | null;

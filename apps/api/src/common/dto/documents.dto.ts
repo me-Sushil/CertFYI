@@ -73,44 +73,6 @@ export class AnchorDto {
   cid?: string
 }
 
-export class RevokeDocumentDto {
-  @ApiProperty({
-    description: 'Hash of the document to revoke.',
-    pattern: HASH_PATTERN,
-    example: EXAMPLE_HASH,
-  })
-  @IsString()
-  @Matches(HASH_REGEX, { message: 'Invalid document hash format' })
-  documentHash!: string
-
-  @ApiProperty({
-    description:
-      'Hash of the confirmed `revokeDocument` transaction, signed by the issuer’s own wallet.',
-    pattern: TX_PATTERN,
-    example: EXAMPLE_TX,
-  })
-  @IsString()
-  @Matches(TX_REGEX, { message: 'Invalid transaction hash format' })
-  txHash!: string
-}
-
-export class RevokeDocumentResponseDto {
-  @ApiProperty({ example: true })
-  success!: boolean
-
-  @ApiProperty({ example: EXAMPLE_HASH })
-  documentHash!: string
-
-  @ApiProperty({ description: 'Revocation transaction hash.', example: EXAMPLE_TX })
-  txHash!: string
-
-  @ApiProperty({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
-  revokedAt!: string
-
-  @ApiProperty({ example: 'Document revoked' })
-  message!: string
-}
-
 export class BatchDocumentDto {
   @ApiProperty({ pattern: HASH_PATTERN, example: EXAMPLE_HASH })
   @IsString()
@@ -368,7 +330,7 @@ export class VerifyDocumentResponseDto {
   })
   success!: boolean
 
-  @ApiProperty({ description: 'Whether the document is anchored and not revoked.', example: true })
+  @ApiProperty({ description: 'Whether the document is anchored on-chain.', example: true })
   isValid!: boolean
 
   @ApiPropertyOptional({ example: EXAMPLE_HASH })
@@ -383,7 +345,7 @@ export class VerifyDocumentResponseDto {
   @ApiPropertyOptional({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' })
   issuedDate?: string
 
-  @ApiPropertyOptional({ enum: ['active', 'revoked', 'not_found'], example: 'active' })
+  @ApiPropertyOptional({ enum: ['active', 'not_found'], example: 'active' })
   status?: string
 
   @ApiProperty({ example: 'Document verified successfully' })
@@ -415,6 +377,6 @@ export class QuickVerifyResponseDto {
   @ApiProperty({ example: true })
   isValid!: boolean
 
-  @ApiProperty({ enum: ['active', 'revoked'], example: 'active' })
+  @ApiProperty({ enum: ['active'], example: 'active' })
   status!: string
 }

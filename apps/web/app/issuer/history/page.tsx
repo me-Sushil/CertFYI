@@ -4,24 +4,13 @@ import { Fragment, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import type { Hex } from 'viem'
 import {
   Search, FileText, History, ExternalLink, ChevronDown,
-  X, Menu, Loader2, Ban, MoreVertical, Copy, Check, Layers,
+  X, Menu, Loader2, MoreVertical, Layers, Copy, Check,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Sidebar } from '@/components/issuer-sidebar'
-import { OnChainButton } from '@/components/admin/on-chain-button'
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,46 +21,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useIssuerDocuments } from '@/queries/issuer'
-import { useRevokeDocumentMutation } from '@/queries/documents'
 import { useDebounce } from 'use-debounce'
 import { cn } from '@/lib/utils'
 import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
 import type { IssuerDocumentRow } from '@/lib/api-types'
-
-const STATUS_OPTIONS = ['all', 'active', 'revoked'] as const
-// Fixed gas limit for revokeDocument - a single SSTORE plus an event emit,
-// comfortably under 200k gas. See the same fix on the anchor flow: some
-// wallets' auto-estimation has returned values that exceed the RPC
-// provider's hard per-tx cap.
-const REVOKE_GAS_LIMIT = BigInt(300_000)
-
-function StatusBadge({ status }: { status: 'active' | 'revoked' }) {
-  const isActive = status === 'active'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-        isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-success' : 'bg-destructive')} />
-      {isActive ? 'Active' : 'Revoked'}
-    </span>
-  )
-}
-
-function BatchStatusSummary({ docs }: { docs: IssuerDocumentRow[] }) {
-  const activeCount = docs.filter((d) => d.status === 'active').length
-  const revokedCount = docs.length - activeCount
-  if (revokedCount === 0) return <StatusBadge status="active" />
-  if (activeCount === 0) return <StatusBadge status="revoked" />
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-3 py-1 text-xs font-semibold text-muted-foreground">
-      {activeCount} active, {revokedCount} revoked
-    </span>
-  )
-}
 
 type DocListItem =
   | { kind: 'single'; doc: IssuerDocumentRow }
@@ -97,7 +51,7 @@ function groupDocuments(documents: IssuerDocumentRow[]): DocListItem[] {
   return items
 }
 
-function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (doc: IssuerDocumentRow) => void }) {
+function RowActionsMenu({ doc }: { doc: IssuerDocumentRow }) {
   const [copied, setCopied] = useState(false)
 
   const copyHash = async () => {
@@ -121,9 +75,9 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
       <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Document Hash</DropdownMenuLabel>
-          <DropdownMenuItem onClick={copyHash} className="justify-between cursor-pointer  font-mono text-xs">
+          <DropdownMenuItem onClick={copyHash} className="justify-between cursor-pointer font-mono text-xs">
             {formatAddress(doc.docHash, 8)}
-            {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5 " aria-hidden />}
+            {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -137,12 +91,6 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
             View on Explorer
           </DropdownMenuItem>
         )}
-        {doc.status === 'active' && (
-          <DropdownMenuItem className="cursor-pointer" variant="destructive" onClick={() => onRevoke(doc)}>
-            <Ban className="h-3.5 w-3.5" aria-hidden />
-            Revoke
-          </DropdownMenuItem>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -152,13 +100,11 @@ function DocumentMobileCard({
   doc,
   isOpen,
   onToggle,
-  onRevoke,
   nested = false,
 }: {
   doc: IssuerDocumentRow
   isOpen: boolean
   onToggle: () => void
-  onRevoke: (doc: IssuerDocumentRow) => void
   nested?: boolean
 }) {
   return (
@@ -178,7 +124,6 @@ function DocumentMobileCard({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <StatusBadge status={doc.status} />
           <ChevronDown
             className={cn('h-4 w-4 text-muted-foreground transition-transform duration-200', isOpen && 'rotate-180')}
             aria-hidden
@@ -218,15 +163,6 @@ function DocumentMobileCard({
               View on Explorer
             </a>
           )}
-          {doc.status === 'active' && (
-            <button
-              onClick={() => onRevoke(doc)}
-              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20"
-            >
-              <Ban className="h-4 w-4" aria-hidden />
-              Revoke
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -239,10 +175,8 @@ export default function IssuanceHistoryPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch] = useDebounce(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set())
-  const [confirmRevoke, setConfirmRevoke] = useState<IssuerDocumentRow | null>(null)
 
   const toggleBatch = (batchId: string) => {
     setExpandedBatches((prev) => {
@@ -253,13 +187,7 @@ export default function IssuanceHistoryPage() {
     })
   }
 
-  const docsQuery = useIssuerDocuments(true, { status: statusFilter, search: debouncedSearch || undefined })
-  const revokeDocument = useRevokeDocumentMutation()
-
-  const handleRevokeConfirmed = async (doc: IssuerDocumentRow, txHash: Hex) => {
-    await revokeDocument.mutateAsync({ documentHash: doc.docHash, txHash })
-    setConfirmRevoke(null)
-  }
+  const docsQuery = useIssuerDocuments(true, { search: debouncedSearch || undefined })
 
   const documents = useMemo(
     () => docsQuery.data?.pages.flatMap((p) => p.documents) ?? [],
@@ -335,23 +263,6 @@ export default function IssuanceHistoryPage() {
                     className="h-11 w-full rounded-xl border border-border/10 bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-1 ring-border/5 transition-all duration-150 ease-[var(--ease-premium)] placeholder:text-muted-foreground focus:border-accent/30 focus:ring-accent/10"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
-                  {STATUS_OPTIONS.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setStatusFilter(opt)}
-                      aria-pressed={statusFilter === opt}
-                      className={cn(
-                        'rounded-xl px-4 py-2 cursor-pointer text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
-                        statusFilter === opt
-                          ? 'bg-primary text-primary-foreground shadow-button'
-                          : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
-                      )}
-                    >
-                      {opt === 'all' ? 'All' : opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <p className="mb-5 text-sm font-semibold text-muted-foreground">
@@ -370,9 +281,9 @@ export default function IssuanceHistoryPage() {
                 <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
                   <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
                   <p className="text-sm font-semibold text-muted-foreground">
-                    {debouncedSearch || statusFilter !== 'all' ? 'No documents match your search' : 'No documents issued yet'}
+                    {debouncedSearch ? 'No documents match your search' : 'No documents issued yet'}
                   </p>
-                  {!debouncedSearch && statusFilter === 'all' && (
+                  {!debouncedSearch && (
                     <Link href="/issuer/issue" className="mt-3 inline-block text-sm font-semibold text-accent hover:opacity-80">
                       Issue your first document &rarr;
                     </Link>
@@ -391,7 +302,6 @@ export default function IssuanceHistoryPage() {
                           <th className="w-[32%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Recipient</th>
                           <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Type</th>
                           <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Issued</th>
-                          <th className="w-[18%] px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
                           <th className="w-[14%] px-6 py-4 text-right text-sm font-extrabold text-foreground">Details</th>
                         </tr>
                       </thead>
@@ -414,11 +324,8 @@ export default function IssuanceHistoryPage() {
                                 <td className="px-6 py-4 text-sm text-muted-foreground">
                                   <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                  <StatusBadge status={doc.status} />
-                                </td>
                                 <td className="px-6 py-4 text-right">
-                                  <RowActionsMenu doc={doc} onRevoke={setConfirmRevoke} />
+                                  <RowActionsMenu doc={doc} />
                                 </td>
                               </tr>
                             )
@@ -454,9 +361,6 @@ export default function IssuanceHistoryPage() {
                                 <td className="px-6 py-4 text-sm text-muted-foreground">
                                   <span title={formatDate(latestAnchoredAt)}>{formatRelativeTime(latestAnchoredAt)}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                  <BatchStatusSummary docs={item.docs} />
-                                </td>
                                 <td className="px-6 py-4 text-right text-xs font-semibold text-accent">
                                   {isBatchOpen ? 'Hide' : 'View'}
                                 </td>
@@ -477,11 +381,8 @@ export default function IssuanceHistoryPage() {
                                     <td className="px-6 py-4 text-sm text-muted-foreground">
                                       <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                      <StatusBadge status={doc.status} />
-                                    </td>
                                     <td className="px-6 py-4 text-right">
-                                      <RowActionsMenu doc={doc} onRevoke={setConfirmRevoke} />
+                                      <RowActionsMenu doc={doc} />
                                     </td>
                                   </tr>
                                 ))}
@@ -503,7 +404,6 @@ export default function IssuanceHistoryPage() {
                             doc={item.doc}
                             isOpen={expanded === item.doc.docHash}
                             onToggle={() => setExpanded(expanded === item.doc.docHash ? null : item.doc.docHash)}
-                            onRevoke={setConfirmRevoke}
                           />
                         )
                       }
@@ -522,7 +422,6 @@ export default function IssuanceHistoryPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <BatchStatusSummary docs={item.docs} />
                               <ChevronDown
                                 className={cn(
                                   'h-4 w-4 text-muted-foreground transition-transform duration-200',
@@ -540,7 +439,6 @@ export default function IssuanceHistoryPage() {
                                   doc={doc}
                                   isOpen={expanded === doc.docHash}
                                   onToggle={() => setExpanded(expanded === doc.docHash ? null : doc.docHash)}
-                                  onRevoke={setConfirmRevoke}
                                   nested
                                 />
                               ))}
@@ -588,37 +486,6 @@ export default function IssuanceHistoryPage() {
           </div>
         </div>
       )}
-
-      {/* Revoke confirmation */}
-      <AlertDialog open={!!confirmRevoke} onOpenChange={(open) => !open && setConfirmRevoke(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Revoke Document</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark{' '}
-              <strong>{confirmRevoke?.recipientName || confirmRevoke?.documentType || 'this document'}</strong>{' '}
-              as revoked on-chain. This cannot be undone, and it costs gas. Verification will show
-              it as revoked, but the anchor record itself remains permanently on the blockchain.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {confirmRevoke && (
-              <OnChainButton
-                functionName="revokeDocument"
-                args={[confirmRevoke.docHash as Hex]}
-                gas={REVOKE_GAS_LIMIT}
-                onConfirmed={(txHash) => handleRevokeConfirmed(confirmRevoke, txHash)}
-                successMessage="Document revoked"
-                errorMessage="Revocation failed"
-                variant="destructive"
-              >
-                Confirm Revocation
-              </OnChainButton>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
