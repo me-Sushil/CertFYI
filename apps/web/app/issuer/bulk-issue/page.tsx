@@ -22,6 +22,7 @@ import {
   calculateMerkleRoot, getExplorerUrl,
 } from '@/lib/contracts/document-anchor'
 import { cn } from '@/lib/utils'
+import { AnchorProcessingOverlay } from '@/components/issuer/anchor-processing-overlay'
 
 const STEPS = ['select', 'map', 'review', 'success'] as const
 type Step = (typeof STEPS)[number]
@@ -435,6 +436,16 @@ export default function BulkIssuancePage() {
 
   return (
     <div className="flex min-h-screen bg-background">
+       <AnchorProcessingOverlay
+      open={isBusy}
+      phase={phase}
+      label={
+        mappedRows
+          ? `${mappedRows.length} document${mappedRows.length !== 1 ? 's' : ''}`
+          : undefined
+      }
+      progress={phase === 'uploading' ? progress : undefined}
+    />
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex min-h-0 flex-1 flex-col border-r border-border/10">
@@ -625,11 +636,11 @@ export default function BulkIssuancePage() {
 
                 <div className="flex gap-4 pt-2">
                   <Link href="/issuer" className="flex-1">
-                    <Button variant="outline" className="h-12 w-full">
+                    <Button variant="outline" className="h-12 cursor-pointer w-full">
                       Cancel
                     </Button>
                   </Link>
-                  <Button className="h-12 flex-1" onClick={handleContinueToMap} disabled={pdfFiles.length === 0}>
+                  <Button className="h-12 cursor-pointer flex-1" onClick={handleContinueToMap} disabled={pdfFiles.length === 0}>
                     Continue ({pdfFiles.length})
                   </Button>
                 </div>
@@ -710,7 +721,7 @@ export default function BulkIssuancePage() {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('select')}>
+                  <Button variant="outline" className="h-12 cursor-pointer flex-1" onClick={() => setStep('select')}>
                     Back
                   </Button>
                 </div>
@@ -787,7 +798,7 @@ export default function BulkIssuancePage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('map')} disabled={isBusy}>
+                  <Button variant="outline" className="h-12 cursor-pointer flex-1" onClick={() => setStep('map')} disabled={isBusy}>
                     Back
                   </Button>
                   <Button className="h-12 flex-1" onClick={handleConfirmIssueAll} disabled={isBusy || !isCorrectChain}>
@@ -800,19 +811,16 @@ export default function BulkIssuancePage() {
 
             {/* Step 4: Success */}
             {isConnected && step === 'success' && result && (
-              <div className="animate-scale-in space-y-8 py-12 text-center">
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-card shadow-button ring-1 ring-border/5">
-                  <CheckCircle className="h-10 w-10 text-success" aria-hidden />
-                </div>
+              <div className="animate-scale-in -mt-15 space-y-8 py-12 text-center">
                 <div>
                   <h2 className="mb-2 text-[30px] leading-[36px] font-extrabold tracking-[-0.8px] text-foreground">
                     Batch Issued Successfully!
                   </h2>
-                  <p className="mx-auto max-w-md text-lg leading-[30.6px] text-muted-foreground">
+                  <p className="mx-auto max-w-2xl text-lg leading-[30.6px] text-muted-foreground">
                     {result.documentCount} documents were anchored under one Merkle root in a single transaction.
                   </p>
                 </div>
-                <div className="mx-auto max-w-md space-y-4 rounded-lg bg-card p-6 text-left text-sm shadow-card ring-1 ring-border/5">
+                <div className="mx-auto max-xl-md space-y-4 rounded-lg bg-card p-6 text-left text-sm shadow-card ring-1 ring-border/5">
                   <div>
                     <p className="mb-2 font-semibold text-muted-foreground">Batch ID</p>
                     <p className="font-mono text-xs break-all text-foreground">{result.batchId}</p>
@@ -839,11 +847,12 @@ export default function BulkIssuancePage() {
                     </div>
                   </div>
                 </div>
-                <div className="mx-auto flex max-w-xs flex-col gap-3">
-                  <Link href="/issuer/history">
-                    <Button className="h-12 w-full">View in History</Button>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Link href="/issuer/history" className="flex-1">
+                  <Button className="h-11 w-full cursor-pointer rounded-lg font-medium shadow-sm transition-all hover:shadow">
+                    View in History</Button>
                   </Link>
-                  <Button variant="outline" className="h-12 w-full" onClick={resetAll}>
+                  <Button variant="outline"  className="h-11 flex-1 cursor-pointer rounded-lg font-medium transition-colors hover:bg-accent/5" onClick={resetAll}>
                     Issue Another Batch
                   </Button>
                 </div>

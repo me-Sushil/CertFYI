@@ -138,7 +138,7 @@ export default function IssuerActivityPage() {
                   onClick={() => setActionFilter(f.value)}
                   aria-pressed={actionFilter === f.value}
                   className={cn(
-                    'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+                    'rounded-xl px-4 py-2 text-sm cursor-pointer font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
                     actionFilter === f.value
                       ? 'bg-primary text-primary-foreground shadow-button'
                       : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',
