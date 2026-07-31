@@ -32,7 +32,7 @@ export function HeroStats() {
   const { data: stats, isLoading, isError } = usePlatformStats()
 
   return (
-    <div className="stagger-5 -mb-29 mx-auto grid max-w-2xl animate-fade-in-up grid-cols-2 gap-6 opacity-0">
+    <div className="-mb-29 mx-auto grid max-w-2xl grid-cols-2 gap-6">
       <StatTile value={stats?.totalDocumentsAnchored} isLoading={isLoading} isError={isError} label="Documents Issued" />
       <StatTile value={stats?.totalVerifications} isLoading={isLoading} isError={isError} label="Verifications" />
     </div>

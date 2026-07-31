@@ -2,7 +2,6 @@
 
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ThemeProvider } from '@/lib/theme-context'
 import {
   RainbowKitProvider,
   RainbowKitAuthenticationProvider,
@@ -202,13 +201,13 @@ export function Providers({ children }: { children: ReactNode }) {
   )
 
   return (
-    <ThemeProvider>
+    <>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <AuthedRainbowKit>{children}</AuthedRainbowKit>
         </QueryClientProvider>
       </WagmiProvider>
       <Toaster position="bottom-right" richColors />
-    </ThemeProvider>
+    </>
   )
 }
