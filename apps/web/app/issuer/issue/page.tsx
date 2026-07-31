@@ -368,10 +368,15 @@ export default function SingleIssuancePage() {
     <div className="flex min-h-screen bg-background">
       {/* [ADDED] Animated processing overlay - shows only while isBusy is true,
           driven entirely by the phase state you already compute above. */}
-      <AnchorProcessingOverlay
+      {/* <AnchorProcessingOverlay
         open={isBusy}
         phase={phase}
         fileName={pdfFile?.name}
+      /> */}
+      <AnchorProcessingOverlay
+        open={isBusy}
+        phase={phase}
+        label={pdfFile?.name}
       />
 
       {/* Desktop sidebar */}

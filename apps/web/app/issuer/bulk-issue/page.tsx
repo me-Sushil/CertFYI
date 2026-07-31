@@ -22,6 +22,7 @@ import {
   calculateMerkleRoot, getExplorerUrl,
 } from '@/lib/contracts/document-anchor'
 import { cn } from '@/lib/utils'
+import { AnchorProcessingOverlay } from '@/components/issuer/anchor-processing-overlay'
 
 const STEPS = ['select', 'map', 'review', 'success'] as const
 type Step = (typeof STEPS)[number]
@@ -435,6 +436,16 @@ export default function BulkIssuancePage() {
 
   return (
     <div className="flex min-h-screen bg-background">
+       <AnchorProcessingOverlay
+      open={isBusy}
+      phase={phase}
+      label={
+        mappedRows
+          ? `${mappedRows.length} document${mappedRows.length !== 1 ? 's' : ''}`
+          : undefined
+      }
+      progress={phase === 'uploading' ? progress : undefined}
+    />
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex min-h-0 flex-1 flex-col border-r border-border/10">

@@ -278,7 +278,7 @@ export default function VerifierPortal() {
               <button
                 onClick={clearFile}
                 aria-label="Close"
-                className="rounded-full p-2 text-muted-foreground transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
+                className="rounded-full p-2 text-muted-foreground transition-colors cursor-pointer duration-150 ease-[var(--ease-premium)] hover:bg-muted/50 hover:text-foreground"
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
@@ -395,11 +395,11 @@ export default function VerifierPortal() {
             )}
 
             <div className="flex flex-col gap-4 pt-2 sm:flex-row">
-              <Button onClick={clearFile} variant="outline" className="h-12 flex-1">
+              <Button onClick={clearFile} variant="outline" className="h-12 flex-1 cursor-pointer">
                 Verify Another PDF
               </Button>
               <Link href="/" className="flex-1">
-                <Button className="h-12 w-full">Back to Home</Button>
+                <Button className="h-12 w-full cursor-pointer">Back to Home</Button>
               </Link>
             </div>
           </div>
