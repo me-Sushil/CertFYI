@@ -41,11 +41,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f3f3f3' },
-    { media: '(prefers-color-scheme: dark)', color: '#111213' },
-  ],
+  // Light-only app. Advertising `light dark` here made the browser paint its
+  // own dark canvas before our CSS loaded on dark-OS machines, which showed up
+  // as a black flash on every hard refresh.
+  colorScheme: 'light',
+  themeColor: '#f3f3f3',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -64,7 +64,7 @@ export default function RootLayout({
       // scroll on route changes (see the framework warning it otherwise logs).
       data-scroll-behavior="smooth"
       className={`${plusJakartaSans.variable} scroll-smooth`}
-      style={{ backgroundColor: 'var(--surface-base)' }}
+      style={{ backgroundColor: 'var(--surface-base, #f3f3f3)' }}
     >
       <body className="antialiased font-sans" style={{ fontFamily: 'var(--font-plus-jakarta-sans), Plus Jakarta Sans, sans-serif' }}>
         <Providers>
