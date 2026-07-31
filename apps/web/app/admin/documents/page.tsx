@@ -3,9 +3,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Button } from '@/components/ui/button'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { SearchInput } from '@/components/ui/search-input'
-import { FilterGroup } from '@/components/ui/filter-group'
 import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { FileSpreadsheet, ExternalLink, ChevronDown, Loader2, Layers } from 'lucide-react'
 import { useAdminDocuments } from '@/queries/admin'
@@ -13,29 +11,6 @@ import { cn } from '@/lib/utils'
 import { formatAddress, formatDate, formatRelativeTime } from '@/lib/format'
 import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
 import type { AdminDocumentRow } from '@/lib/api-types'
-
-const STATUS_FILTERS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'REVOKED', label: 'Revoked' },
-]
-
-const DOC_BADGE: Record<string, { label: string; tone: 'success' | 'destructive' }> = {
-  active: { label: 'Active', tone: 'success' },
-  revoked: { label: 'Revoked', tone: 'destructive' },
-}
-
-function BatchStatusSummary({ docs }: { docs: AdminDocumentRow[] }) {
-  const activeCount = docs.filter((d) => d.status === 'active').length
-  const revokedCount = docs.length - activeCount
-  if (revokedCount === 0) return <StatusBadge {...DOC_BADGE.active} />
-  if (activeCount === 0) return <StatusBadge {...DOC_BADGE.revoked} />
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-3 py-1 text-xs font-semibold text-muted-foreground">
-      {activeCount} active, {revokedCount} revoked
-    </span>
-  )
-}
 
 type DocListItem =
   | { kind: 'single'; doc: AdminDocumentRow }
@@ -89,7 +64,6 @@ function DocumentMobileCard({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <StatusBadge {...DOC_BADGE[doc.status]} />
           <ChevronDown
             className={cn('h-4 w-4 text-muted-foreground transition-transform duration-200', isOpen && 'rotate-180')}
             aria-hidden
@@ -144,7 +118,6 @@ function DocumentMobileCard({
 export default function AdminDocumentsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch] = useDebounce(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState('ALL')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set())
 
@@ -158,7 +131,6 @@ export default function AdminDocumentsPage() {
   }
 
   const docsQuery = useAdminDocuments(true, {
-    status: statusFilter,
     search: debouncedSearch || undefined,
   })
 
@@ -181,7 +153,6 @@ export default function AdminDocumentsPage() {
           isSearchPending={isSearchPending}
           isFetching={docsQuery.isFetching && !docsQuery.isFetchingNextPage}
         />
-        <FilterGroup options={STATUS_FILTERS} value={statusFilter} onChange={setStatusFilter} />
       </div>
 
       <p className="mb-5 text-sm font-semibold text-muted-foreground">
@@ -200,7 +171,7 @@ export default function AdminDocumentsPage() {
         <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
           <FileSpreadsheet className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-sm font-semibold text-muted-foreground">
-            {debouncedSearch || statusFilter !== 'ALL' ? 'No documents match your search' : 'No documents anchored yet'}
+            {debouncedSearch ? 'No documents match your search' : 'No documents anchored yet'}
           </p>
         </div>
       )}
@@ -216,7 +187,6 @@ export default function AdminDocumentsPage() {
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Recipient</th>
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Type</th>
                   <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Anchored</th>
-                  <th className="px-6 py-4 text-left text-sm font-extrabold text-foreground">Status</th>
                   <th className="px-6 py-4 text-right text-sm font-extrabold text-foreground" />
                 </tr>
               </thead>
@@ -248,9 +218,6 @@ export default function AdminDocumentsPage() {
                         <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge {...DOC_BADGE[doc.status]} />
                         </td>
                         <td className="px-6 py-4 text-right">
                           {doc.txHash && (
@@ -307,9 +274,6 @@ export default function AdminDocumentsPage() {
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           <span title={formatDate(first.anchoredAt)}>{formatRelativeTime(first.anchoredAt)}</span>
                         </td>
-                        <td className="px-6 py-4">
-                          <BatchStatusSummary docs={item.docs} />
-                        </td>
                         <td className="px-6 py-4 text-right text-xs font-semibold text-accent">
                           {isBatchOpen ? 'Hide' : 'View'}
                         </td>
@@ -336,9 +300,6 @@ export default function AdminDocumentsPage() {
                             <td className="truncate px-6 py-4 text-sm text-muted-foreground">{doc.documentType || '-'}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               <span title={formatDate(doc.anchoredAt)}>{formatRelativeTime(doc.anchoredAt)}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <StatusBadge {...DOC_BADGE[doc.status]} />
                             </td>
                             <td className="px-6 py-4 text-right">
                               {doc.txHash && (
@@ -390,7 +351,6 @@ export default function AdminDocumentsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <BatchStatusSummary docs={item.docs} />
                       <ChevronDown
                         className={cn(
                           'h-4 w-4 text-muted-foreground transition-transform duration-200',

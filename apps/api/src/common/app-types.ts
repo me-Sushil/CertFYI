@@ -9,8 +9,6 @@ export interface Document {
   issuerEmail: string
   issuedAt: Date
   expiresAt?: Date
-  revoked: boolean
-  revokedAt?: Date
   transactionHash?: string
   blockNumber?: number
 }

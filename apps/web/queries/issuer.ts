@@ -49,13 +49,12 @@ export function useIssuerStats(enabled: boolean) {
 
 export function useIssuerDocuments(
   enabled: boolean,
-  params?: { status?: 'all' | 'active' | 'revoked'; search?: string },
+  params?: { search?: string },
 ) {
   return useInfiniteQuery<IssuerDocumentsResponse>({
     queryKey: keys.issuer.documents.list(params),
     queryFn: ({ pageParam }) =>
       issuerApi.getDocuments({
-        status: params?.status,
         search: params?.search,
         cursor: pageParam as string | undefined,
       }),

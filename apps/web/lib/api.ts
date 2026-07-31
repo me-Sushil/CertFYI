@@ -29,8 +29,6 @@ import type {
   PdfUploadResponse,
   ReactivateIssuerRequest,
   RejectUserRequest,
-  RevokeDocumentRequest,
-  RevokeDocumentResponse,
   SessionResponse,
   SetIssuerMetadataRequest,
   SetIssuerMetadataResponse,
@@ -131,9 +129,8 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  getDocuments: (params?: { status?: string; search?: string; cursor?: string; limit?: number }) => {
+  getDocuments: (params?: { search?: string; cursor?: string; limit?: number }) => {
     const searchParams = new URLSearchParams()
-    if (params?.status) searchParams.set('status', params.status)
     if (params?.search) searchParams.set('search', params.search)
     if (params?.cursor) searchParams.set('cursor', params.cursor)
     if (params?.limit) searchParams.set('limit', String(params.limit))
@@ -170,7 +167,7 @@ export const issuerApi = {
   getStats: () => request<IssuerStatsResponse>('/issuer/stats'),
   getDocuments: (query: IssuerDocumentsQuery = {}) =>
     request<IssuerDocumentsResponse>(
-      `/issuer/documents${toQueryString({ status: query.status, search: query.search, cursor: query.cursor })}`,
+      `/issuer/documents${toQueryString({ search: query.search, cursor: query.cursor })}`,
     ),
   getActivity: (query: IssuerActivityQuery = {}) =>
     request<IssuerActivityResponse>(
@@ -192,8 +189,6 @@ export const issuerApi = {
 export const documentsApi = {
   anchor: (body: AnchorDocumentRequest) =>
     request<AnchorDocumentResponse>('/documents/anchor', { method: 'POST', body: JSON.stringify(body) }),
-  revoke: (body: RevokeDocumentRequest) =>
-    request<RevokeDocumentResponse>('/documents/revoke', { method: 'POST', body: JSON.stringify(body) }),
   getAnchor: (hash: string) => request(`/documents/anchor?hash=${encodeURIComponent(hash)}`),
   anchorBatch: (body: BatchAnchorRequest) =>
     request<BatchAnchorResponse>('/documents/anchor-batch', { method: 'POST', body: JSON.stringify(body) }),

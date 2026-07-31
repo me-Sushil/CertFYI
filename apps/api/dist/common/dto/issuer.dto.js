@@ -92,7 +92,7 @@ __decorate([
 ], RequestStatusResponseDto.prototype, "requestStatus", void 0);
 class IssuerStatsResponseDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { totalIssued: { required: true, type: () => Number }, activeDocuments: { required: true, type: () => Number }, revokedCount: { required: true, type: () => Number }, recentActivityCount: { required: true, type: () => Number } };
+        return { totalIssued: { required: true, type: () => Number }, recentActivityCount: { required: true, type: () => Number } };
     }
 }
 exports.IssuerStatsResponseDto = IssuerStatsResponseDto;
@@ -101,20 +101,12 @@ __decorate([
     __metadata("design:type", Number)
 ], IssuerStatsResponseDto.prototype, "totalIssued", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Currently active (non-revoked) documents.', example: 138 }),
-    __metadata("design:type", Number)
-], IssuerStatsResponseDto.prototype, "activeDocuments", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Number of revoked documents.', example: 4 }),
-    __metadata("design:type", Number)
-], IssuerStatsResponseDto.prototype, "revokedCount", void 0);
-__decorate([
     (0, swagger_1.ApiProperty)({ description: 'Recent activity entries count.', example: 12 }),
     __metadata("design:type", Number)
 ], IssuerStatsResponseDto.prototype, "recentActivityCount", void 0);
 class IssuerDocumentDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, revokedAt: { required: true, type: () => String, nullable: true }, revokeTxHash: { required: false, type: () => String }, status: { required: true, type: () => Object }, batchId: { required: true, type: () => String, nullable: true } };
+        return { docHash: { required: true, type: () => String }, documentType: { required: false, type: () => String }, recipientName: { required: false, type: () => String }, recipientEmail: { required: false, type: () => String }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => String }, batchId: { required: true, type: () => String, nullable: true } };
     }
 }
 exports.IssuerDocumentDto = IssuerDocumentDto;
@@ -142,18 +134,6 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: '2026-07-28T12:00:00.000Z' }),
     __metadata("design:type", String)
 ], IssuerDocumentDto.prototype, "anchoredAt", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: null, nullable: true }),
-    __metadata("design:type", Object)
-], IssuerDocumentDto.prototype, "revokedAt", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' }),
-    __metadata("design:type", String)
-], IssuerDocumentDto.prototype, "revokeTxHash", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ enum: ['active', 'revoked'], example: 'active' }),
-    __metadata("design:type", String)
-], IssuerDocumentDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: null, nullable: true, description: 'Set when issued as part of a bulk batch anchor.' }),
     __metadata("design:type", Object)
@@ -217,16 +197,10 @@ __decorate([
 ], IssuerActivityResponseDto.prototype, "nextCursor", void 0);
 class IssuerDocumentsQueryDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { status: { required: false, type: () => Object, enum: ['all', 'active', 'revoked'] }, search: { required: false, type: () => String }, cursor: { required: false, type: () => String } };
+        return { search: { required: false, type: () => String }, cursor: { required: false, type: () => String } };
     }
 }
 exports.IssuerDocumentsQueryDto = IssuerDocumentsQueryDto;
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: ['all', 'active', 'revoked'], default: 'all' }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['all', 'active', 'revoked']),
-    __metadata("design:type", String)
-], IssuerDocumentsQueryDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Matches recipient name/email, document type, or hash.' }),
     (0, class_validator_1.IsOptional)(),

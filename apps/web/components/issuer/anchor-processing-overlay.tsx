@@ -402,23 +402,22 @@ export function AnchorProcessingOverlay({ open, phase, label, progress }: Anchor
             )}
           </div>
 
-          {/* Forge node: spinning arc loader, icon morphs with phase */}
+          {/* Forge node: spinning ring loader, icon morphs with phase.
+              Plain HTML borders, not SVG strokes: a <div> rotates around its
+              own center by default in every browser, so there's no
+              transform-origin / viewBox quirk to fight - this is the same
+              bulletproof pattern behind every "border-t-transparent
+              animate-spin" loader. Thick (4px) and two-tone for visibility
+              at a glance on any screen. */}
           <div className="relative z-10 flex h-20 w-20 shrink-0 items-center justify-center">
             {/* faint full track so the moving arc has something to travel around */}
-            <svg className="absolute inset-0" viewBox="0 0 80 80" aria-hidden>
-              <circle cx="40" cy="40" r="37" fill="none" className="stroke-accent/15" strokeWidth="3" />
-            </svg>
-            {/* the actual moving arc - a partial stroke that continuously rotates */}
-            <svg className="absolute inset-0 anchorviz-spin" viewBox="0 0 80 80" aria-hidden>
-              <circle
-                cx="40" cy="40" r="37"
-                fill="none"
-                className="stroke-accent"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray="58 174"
-              />
-            </svg>
+            <div className="absolute inset-0 rounded-full border-4 border-accent/15" />
+            {/* the actual moving arc */}
+            <div
+              className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-accent border-r-accent"
+              style={{ animationDuration: '0.9s' }}
+              aria-hidden
+            />
             <div className="absolute inset-[6px] rounded-full bg-accent/10 anchorviz-pulse-ring" />
             <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-button">
               <ActiveIcon key={phase} className="h-5 w-5 anchorviz-icon-pop" aria-hidden />
@@ -538,7 +537,7 @@ export function AnchorProcessingOverlay({ open, phase, label, progress }: Anchor
 
       <style>{`
         @media (prefers-reduced-motion: reduce) {
-          .anchorviz-fade-in, .anchorviz-rise, .anchorviz-spin, .anchorviz-pulse-ring,
+          .anchorviz-fade-in, .anchorviz-rise, .anchorviz-pulse-ring,
           .anchorviz-icon-pop, .anchorviz-dash, .anchorviz-block-glow, .anchorviz-dot,
           .anchorviz-doc-dissolve, .anchorviz-scan-sweep, .anchorviz-packet-travel,
           .anchorviz-chain-shift, .anchorviz-link-pulse {
@@ -554,9 +553,6 @@ export function AnchorProcessingOverlay({ open, phase, label, progress }: Anchor
           from { opacity: 0; transform: translateY(8px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .anchorviz-spin { animation: anchorviz-spin 1.4s linear infinite; }
-        @keyframes anchorviz-spin { to { transform: rotate(360deg); } }
 
         .anchorviz-pulse-ring { animation: anchorviz-pulse-ring 2s ease-in-out infinite; }
         @keyframes anchorviz-pulse-ring {

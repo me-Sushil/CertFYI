@@ -10,25 +10,22 @@ The core contract for anchoring documents on the blockchain with support for:
 
 - **Single Document Anchoring**: Store individual document hashes with metadata
 - **Merkle Tree Batching**: Efficiently anchor multiple documents in a single transaction using Merkle roots
-- **Document Revocation**: Revoke documents when they become invalid
-- **Issuer Management**: Approve/revoke issuer addresses for document anchoring
+- **Issuer Management**: Grant/revoke `ISSUER_ROLE` for document anchoring, via OpenZeppelin AccessControl
 - **Merkle Proof Verification**: Verify that a specific document is part of an anchored batch
 
 #### Key Features
 
 1. **Gas Efficient**: Uses Merkle root batching to anchor 100+ documents in a single transaction
 2. **Non-Custodial**: Documents are anchored by issuing organizations directly
-3. **Immutable Records**: Once anchored, document metadata cannot be modified
-4. **Revocation Support**: Documents can be revoked while maintaining audit trails
+3. **Immutable Records**: Once anchored, a document's hash, issuer, and timestamp cannot be modified
 
 #### Main Functions
 
-- `approveIssuer(address)` - Approve an issuer to anchor documents (owner only)
-- `revokeIssuer(address)` - Revoke issuer privileges (owner only)
+- `grantRole(ISSUER_ROLE, address)` - Approve an issuer to anchor documents (`ADMIN_ROLE` only)
+- `revokeRole(ISSUER_ROLE, address)` - Suspend an issuer's anchoring privileges (`ADMIN_ROLE` only)
 - `anchorDocument(bytes32, string)` - Anchor a single document
 - `anchorMerkleBatch(bytes32, uint256, string)` - Anchor a batch using Merkle root
-- `revokeDocument(bytes32)` - Revoke a document
-- `verifyDocument(bytes32)` - Check if a document is valid
+- `verifyDocument(bytes32)` - Check if a document hash is anchored
 - `getDocument(bytes32)` - Get document details
 - `getMerkleBatch(bytes32)` - Get batch details
 - `verifyMerkleProof(bytes32[], bytes32, bytes32)` - Verify Merkle proof

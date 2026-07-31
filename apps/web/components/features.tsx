@@ -37,8 +37,8 @@ const FEATURES: Feature[] = [
   },
   {
     icon: FileCheck,
-    title: 'Revocation Management',
-    description: 'Issuers can revoke documents when needed, instantly visible to all verifiers.',
+    title: 'Full Audit Trail',
+    description: 'Every anchoring action is logged with actor, timestamp, and transaction hash.',
     color: '--color-accent-peach',
   },
   {

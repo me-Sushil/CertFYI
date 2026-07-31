@@ -69,13 +69,12 @@ export function useIssuers(enabled: boolean, params?: { status?: string; search?
   })
 }
 
-export function useAdminDocuments(enabled: boolean, params?: { status?: string; search?: string }) {
+export function useAdminDocuments(enabled: boolean, params?: { search?: string }) {
   return useInfiniteQuery<{ documents: AdminDocumentRow[]; nextCursor: string | null }>({
     queryKey: keys.admin.documents.list(params),
     queryFn: async ({ pageParam }) => {
       const cursor = pageParam as string | undefined
       return adminApi.getDocuments({
-        status: params?.status,
         search: params?.search,
         cursor,
         limit: 20,

@@ -117,12 +117,11 @@ export class AdminController {
   @Get('documents')
   @ApiOperation({
     summary: 'List all anchored documents',
-    description: 'Paginated, filterable by status and search term. Results newest-first.',
+    description: 'Paginated, filterable by search term. Results newest-first.',
   })
   @ApiOkResponse({ description: 'Document list.', type: AdminDocumentsListResponseDto })
   getDocuments(@Query() query: AdminDocumentsQueryDto) {
     return this.adminService.getDocuments({
-      status: query.status,
       search: query.search,
       cursor: query.cursor,
       limit: query.limit ? parseInt(query.limit, 10) : undefined,

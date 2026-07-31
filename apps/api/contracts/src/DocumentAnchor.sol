@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title DocumentAnchor
- * @dev Anchors document hashes and revocations on-chain with Merkle tree support.
+ * @dev Anchors document hashes on-chain with Merkle tree support.
  * Access is role-gated via OpenZeppelin AccessControl: ADMIN_ROLE manages ISSUER_ROLE
  * membership (grantRole/revokeRole), and only ISSUER_ROLE holders may anchor documents.
  */
@@ -20,7 +20,6 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
         bytes32 hash;
         address issuer;
         uint256 timestamp;
-        bool revoked;
         string documentType;
     }
 
@@ -35,7 +34,6 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
 
     // Mappings
     mapping(bytes32 => Document) public documents;
-    mapping(bytes32 => bool) public revokedDocuments;
     mapping(bytes32 => MerkleBatch) public merkleBatches;
     mapping(bytes32 => bool) public usedMerkleRoots;
 
@@ -44,12 +42,6 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
         bytes32 indexed documentHash,
         address indexed issuer,
         string documentType,
-        uint256 timestamp
-    );
-
-    event DocumentRevoked(
-        bytes32 indexed documentHash,
-        address indexed issuer,
         uint256 timestamp
     );
 
@@ -92,7 +84,6 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
             hash: _documentHash,
             issuer: msg.sender,
             timestamp: block.timestamp,
-            revoked: false,
             documentType: _documentType
         });
 
@@ -124,48 +115,26 @@ contract DocumentAnchor is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @dev Revoke a document
-     */
-    function revokeDocument(bytes32 _documentHash) external nonReentrant {
-        Document storage doc = documents[_documentHash];
-        require(doc.timestamp != 0, "Document not found");
-        require(doc.issuer == msg.sender || hasRole(ADMIN_ROLE, msg.sender), "Only issuer or admin can revoke");
-        require(!doc.revoked, "Document already revoked");
-
-        doc.revoked = true;
-        revokedDocuments[_documentHash] = true;
-
-        emit DocumentRevoked(_documentHash, msg.sender, block.timestamp);
-    }
-
-    /**
-     * @dev Verify if a document is valid and not revoked
+     * @dev Verify if a document hash is anchored
      */
     function verifyDocument(bytes32 _documentHash) external view returns (bool) {
-        Document memory doc = documents[_documentHash];
-        
-        if (doc.timestamp == 0) {
-            return false; // Document not anchored
-        }
-        
-        return !doc.revoked;
+        return documents[_documentHash].timestamp != 0;
     }
 
     /**
      * @dev Get document details
      */
-    function getDocument(bytes32 _documentHash) 
-        external 
-        view 
+    function getDocument(bytes32 _documentHash)
+        external
+        view
         returns (
             address issuer,
             uint256 timestamp,
-            bool revoked,
             string memory documentType
-        ) 
+        )
     {
         Document memory doc = documents[_documentHash];
-        return (doc.issuer, doc.timestamp, doc.revoked, doc.documentType);
+        return (doc.issuer, doc.timestamp, doc.documentType);
     }
 
     /**

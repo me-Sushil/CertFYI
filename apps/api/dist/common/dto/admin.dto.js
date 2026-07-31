@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuditLogResponseDto = exports.AuditLogEntryDto = exports.AdminDocumentsListResponseDto = exports.AdminDocumentEntityDto = exports.AdminDocumentsQueryDto = exports.DOCUMENT_STATUS_FILTERS = exports.AdminStatsResponseDto = exports.IssuerDetailResponseDto = exports.IssuerListResponseDto = exports.IssuerEntityDto = exports.AccessRequestDecisionResponseDto = exports.AccessRequestListResponseDto = exports.AccessRequestEntityDto = exports.AuditLogQueryDto = exports.IssuersQueryDto = exports.RequestsQueryDto = exports.SetIssuerMetadataDto = exports.ReactivateIssuerDto = exports.SuspendIssuerDto = exports.RejectUserDto = exports.ApproveUserDto = exports.ISSUER_STATUS_FILTERS = exports.REQUEST_STATUS_FILTERS = exports.REQUEST_STATUSES = void 0;
+exports.AuditLogResponseDto = exports.AuditLogEntryDto = exports.AdminDocumentsListResponseDto = exports.AdminDocumentEntityDto = exports.AdminDocumentsQueryDto = exports.AdminStatsResponseDto = exports.IssuerDetailResponseDto = exports.IssuerListResponseDto = exports.IssuerEntityDto = exports.AccessRequestDecisionResponseDto = exports.AccessRequestListResponseDto = exports.AccessRequestEntityDto = exports.AuditLogQueryDto = exports.IssuersQueryDto = exports.RequestsQueryDto = exports.SetIssuerMetadataDto = exports.ReactivateIssuerDto = exports.SuspendIssuerDto = exports.RejectUserDto = exports.ApproveUserDto = exports.ISSUER_STATUS_FILTERS = exports.REQUEST_STATUS_FILTERS = exports.REQUEST_STATUSES = void 0;
 const openapi = require("@nestjs/swagger");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
@@ -436,23 +436,12 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: 1 }),
     __metadata("design:type", Number)
 ], AdminStatsResponseDto.prototype, "suspendedIssuers", void 0);
-exports.DOCUMENT_STATUS_FILTERS = ['ALL', 'ACTIVE', 'REVOKED'];
 class AdminDocumentsQueryDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { status: { required: false, type: () => String, enum: exports.DOCUMENT_STATUS_FILTERS }, search: { required: false, type: () => String }, cursor: { required: false, type: () => String }, limit: { required: false, type: () => String } };
+        return { search: { required: false, type: () => String }, cursor: { required: false, type: () => String }, limit: { required: false, type: () => String } };
     }
 }
 exports.AdminDocumentsQueryDto = AdminDocumentsQueryDto;
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: 'Filter by document status. Defaults to `ALL`.',
-        enum: exports.DOCUMENT_STATUS_FILTERS,
-        default: 'ALL',
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(exports.DOCUMENT_STATUS_FILTERS),
-    __metadata("design:type", String)
-], AdminDocumentsQueryDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Search term matching recipient name, email, type, or doc hash.',
@@ -482,7 +471,7 @@ __decorate([
 ], AdminDocumentsQueryDto.prototype, "limit", void 0);
 class AdminDocumentEntityDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { docHash: { required: true, type: () => String }, issuerAddress: { required: true, type: () => String }, issuerName: { required: true, type: () => String, nullable: true }, documentType: { required: true, type: () => String, nullable: true }, recipientName: { required: true, type: () => String, nullable: true }, recipientEmail: { required: true, type: () => String, nullable: true }, cid: { required: true, type: () => String, nullable: true }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => Date }, revokedAt: { required: true, type: () => Date, nullable: true }, revokeTxHash: { required: true, type: () => String, nullable: true }, status: { required: true, type: () => String }, batchId: { required: true, type: () => String, nullable: true } };
+        return { docHash: { required: true, type: () => String }, issuerAddress: { required: true, type: () => String }, issuerName: { required: true, type: () => String, nullable: true }, documentType: { required: true, type: () => String, nullable: true }, recipientName: { required: true, type: () => String, nullable: true }, recipientEmail: { required: true, type: () => String, nullable: true }, cid: { required: true, type: () => String, nullable: true }, txHash: { required: true, type: () => String }, anchoredAt: { required: true, type: () => Date }, batchId: { required: true, type: () => String, nullable: true } };
     }
 }
 exports.AdminDocumentEntityDto = AdminDocumentEntityDto;
@@ -522,18 +511,6 @@ __decorate([
     (0, swagger_1.ApiProperty)({ format: 'date-time', example: '2026-01-01T00:00:00.000Z' }),
     __metadata("design:type", Date)
 ], AdminDocumentEntityDto.prototype, "anchoredAt", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ format: 'date-time', nullable: true, type: String, example: null }),
-    __metadata("design:type", Object)
-], AdminDocumentEntityDto.prototype, "revokedAt", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: null }),
-    __metadata("design:type", Object)
-], AdminDocumentEntityDto.prototype, "revokeTxHash", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: 'active' }),
-    __metadata("design:type", String)
-], AdminDocumentEntityDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ nullable: true, type: String, example: null, description: 'Set when issued as part of a bulk batch anchor.' }),
     __metadata("design:type", Object)

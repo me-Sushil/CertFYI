@@ -50,7 +50,6 @@ let AdminController = class AdminController {
     }
     getDocuments(query) {
         return this.adminService.getDocuments({
-            status: query.status,
             search: query.search,
             cursor: query.cursor,
             limit: query.limit ? parseInt(query.limit, 10) : undefined,
@@ -173,7 +172,7 @@ __decorate([
     (0, common_1.Get)('documents'),
     (0, swagger_1.ApiOperation)({
         summary: 'List all anchored documents',
-        description: 'Paginated, filterable by status and search term. Results newest-first.',
+        description: 'Paginated, filterable by search term. Results newest-first.',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Document list.', type: admin_dto_1.AdminDocumentsListResponseDto }),
     openapi.ApiResponse({ status: 200 }),

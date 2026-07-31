@@ -1,7 +1,11 @@
 import { keccak256, stringToBytes } from 'viem'
 
+// Falls back to the actual deployed Sepolia contract so a missing env var
+// fails loudly with a normal "not found" instead of viem's cryptic
+// "Address must be a hex value of 20 bytes" (the old fallback here was
+// itself a malformed, 39-character placeholder address).
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE'
+  '0x69D2f9880532d171fC76DDF9C6D9D092fDE8abF3'
 
 export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '11155111')
 
@@ -76,13 +80,6 @@ export const CONTRACT_ABI = [
   },
   {
     inputs: [{ internalType: 'bytes32', name: '_documentHash', type: 'bytes32' }],
-    name: 'revokeDocument',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'bytes32', name: '_documentHash', type: 'bytes32' }],
     name: 'verifyDocument',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
@@ -91,6 +88,9 @@ export const CONTRACT_ABI = [
   {
     inputs: [{ internalType: 'bytes32', name: '_documentHash', type: 'bytes32' }],
     name: 'getDocument',
+    // The live contract was never redeployed after DocumentAnchor.sol's source
+    // dropped `revoked` - it still returns this 4-value tuple. Must match what's
+    // actually deployed, not the current source.
     outputs: [
       { internalType: 'address', name: 'issuer', type: 'address' },
       { internalType: 'uint256', name: 'timestamp', type: 'uint256' },
@@ -149,16 +149,6 @@ export const CONTRACT_ABI = [
       { indexed: false, internalType: 'uint256', name: 'timestamp', type: 'uint256' },
     ],
     name: 'DocumentAnchored',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'documentHash', type: 'bytes32' },
-      { indexed: true, internalType: 'address', name: 'issuer', type: 'address' },
-      { indexed: false, internalType: 'uint256', name: 'timestamp', type: 'uint256' },
-    ],
-    name: 'DocumentRevoked',
     type: 'event',
   },
   {
