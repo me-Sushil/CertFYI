@@ -127,8 +127,7 @@ export default function IssuerActivityPage() {
                 Activity
               </h2>
               <p className="text-lg leading-[30.6px] text-muted-foreground">
-                Every anchoring attempt, on-chain and off - including failures, so nothing that
-                happened to a document is ever silently lost.
+                Every attempt to save a document's record : successful or failed - is permanently logged.
               </p>
             </div>
 
