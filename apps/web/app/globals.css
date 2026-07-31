@@ -250,6 +250,22 @@
   }
   body {
     @apply bg-[var(--surface-base)] text-[var(--heading-black)] font-sans;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+
+  /*
+   * body sets user-select: none globally (see above) to remove the text
+   * caret/selection feel across the site. Real form fields need selection
+   * back on, or typed values (addresses, hashes) can't be copied/edited.
+   */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
   }
 
   /*

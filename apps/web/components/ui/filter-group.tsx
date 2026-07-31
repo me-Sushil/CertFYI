@@ -20,7 +20,7 @@ export function FilterGroup({ options, value, onChange }: FilterGroupProps) {
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={cn(
-            'rounded-xl px-3 py-1.5 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+            'rounded-xl px-3 py-1.5 text-sm cursor-pointer font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
             value === opt.value
               ? 'bg-primary text-primary-foreground shadow-button'
               : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',

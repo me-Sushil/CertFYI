@@ -53,7 +53,7 @@ export function Header() {
           >
             Verify PDF
           </Link>
-          <Button onClick={handleIssueCertificateClick} size="lg" className="h-auto py-3">
+          <Button onClick={handleIssueCertificateClick} size="lg" className="h-auto cursor-pointer py-3">
             {dashboard.label}
           </Button>
         </nav>

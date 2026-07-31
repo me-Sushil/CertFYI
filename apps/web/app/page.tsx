@@ -2,24 +2,33 @@ import Link from "next/link";
 import { HeaderWrapper } from "@/components/header-wrapper";
 import { Features } from "@/components/features";
 import { HeroStats } from "@/components/hero-stats";
-import { ArrowRight, FileCheck, Zap } from "lucide-react";
+import {
+  Zap,
+  ArrowRight,
+  FileCheck,
+  FileText,
+  Building2,
+  Users,
+  Timer,
+  ShieldCheck,
+} from "lucide-react";
 
 const STEPS = [
   {
-    step: "01",
-    title: "Upload Your PDF",
+    icon: FileCheck,
+    title: "Upload your PDF",
     description:
-      "Drag and drop any PDF file into the verification portal. It takes just seconds.",
+      "Drag and drop any PDF into the verification portal. It takes just seconds.",
   },
   {
-    step: "02",
-    title: "Instant Verification",
+    icon: Zap,
+    title: "Instant verification",
     description:
-      "Our system calculates the document hash and checks it against the blockchain in real-time.",
+      "Our system calculates the document hash and checks it against the blockchain in real time.",
   },
   {
-    step: "03",
-    title: "View Results",
+    icon: ShieldCheck,
+    title: "View results",
     description:
       "See the issuer identity, issuance date, and proof on the blockchain explorer.",
   },
@@ -69,7 +78,7 @@ export default function HomePage() {
             and issuance timestamp without a central authority.
           </p>
 
-          <div className="stagger-4 mb-20 flex animate-fade-in-up flex-col justify-center gap-4 opacity-0 sm:flex-row">
+          <div className="stagger-4 mb-13 flex animate-fade-in-up flex-col justify-center gap-4 opacity-0 sm:flex-row">
             <Link href="/verify" className={heroCta}>
               <FileCheck className="h-5 w-5" />
               Start Verifying
@@ -80,7 +89,72 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <HeroStats />
+          {/* Verification Chain */}
+          <div className="relative mx-auto mt-4 max-w-5xl">
+            {/* connecting line between nodes — desktop only */}
+            <div
+              className="pointer-events-none absolute top-[22px] left-[12.5%] right-[12.5%] hidden h-px sm:block"
+              style={{
+                background:
+                  "linear-gradient(to right, transparent, var(--accent) 15%, var(--accent) 85%, transparent)",
+                opacity: 0.25,
+              }}
+            />
+
+            <div className="relative grid grid-cols-2 gap-y-10 gap-x-6 sm:grid-cols-4 sm:gap-x-4">
+              {[
+                {
+                  icon: FileText,
+                  tag: "0x01",
+                  value: "1,200+",
+                  label: "Documents verified",
+                },
+                {
+                  icon: Building2,
+                  tag: "0x02",
+                  value: "50+",
+                  label: "Organizations onboarded",
+                },
+                {
+                  icon: Users,
+                  tag: "0x03",
+                  value: "400+",
+                  label: "Active users",
+                },
+                {
+                  icon: Timer,
+                  tag: "0x04",
+                  value: "5s",
+                  label: "Avg. verification time",
+                },
+              ].map((stat, idx) => (
+                <div
+                  key={idx}
+                  className="group flex animate-fade-in-up flex-col items-center text-center opacity-0"
+                  style={{ animationDelay: `${0.5 + idx * 0.1}s` }}
+                >
+                  {/* node */}
+                  <div className="relative z-10 mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-card shadow-sm transition-all duration-300 ease-[var(--ease-premium)] group-hover:-translate-y-1 group-hover:border-accent/50 group-hover:shadow-glow">
+                    <stat.icon
+                      className="h-4 w-4 text-muted-foreground transition-colors duration-300 group-hover:text-accent"
+                      strokeWidth={1.75}
+                    />
+                  </div>
+
+                  <div className="mb-1 font-mono text-[10px] tracking-[0.15em] text-muted-foreground/50 uppercase">
+                    {stat.tag}
+                  </div>
+                  <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums sm:text-4xl">
+                    {stat.value}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* <HeroStats /> */}
         </div>
       </section>
 
@@ -89,7 +163,7 @@ export default function HomePage() {
       {/* How it works */}
       <section
         id="how-it-works"
-        className="relative px-6 py-24 sm:px-8 sm:py-32 lg:px-10"
+        className="relative -mt-37 px-6 py-24 sm:px-8 sm:py-32 lg:px-10"
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
@@ -111,31 +185,50 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="space-y-10">
-            {STEPS.map((item) => (
-              <div
-                key={item.step}
-                className="group flex items-start gap-6 sm:gap-10"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-card text-base font-extrabold text-accent shadow-soft transition-all duration-300 ease-[var(--ease-premium)] group-hover:-translate-y-0.5 group-hover:shadow-button sm:h-14 sm:w-14 sm:text-lg">
-                  {item.step}
+          <div className="relative">
+            {/* connecting line through the node centers */}
+            <div
+              className="absolute top-6 bottom-6 left-6 w-px sm:top-7 sm:bottom-7 sm:left-7"
+              style={{
+                background:
+                  "linear-gradient(to bottom, var(--accent) 0%, var(--border) 60%, transparent 100%)",
+                opacity: 0.3,
+              }}
+            />
+
+            <div className="space-y-12">
+              {STEPS.map((item, idx) => (
+                <div
+                  key={item.title}
+                  className="group relative flex items-start gap-6 sm:gap-8"
+                >
+                  <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/60 bg-card shadow-soft transition-all duration-300 ease-[var(--ease-premium)] group-hover:-translate-y-0.5 group-hover:border-accent/50 group-hover:shadow-glow sm:h-14 sm:w-14">
+                    <item.icon
+                      className="h-5 w-5 text-accent transition-transform duration-300 group-hover:scale-110 sm:h-6 sm:w-6"
+                      strokeWidth={1.75}
+                    />
+                  </div>
+
+                  <div className="flex-1 pt-1 sm:pt-2">
+                    <div className="mb-1.5 font-mono text-xs font-medium tracking-[0.15em] text-muted-foreground/60 uppercase">
+                      Step {String(idx + 1).padStart(2, "0")}
+                    </div>
+                    <h3 className="mb-2 text-2xl font-extrabold tracking-[-0.8px] text-foreground sm:text-3xl lg:text-[30px]">
+                      {item.title}
+                    </h3>
+                    <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 pt-2 sm:pt-3">
-                  <h3 className="mb-2 text-2xl font-extrabold tracking-[-0.8px] text-foreground sm:text-3xl lg:text-[30px]">
-                    {item.title}
-                  </h3>
-                  <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
+      <section className="px-6 py-24 -mt-35 sm:px-8 sm:py-32 lg:px-10">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-3xl leading-tight font-extrabold tracking-[-1px] text-foreground sm:text-4xl md:text-5xl lg:text-[60px] lg:leading-[1.12]">
             Ready to{" "}
