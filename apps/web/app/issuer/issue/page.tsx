@@ -485,11 +485,11 @@ export default function SingleIssuancePage() {
 
                   <div className="flex gap-4 pt-6">
                     <Link href="/issuer" className="flex-1">
-                      <Button variant="outline" className="h-12 w-full">
+                      <Button variant="outline" className="h-12 cursor-pointer w-full">
                         Cancel
                       </Button>
                     </Link>
-                    <Button type="submit" className="h-12 flex-1" disabled={!pdfFile}>
+                    <Button type="submit" className="h-12 cursor-pointer flex-1" disabled={!pdfFile}>
                       Continue to Preview
                     </Button>
                   </div>
@@ -591,16 +591,16 @@ export default function SingleIssuancePage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={resetForm} disabled={isBusy}>
+                  <Button variant="outline" className="h-12 cursor-pointer flex-1" onClick={resetForm} disabled={isBusy}>
                     Back
                   </Button>
                   {phase === 'error' && txHash ? (
-                    <Button className="h-12 flex-1" onClick={handleRetryRecording} disabled={isBusy}>
+                    <Button className="h-12 cursor-pointer flex-1" onClick={handleRetryRecording} disabled={isBusy}>
                       {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Retry Recording
                     </Button>
                   ) : (
-                    <Button className="h-12 flex-1" onClick={handleConfirm} disabled={isBusy || !isCorrectChain}>
+                    <Button className="h-12 cursor-pointer flex-1" onClick={handleConfirm} disabled={isBusy || !isCorrectChain}>
                       {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {phase === 'reverted' ? 'Try Again' : phaseLabel[phase]}
                     </Button>
@@ -661,9 +661,9 @@ export default function SingleIssuancePage() {
                 </div>
                 <div className="mx-auto flex max-w-xs flex-col gap-3">
                   <Link href="/issuer">
-                    <Button className="h-12 w-full">Back to Dashboard</Button>
+                    <Button className="h-12 cursor-pointer w-full">Back to Dashboard</Button>
                   </Link>
-                  <Button variant="outline" className="h-12 w-full" onClick={resetForm}>
+                  <Button variant="outline" className="h-12 cursor-pointer w-full" onClick={resetForm}>
                     Issue Another
                   </Button>
                 </div>

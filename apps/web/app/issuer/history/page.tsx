@@ -113,7 +113,7 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        className="ml-auto flex h-8 w-8 items-center cursor-pointer justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
         aria-label="Document actions"
       >
         <MoreVertical className="h-4 w-4" aria-hidden />
@@ -121,14 +121,14 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
       <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Document Hash</DropdownMenuLabel>
-          <DropdownMenuItem onClick={copyHash} className="justify-between font-mono text-xs">
+          <DropdownMenuItem onClick={copyHash} className="justify-between cursor-pointer  font-mono text-xs">
             {formatAddress(doc.docHash, 8)}
-            {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+            {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5 " aria-hidden />}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {doc.txHash && (
-          <DropdownMenuItem
+          <DropdownMenuItem className="cursor-pointer"
             render={
               <a href={getExplorerUrl(doc.txHash, CONTRACT_CHAIN_ID) ?? '#'} target="_blank" rel="noopener noreferrer" />
             }
@@ -138,7 +138,7 @@ function RowActionsMenu({ doc, onRevoke }: { doc: IssuerDocumentRow; onRevoke: (
           </DropdownMenuItem>
         )}
         {doc.status === 'active' && (
-          <DropdownMenuItem variant="destructive" onClick={() => onRevoke(doc)}>
+          <DropdownMenuItem className="cursor-pointer" variant="destructive" onClick={() => onRevoke(doc)}>
             <Ban className="h-3.5 w-3.5" aria-hidden />
             Revoke
           </DropdownMenuItem>
@@ -342,7 +342,7 @@ export default function IssuanceHistoryPage() {
                       onClick={() => setStatusFilter(opt)}
                       aria-pressed={statusFilter === opt}
                       className={cn(
-                        'rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
+                        'rounded-xl px-4 py-2 cursor-pointer text-sm font-semibold transition-all duration-200 ease-[var(--ease-premium)]',
                         statusFilter === opt
                           ? 'bg-primary text-primary-foreground shadow-button'
                           : 'bg-card text-muted-foreground shadow-soft ring-1 ring-border/5 hover:text-foreground',

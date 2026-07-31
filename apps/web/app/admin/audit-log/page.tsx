@@ -1,50 +1,53 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { SearchInput } from '@/components/ui/search-input'
-import { FilterGroup } from '@/components/ui/filter-group'
-import { LoadMoreButton } from '@/components/ui/load-more-button'
-import { Download, ExternalLink, FileText, Loader2 } from 'lucide-react'
-import { useAuditLog } from '@/queries/admin'
-import { CONTRACT_CHAIN_ID, getExplorerUrl } from '@/lib/contracts/document-anchor'
-import { formatDateTime, formatAddress } from '@/lib/format'
-import { cn } from '@/lib/utils'
-import type { AuditLogEntry } from '@/lib/api-types'
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
+import { FilterGroup } from "@/components/ui/filter-group";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { Download, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { useAuditLog } from "@/queries/admin";
+import {
+  CONTRACT_CHAIN_ID,
+  getExplorerUrl,
+} from "@/lib/contracts/document-anchor";
+import { formatDateTime, formatAddress } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { AuditLogEntry } from "@/lib/api-types";
 
 const ACTION_FILTERS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'ISSUER_APPROVED', label: 'Approved' },
-  { value: 'ISSUER_REJECTED', label: 'Rejected' },
-  { value: 'ISSUER_SUSPENDED', label: 'Suspended' },
-  { value: 'ISSUER_REACTIVATED', label: 'Reactivated' },
-  { value: 'ISSUER_METADATA_SET', label: 'Metadata Set' },
-  { value: 'DOCUMENT_ANCHORED', label: 'Anchored' },
-  { value: 'DOCUMENT_ANCHOR_FAILED', label: 'Anchor Failed' },
-  { value: 'DOCUMENT_REVOKED', label: 'Revoked' },
-  { value: 'BATCH_ANCHORED', label: 'Batch' },
-  { value: 'IPFS_PIN_FAILED', label: 'IPFS Failed' },
-  { value: 'IPFS_PIN_RETRIED', label: 'IPFS Retried' },
-] as const
+  { value: "ALL", label: "All" },
+  { value: "ISSUER_APPROVED", label: "Approved" },
+  { value: "ISSUER_REJECTED", label: "Rejected" },
+  { value: "ISSUER_SUSPENDED", label: "Suspended" },
+  { value: "ISSUER_REACTIVATED", label: "Reactivated" },
+  { value: "ISSUER_METADATA_SET", label: "Metadata Set" },
+  { value: "DOCUMENT_ANCHORED", label: "Anchored" },
+  { value: "DOCUMENT_ANCHOR_FAILED", label: "Anchor Failed" },
+  { value: "DOCUMENT_REVOKED", label: "Revoked" },
+  { value: "BATCH_ANCHORED", label: "Batch" },
+  { value: "IPFS_PIN_FAILED", label: "IPFS Failed" },
+  { value: "IPFS_PIN_RETRIED", label: "IPFS Retried" },
+] as const;
 
 const ACTION_DOT: Record<string, string> = {
-  ISSUER_APPROVED: 'bg-success',
-  ISSUER_REACTIVATED: 'bg-success',
-  DOCUMENT_ANCHORED: 'bg-success',
-  BATCH_ANCHORED: 'bg-success',
-  IPFS_PIN_RETRIED: 'bg-success',
-  ISSUER_REJECTED: 'bg-destructive',
-  ISSUER_SUSPENDED: 'bg-destructive',
-  DOCUMENT_REVOKED: 'bg-destructive',
-  DOCUMENT_ANCHOR_FAILED: 'bg-destructive',
-  IPFS_PIN_FAILED: 'bg-destructive',
-}
+  ISSUER_APPROVED: "bg-success",
+  ISSUER_REACTIVATED: "bg-success",
+  DOCUMENT_ANCHORED: "bg-success",
+  BATCH_ANCHORED: "bg-success",
+  IPFS_PIN_RETRIED: "bg-success",
+  ISSUER_REJECTED: "bg-destructive",
+  ISSUER_SUSPENDED: "bg-destructive",
+  DOCUMENT_REVOKED: "bg-destructive",
+  DOCUMENT_ANCHOR_FAILED: "bg-destructive",
+  IPFS_PIN_FAILED: "bg-destructive",
+};
 
 export default function AuditLogPage() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterAction, setFilterAction] = useState('ALL')
-  const [isExporting, setIsExporting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterAction, setFilterAction] = useState("ALL");
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     data: pagesData,
@@ -53,101 +56,145 @@ export default function AuditLogPage() {
     isLoading,
     isFetchingNextPage,
   } = useAuditLog(true, {
-    action: filterAction !== 'ALL' ? filterAction : undefined,
+    action: filterAction !== "ALL" ? filterAction : undefined,
     actor: searchTerm || undefined,
-  })
+  });
 
-  const entries = pagesData?.pages.flatMap((p) => p.entries) ?? []
+  const entries = pagesData?.pages.flatMap((p) => p.entries) ?? [];
 
-  const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/audit-log/export${filterAction !== 'ALL' ? `?action=${filterAction}` : ''}${searchTerm ? `${filterAction !== 'ALL' ? '&' : '?'}actor=${encodeURIComponent(searchTerm)}` : ''}`
+  const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/admin/audit-log/export${filterAction !== "ALL" ? `?action=${filterAction}` : ""}${searchTerm ? `${filterAction !== "ALL" ? "&" : "?"}actor=${encodeURIComponent(searchTerm)}` : ""}`;
 
   const handleExportCsv = async () => {
-    setIsExporting(true)
+    setIsExporting(true);
     try {
-      const res = await fetch(exportUrl, { credentials: 'include' })
-      if (!res.ok) throw new Error('Export failed. Please try again.')
-      const blob = await res.blob()
-      const disposition = res.headers.get('Content-Disposition')
-      const filename = disposition?.match(/filename="([^"]+)"/)?.[1] ?? 'audit-log.csv'
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(url)
+      const res = await fetch(exportUrl, { credentials: "include" });
+      if (!res.ok) throw new Error("Export failed. Please try again.");
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const filename =
+        disposition?.match(/filename="([^"]+)"/)?.[1] ?? "audit-log.csv";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Export failed. Please try again.')
+      toast.error(
+        err instanceof Error ? err.message : "Export failed. Please try again.",
+      );
     } finally {
-      setIsExporting(false)
+      setIsExporting(false);
     }
-  }
+  };
 
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <FilterGroup options={ACTION_FILTERS} value={filterAction} onChange={setFilterAction} />
-        <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCsv} disabled={isExporting}>
-          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
-          Export CSV
-        </Button>
+        <FilterGroup
+          options={ACTION_FILTERS}
+          value={filterAction}
+          onChange={setFilterAction}
+        />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
           value={searchTerm}
           onChange={setSearchTerm}
           placeholder="Filter by actor address..."
         />
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 shrink-0 cursor-pointer sm:w-auto"
+          onClick={handleExportCsv}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="h-4 w-4" aria-hidden />
+          )}
+          {isExporting ? "Exporting…" : "Export CSV"}
+        </Button>
       </div>
 
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5" />
+            <div
+              key={i}
+              className="h-20 animate-pulse rounded-lg bg-card/50 shadow-soft ring-1 ring-border/5"
+            />
           ))}
         </div>
       ) : entries.length === 0 ? (
         <div className="rounded-lg bg-card p-12 text-center shadow-card ring-1 ring-border/5">
-          <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" aria-hidden />
+          <FileText
+            className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50"
+            aria-hidden
+          />
           <p className="text-sm font-semibold text-muted-foreground">
-            {searchTerm || filterAction !== 'ALL' ? 'No entries match your filters' : 'No audit entries yet'}
+            {searchTerm || filterAction !== "ALL"
+              ? "No entries match your filters"
+              : "No audit entries yet"}
           </p>
         </div>
       ) : (
         <>
           <div className="overflow-hidden rounded-lg bg-card shadow-card ring-1 ring-border/5">
             {entries.map((entry, idx) => (
-              <AuditLogEntryRow key={entry.id} entry={entry} isLast={idx === entries.length - 1} />
+              <AuditLogEntryRow
+                key={entry.id}
+                entry={entry}
+                isLast={idx === entries.length - 1}
+              />
             ))}
           </div>
 
-          <LoadMoreButton hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} fetchNextPage={fetchNextPage} />
+          <LoadMoreButton
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+          />
         </>
       )}
     </div>
-  )
+  );
 }
 
-function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boolean }) {
-  const explorerUrl = entry.txHash ? getExplorerUrl(entry.txHash, CONTRACT_CHAIN_ID) : null
-  const dotTone = ACTION_DOT[entry.action] ?? 'bg-accent'
+function AuditLogEntryRow({
+  entry,
+  isLast,
+}: {
+  entry: AuditLogEntry;
+  isLast: boolean;
+}) {
+  const explorerUrl = entry.txHash
+    ? getExplorerUrl(entry.txHash, CONTRACT_CHAIN_ID)
+    : null;
+  const dotTone = ACTION_DOT[entry.action] ?? "bg-accent";
 
   return (
     <div
       className={cn(
-        'p-5 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/20 sm:p-6',
-        !isLast && 'border-b border-border/10',
+        "p-5 transition-colors duration-150 ease-[var(--ease-premium)] hover:bg-muted/20 sm:p-6",
+        !isLast && "border-b border-border/10",
       )}
     >
       <div className="flex items-start gap-4">
         <div className="mt-1.5 shrink-0">
-          <div className={cn('h-2.5 w-2.5 rounded-full', dotTone)} />
+          <div className={cn("h-2.5 w-2.5 rounded-full", dotTone)} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-col items-start justify-between gap-4 sm:flex-row">
-            <p className="text-sm font-extrabold text-foreground">{entry.action.replace(/_/g, ' ')}</p>
+            <p className="text-sm font-extrabold text-foreground">
+              {entry.action.replace(/_/g, " ")}
+            </p>
             <time className="text-xs font-semibold whitespace-nowrap text-muted-foreground">
               {formatDateTime(entry.createdAt)}
             </time>
@@ -158,7 +205,8 @@ function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boo
               <span className="font-semibold">Actor:</span> {entry.actorName}
             </p>
             <p>
-              <span className="font-semibold">Target:</span> {formatAddress(entry.targetRef)}
+              <span className="font-semibold">Target:</span>{" "}
+              {formatAddress(entry.targetRef)}
             </p>
             {entry.detail && (
               <p className="break-words">
@@ -167,7 +215,7 @@ function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boo
             )}
             {explorerUrl && (
               <p>
-                <span className="font-semibold">Tx:</span>{' '}
+                <span className="font-semibold">Tx:</span>{" "}
                 <a
                   href={explorerUrl}
                   target="_blank"
@@ -183,5 +231,5 @@ function AuditLogEntryRow({ entry, isLast }: { entry: AuditLogEntry; isLast: boo
         </div>
       </div>
     </div>
-  )
+  );
 }

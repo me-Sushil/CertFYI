@@ -157,25 +157,25 @@ export default function IssuerDashboard() {
               </h3>
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Link href="/issuer/issue">
-                  <Button className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                  <Button className="h-12 w-full justify-start cursor-pointer gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
                     <Plus className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                     Issue Single
                   </Button>
                 </Link>
                 <Link href="/issuer/bulk-issue">
-                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                  <Button variant="outline" className="h-12 w-full cursor-pointer justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
                     <Upload className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                     Bulk Issue
                   </Button>
                 </Link>
                 <Link href="/issuer/history">
-                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                  <Button variant="outline" className="h-12 w-full cursor-pointer justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
                     <History className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                     History
                   </Button>
                 </Link>
                 <Link href="/verify">
-                  <Button variant="outline" className="h-12 w-full justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
+                  <Button variant="outline" className="h-12 w-full cursor-pointer justify-start gap-2.5 text-sm font-bold sm:h-14 sm:text-base">
                     <ArrowUpRight className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                     Verify
                   </Button>

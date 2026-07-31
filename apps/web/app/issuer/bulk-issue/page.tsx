@@ -625,11 +625,11 @@ export default function BulkIssuancePage() {
 
                 <div className="flex gap-4 pt-2">
                   <Link href="/issuer" className="flex-1">
-                    <Button variant="outline" className="h-12 w-full">
+                    <Button variant="outline" className="h-12 cursor-pointer w-full">
                       Cancel
                     </Button>
                   </Link>
-                  <Button className="h-12 flex-1" onClick={handleContinueToMap} disabled={pdfFiles.length === 0}>
+                  <Button className="h-12 cursor-pointer flex-1" onClick={handleContinueToMap} disabled={pdfFiles.length === 0}>
                     Continue ({pdfFiles.length})
                   </Button>
                 </div>
@@ -710,7 +710,7 @@ export default function BulkIssuancePage() {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('select')}>
+                  <Button variant="outline" className="h-12 cursor-pointer flex-1" onClick={() => setStep('select')}>
                     Back
                   </Button>
                 </div>
@@ -787,7 +787,7 @@ export default function BulkIssuancePage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 flex-1" onClick={() => setStep('map')} disabled={isBusy}>
+                  <Button variant="outline" className="h-12 cursor-pointer flex-1" onClick={() => setStep('map')} disabled={isBusy}>
                     Back
                   </Button>
                   <Button className="h-12 flex-1" onClick={handleConfirmIssueAll} disabled={isBusy || !isCorrectChain}>
@@ -843,7 +843,7 @@ export default function BulkIssuancePage() {
                   <Link href="/issuer/history">
                     <Button className="h-12 w-full">View in History</Button>
                   </Link>
-                  <Button variant="outline" className="h-12 w-full" onClick={resetAll}>
+                  <Button variant="outline" className="h-12 cursor-pointer w-full" onClick={resetAll}>
                     Issue Another Batch
                   </Button>
                 </div>

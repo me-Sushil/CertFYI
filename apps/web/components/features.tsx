@@ -127,7 +127,7 @@ export function Features() {
   const { ref, visible } = useInView(0.05)
 
   return (
-    <section id="features" className="relative overflow-hidden px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
+    <section id="features" className="relative -mt-25 overflow-hidden px-6 py-24 sm:px-8 sm:py-32 lg:px-10">
       <div
         ref={ref}
         className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -152,7 +152,7 @@ export function Features() {
 
       <div className="relative z-10 mx-auto max-w-7xl">
         <div className="mb-16 text-center">
-          <div
+          {/* <div
             className={`mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-soft transition-all duration-700 ease-[var(--ease-premium)] ${
               visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             }`}
@@ -164,7 +164,7 @@ export function Features() {
             <span className="text-[15px] font-semibold leading-[19.5px] text-muted-foreground">
               What you get
             </span>
-          </div>
+          </div> */}
 
           <h2
             className={`mb-4 text-3xl leading-tight font-extrabold tracking-[-1px] text-foreground transition-all duration-700 delay-100 ease-[var(--ease-premium)] sm:text-4xl md:text-5xl lg:text-[60px] lg:leading-[1.12] ${
@@ -174,7 +174,7 @@ export function Features() {
             Powerful Features
           </h2>
           <p
-            className={`mx-auto max-w-xl text-base leading-relaxed text-muted-foreground transition-all duration-700 delay-150 ease-[var(--ease-premium)] sm:text-lg ${
+            className={`mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground transition-all duration-700 delay-150 ease-[var(--ease-premium)] sm:text-lg ${
               visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >

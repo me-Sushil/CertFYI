@@ -269,7 +269,7 @@ function IssuerRowComponent({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-2 text-destructive hover:bg-destructive/10"
+                  className="gap-2 text-destructive cursor-pointer hover:bg-destructive/10"
                   onClick={onSuspend}
                 >
                   <AlertTriangle className="h-4 w-4" aria-hidden /> Suspend
