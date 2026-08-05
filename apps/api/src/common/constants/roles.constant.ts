@@ -30,8 +30,8 @@ export const NONCE_MAX_AGE_SECONDS = 60 * 5 // 5 minutes
 
 export const NONCE_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  secure: true,
+  sameSite: 'none',
   path: '/',
   maxAge: NONCE_MAX_AGE_SECONDS * 1000,
 }
