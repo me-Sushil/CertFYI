@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { IsEmail, IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator'
+import { IsEmail, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator'
 
 const HASH_REGEX = /^0x[a-fA-F0-9]{64}$/
 const HASH_PATTERN = '^0x[a-fA-F0-9]{64}$'
@@ -91,12 +91,6 @@ export class IssuerStatsResponseDto {
   @ApiProperty({ description: 'Total documents issued by this issuer.', example: 142 })
   totalIssued!: number
 
-  @ApiProperty({ description: 'Currently active (non-revoked) documents.', example: 138 })
-  activeDocuments!: number
-
-  @ApiProperty({ description: 'Number of revoked documents.', example: 4 })
-  revokedCount!: number
-
   @ApiProperty({ description: 'Recent activity entries count.', example: 12 })
   recentActivityCount!: number
 }
@@ -119,15 +113,6 @@ export class IssuerDocumentDto {
 
   @ApiProperty({ example: '2026-07-28T12:00:00.000Z' })
   anchoredAt!: string
-
-  @ApiProperty({ example: null, nullable: true })
-  revokedAt!: string | null
-
-  @ApiPropertyOptional({ example: '0x742d35Cc6634C0532925a3b844Bc9e7595f42bE' })
-  revokeTxHash?: string
-
-  @ApiProperty({ enum: ['active', 'revoked'], example: 'active' })
-  status!: 'active' | 'revoked'
 
   @ApiProperty({ example: null, nullable: true, description: 'Set when issued as part of a bulk batch anchor.' })
   batchId!: string | null
@@ -170,11 +155,6 @@ export class IssuerActivityResponseDto {
 }
 
 export class IssuerDocumentsQueryDto {
-  @ApiPropertyOptional({ enum: ['all', 'active', 'revoked'], default: 'all' })
-  @IsOptional()
-  @IsIn(['all', 'active', 'revoked'])
-  status?: 'all' | 'active' | 'revoked'
-
   @ApiPropertyOptional({ description: 'Matches recipient name/email, document type, or hash.' })
   @IsOptional()
   @IsString()

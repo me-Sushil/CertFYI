@@ -19,18 +19,6 @@ export function useAnchorDocumentMutation() {
   })
 }
 
-export function useRevokeDocumentMutation() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: documentsApi.revoke,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: keys.issuer.documents.all })
-      queryClient.invalidateQueries({ queryKey: keys.issuer.activity.all })
-      queryClient.invalidateQueries({ queryKey: keys.issuer.stats.all })
-    },
-  })
-}
-
 export function useAnchorBatchMutation() {
   const queryClient = useQueryClient()
   return useMutation({

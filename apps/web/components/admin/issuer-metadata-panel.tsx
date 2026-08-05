@@ -11,7 +11,7 @@ import { ipfsGatewayUrl } from '@/lib/ipfs'
 import type { IssuerRow } from '@/lib/api-types'
 
 // Fixed gas limit for setIssuerMetadata - an event-only write (no storage),
-// comfortably under 200k gas. See the same fix on anchor/revoke: wallet
+// comfortably under 200k gas. See the same fix on anchorDocument: wallet
 // auto-estimation has been observed returning values that exceed the RPC
 // provider's hard per-tx cap.
 const METADATA_GAS_LIMIT = BigInt(300_000)

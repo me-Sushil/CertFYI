@@ -55,25 +55,19 @@ let IssuerService = class IssuerService {
     }
     async getStats(address) {
         const normalized = address.toLowerCase();
-        const [totalIssued, activeDocuments, revokedCount, recentActivityCount] = await Promise.all([
+        const [totalIssued, recentActivityCount] = await Promise.all([
             this.prisma.anchoredDocument.count({ where: { issuerAddress: normalized } }),
-            this.prisma.anchoredDocument.count({ where: { issuerAddress: normalized, revokedAt: null } }),
-            this.prisma.anchoredDocument.count({ where: { issuerAddress: normalized, revokedAt: { not: null } } }),
             this.prisma.auditLog.count({
                 where: { actorAddress: normalized },
             }),
         ]);
-        return { totalIssued, activeDocuments, revokedCount, recentActivityCount };
+        return { totalIssued, recentActivityCount };
     }
     async getDocuments(address, params = {}) {
         const normalized = address.toLowerCase();
         const limit = shared_constant_1.DEFAULT_PAGE_SIZE;
         const cursorObj = params.cursor ? { docHash: params.cursor } : undefined;
         const where = { issuerAddress: normalized };
-        if (params.status === 'active')
-            where.revokedAt = null;
-        if (params.status === 'revoked')
-            where.revokedAt = { not: null };
         if (params.search) {
             where.OR = [
                 { recipientName: { contains: params.search, mode: 'insensitive' } },
@@ -100,9 +94,6 @@ let IssuerService = class IssuerService {
             cid: d.cid,
             metadataCid: d.metadataCid,
             anchoredAt: d.anchoredAt.toISOString(),
-            revokedAt: d.revokedAt?.toISOString() ?? null,
-            revokeTxHash: d.revokeTxHash ?? undefined,
-            status: d.revokedAt ? 'revoked' : 'active',
             batchId: d.batchId ?? null,
         }));
         return {
@@ -162,7 +153,6 @@ let IssuerService = class IssuerService {
             chainId: this.blockchain.contractChainId,
             txHash: record.txHash,
             cid: record.cid,
-            revoked: !!record.revokedAt,
             recipientEmail: record.recipientEmail,
             recipientName: record.recipientName,
         });

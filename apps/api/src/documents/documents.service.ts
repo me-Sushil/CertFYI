@@ -1,11 +1,11 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import crypto from 'crypto'
 import type { AnchoredDocument } from '@prisma/client'
 import type { Hex } from 'viem'
 import { BlockchainService } from '../blockchain/blockchain.service'
 import { AuditService } from '../audit/audit.service'
 import { IpfsService } from '../ipfs/ipfs.service'
-import type { AnchorDto, BatchAnchorDto, RevokeDocumentDto } from '../common/dto/documents.dto'
+import type { AnchorDto, BatchAnchorDto } from '../common/dto/documents.dto'
 import { PrismaService } from '../prisma/prisma.service'
 import { buildMetadataSidecar } from '../common/utils/metadata-sidecar.util'
 
@@ -107,66 +107,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Record a document revocation.
-   *
-   * Mirrors `anchor`: the issuer has already signed and confirmed
-   * `revokeDocument` on-chain in their own wallet; this verifies that receipt
-   * before writing anything. Scoped to the document's own issuer - the
-   * contract also allows ADMIN_ROLE to revoke, but that path belongs to an
-   * admin-facing endpoint, not this issuer-only one.
-   */
-  async revoke(body: RevokeDocumentDto, issuerAddress: string) {
-    const record = await this.prisma.anchoredDocument.findUnique({
-      where: { docHash: body.documentHash },
-    })
-    if (!record) {
-      throw new NotFoundException({ error: 'Document not found', hash: body.documentHash })
-    }
-    if (record.issuerAddress !== issuerAddress) {
-      throw new ForbiddenException('This document was not issued by the current session')
-    }
-
-    if (record.revokedAt) {
-      return {
-        success: true,
-        documentHash: record.docHash,
-        txHash: record.revokeTxHash ?? record.txHash,
-        revokedAt: record.revokedAt.toISOString(),
-        message: 'Document already revoked',
-      }
-    }
-
-    const verification = await this.blockchain.verifyDocumentRevoke(
-      body.documentHash as Hex,
-      body.txHash as Hex,
-      issuerAddress,
-    )
-    if (!verification.ok) {
-      throw new BadRequestException(verification.error ?? 'Could not verify the revocation transaction')
-    }
-
-    const updated = await this.prisma.anchoredDocument.update({
-      where: { docHash: body.documentHash },
-      data: { revokedAt: new Date(), revokeTxHash: body.txHash },
-    })
-
-    await this.audit.record({
-      action: 'DOCUMENT_REVOKED',
-      actorAddress: issuerAddress,
-      targetRef: body.documentHash,
-      txHash: body.txHash,
-    })
-
-    return {
-      success: true,
-      documentHash: updated.docHash,
-      txHash: body.txHash,
-      revokedAt: updated.revokedAt!.toISOString(),
-      message: 'Document revoked',
-    }
-  }
-
   async getAnchor(hash?: string) {
     if (!hash) {
       throw new BadRequestException('Missing hash parameter')
@@ -188,7 +128,7 @@ export class DocumentsService {
         cid: record.cid,
         metadataCid: record.metadataCid,
         timestamp: record.anchoredAt.toISOString(),
-        status: record.revokedAt ? 'revoked' : 'confirmed',
+        status: 'confirmed',
         merkleRoot: null,
         batchId: null,
       },
@@ -385,16 +325,6 @@ export class DocumentsService {
         : undefined,
     }
 
-    if (onChain.revoked) {
-      return {
-        ...base,
-        isValid: false,
-        status: 'revoked',
-        message: 'This document has been revoked by its issuer.',
-        error: 'Document is revoked',
-      }
-    }
-
     return {
       ...base,
       isValid: true,
@@ -414,12 +344,11 @@ export class DocumentsService {
     this.prisma.verificationLog.create({ data: {} }).catch(() => {})
 
     const onChain = await this.blockchain.getOnChainDocument(hash as Hex)
-    const isValid = !!onChain && !onChain.revoked
     return {
       success: true,
       hash,
-      isValid,
-      status: !onChain ? 'not_found' : onChain.revoked ? 'revoked' : 'active',
+      isValid: !!onChain,
+      status: onChain ? 'active' : 'not_found',
     }
   }
 
@@ -449,7 +378,6 @@ export class DocumentsService {
       chainId: this.blockchain.contractChainId,
       txHash: input.txHash,
       cid: input.cid,
-      revoked: false,
       recipientEmail: input.recipientEmail,
       recipientName: input.recipientName,
     })

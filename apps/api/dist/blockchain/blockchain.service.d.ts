@@ -11,7 +11,6 @@ export interface OnChainDocument {
     anchored: boolean;
     issuer: string;
     timestamp: number;
-    revoked: boolean;
     documentType: string;
 }
 export declare class BlockchainService implements OnModuleInit {
@@ -25,7 +24,6 @@ export declare class BlockchainService implements OnModuleInit {
     verifyIssuerRoleRevoke(walletAddress: string, txHash: Hex, adminAddress: string): Promise<RoleGrantVerification>;
     private verifyRoleEvent;
     verifyDocumentAnchor(documentHash: Hex, txHash: Hex, issuerAddress: string): Promise<RoleGrantVerification>;
-    verifyDocumentRevoke(documentHash: Hex, txHash: Hex, revokerAddress: string): Promise<RoleGrantVerification>;
     getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null>;
     verifyMerkleBatchAnchor(merkleRoot: Hex, txHash: Hex, issuerAddress: string): Promise<RoleGrantVerification>;
     getReceiptSummary(txHash: Hex): Promise<{

@@ -21,8 +21,6 @@ import {
   BatchAnchorResponseDto,
   BatchLookupResponseDto,
   QuickVerifyResponseDto,
-  RevokeDocumentDto,
-  RevokeDocumentResponseDto,
   VerifyDocumentDto,
   VerifyDocumentResponseDto,
 } from '../common/dto/documents.dto'
@@ -60,29 +58,6 @@ export class DocumentsController {
   @ApiForbiddenResponse({ description: 'Session is not an active issuer.', type: ApiErrorDto })
   anchor(@CurrentUser() user: SessionPayload, @Body() body: AnchorDto) {
     return this.documentsService.anchor(body, user.address)
-  }
-
-  @Post('revoke')
-  @HttpCode(200)
-  @UseGuards(SessionGuard, RolesGuard, IssuerActiveGuard)
-  @Roles('ISSUER')
-  @Throttle({ default: AUTHENTICATED_THROTTLE })
-  @ApiCookieAuth(SESSION_COOKIE_AUTH)
-  @ApiOperation({
-    summary: 'Revoke a previously anchored document',
-    description:
-      'Records a revocation the issuer has already confirmed on-chain in their own wallet, for ' +
-      'a document they issued. The backend verifies the transaction receipt before persisting ' +
-      'anything. Revocation does not invalidate documents that were valid while the issuer was ' +
-      'in good standing - the chain anchor itself is untouched, only its status changes.',
-  })
-  @ApiOkResponse({ description: 'Document revoked.', type: RevokeDocumentResponseDto })
-  @ApiBadRequestResponse({ description: 'Validation failed, or the transaction could not be verified.', type: ValidationErrorDto })
-  @ApiUnauthorizedResponse({ description: 'No valid session cookie.', type: ApiErrorDto })
-  @ApiForbiddenResponse({ description: 'Session is not an active issuer, or does not own this document.', type: ApiErrorDto })
-  @ApiNotFoundResponse({ description: 'No document anchored for that hash.', type: ApiErrorDto })
-  revoke(@CurrentUser() user: SessionPayload, @Body() body: RevokeDocumentDto) {
-    return this.documentsService.revoke(body, user.address)
   }
 
   @Get('anchor')
@@ -153,8 +128,7 @@ export class DocumentsController {
   })
   @ApiOkResponse({
     description:
-      'Verification completed. Inspect `isValid` - a document that is revoked or unknown still ' +
-      'returns 200.',
+      'Verification completed. Inspect `isValid` - an unknown document still returns 200.',
     type: VerifyDocumentResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Validation failed.', type: ValidationErrorDto })

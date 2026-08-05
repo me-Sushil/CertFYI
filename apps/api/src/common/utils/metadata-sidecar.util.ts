@@ -9,7 +9,6 @@ export interface MetadataSidecarInput {
   chainId: number
   txHash: string
   cid: string | null
-  revoked: boolean
   recipientEmail?: string | null
   recipientName?: string | null
 }
@@ -32,7 +31,6 @@ export function buildMetadataSidecar(input: MetadataSidecarInput) {
     txHash: input.txHash,
     cid: input.cid,
     recipientRef: computeRecipientRef(input.recipientEmail, input.recipientName),
-    revoked: input.revoked,
   }
 }
 

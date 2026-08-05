@@ -12,8 +12,6 @@ export declare class IssuerController {
     }>;
     getStats(user: SessionPayload): Promise<{
         totalIssued: number;
-        activeDocuments: number;
-        revokedCount: number;
         recentActivityCount: number;
     }>;
     getDocuments(user: SessionPayload, query: IssuerDocumentsQueryDto): Promise<{
@@ -26,9 +24,6 @@ export declare class IssuerController {
             cid: string | null;
             metadataCid: string | null;
             anchoredAt: string;
-            revokedAt: string | null;
-            revokeTxHash: string | undefined;
-            status: "revoked" | "active";
             batchId: string | null;
         }[];
         nextCursor: string | null;

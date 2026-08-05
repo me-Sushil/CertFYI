@@ -49,16 +49,6 @@ const DocumentAnchoredEvent = {
   ],
 } as const
 
-const DocumentRevokedEvent = {
-  type: 'event',
-  name: 'DocumentRevoked',
-  inputs: [
-    { indexed: true, name: 'documentHash', type: 'bytes32' },
-    { indexed: true, name: 'issuer', type: 'address' },
-    { indexed: false, name: 'timestamp', type: 'uint256' },
-  ],
-} as const
-
 const MerkleRootAnchoredEvent = {
   type: 'event',
   name: 'MerkleRootAnchored',
@@ -86,8 +76,12 @@ const GetMerkleBatchFn = {
   ],
 } as const
 
-const DOCUMENT_EVENTS = [DocumentAnchoredEvent, DocumentRevokedEvent]
+const DOCUMENT_EVENTS = [DocumentAnchoredEvent]
 
+// NOTE: the live contract on Sepolia was never redeployed after removing
+// `revoked` from DocumentAnchor.sol's source - it still returns the old
+// 4-value tuple. This ABI must match what's *actually deployed*, not the
+// current source, or viem decodes every field at the wrong byte offset.
 const GetDocumentFn = {
   type: 'function',
   name: 'getDocument',
@@ -121,7 +115,6 @@ export interface OnChainDocument {
   anchored: boolean
   issuer: string
   timestamp: number
-  revoked: boolean
   documentType: string
 }
 
@@ -345,69 +338,11 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
-  /**
-   * Verifies that `txHash` really revoked `documentHash`, sent by `revokerAddress`.
-   *
-   * The contract allows the document's own issuer *or* an ADMIN_ROLE holder to
-   * revoke - this only confirms the transaction itself; the caller decides
-   * whether `revokerAddress` was entitled to send it (e.g. "is this the
-   * document's issuer").
-   */
-  async verifyDocumentRevoke(
-    documentHash: Hex,
-    txHash: Hex,
-    revokerAddress: string,
-  ): Promise<RoleGrantVerification> {
-    let receipt
-    try {
-      receipt = await this.publicClient.getTransactionReceipt({ hash: txHash })
-    } catch {
-      return { ok: false, error: 'Transaction not found', status: 400 }
-    }
-
-    if (receipt.status !== 'success') {
-      return { ok: false, error: 'On-chain transaction did not succeed', status: 400 }
-    }
-
-    if (receipt.to?.toLowerCase() !== this.contractAddress.toLowerCase()) {
-      return { ok: false, error: 'Transaction does not target the document contract', status: 400 }
-    }
-
-    if (receipt.from.toLowerCase() !== revokerAddress.toLowerCase()) {
-      return {
-        ok: false,
-        error: 'Transaction was sent by a different wallet than the current session.',
-        status: 403,
-      }
-    }
-
-    const events = parseEventLogs({ abi: DOCUMENT_EVENTS, logs: receipt.logs })
-    const matched = events.some(
-      (event) =>
-        event.eventName === 'DocumentRevoked' &&
-        event.args.documentHash.toLowerCase() === documentHash.toLowerCase(),
-    )
-
-    if (matched) {
-      return { ok: true }
-    }
-
-    const onChain = await this.getOnChainDocument(documentHash)
-    if (onChain?.revoked) {
-      return { ok: true }
-    }
-
-    return {
-      ok: false,
-      error: 'Transaction did not emit DocumentRevoked for this hash, and the hash is not ' +
-        'revoked on-chain.',
-      status: 400,
-    }
-  }
-
   /** Reads a document's current on-chain state directly from the contract. */
   async getOnChainDocument(documentHash: Hex): Promise<OnChainDocument | null> {
-    const [issuer, timestamp, revoked, documentType] = await this.publicClient.readContract({
+    // The 3rd tuple value (`revoked`) is decoded but intentionally unused -
+    // see the note on GetDocumentFn above.
+    const [issuer, timestamp, , documentType] = await this.publicClient.readContract({
       address: this.contractAddress as Hex,
       abi: [GetDocumentFn],
       functionName: 'getDocument',
@@ -422,7 +357,6 @@ export class BlockchainService implements OnModuleInit {
       anchored: true,
       issuer,
       timestamp: Number(timestamp),
-      revoked,
       documentType,
     }
   }

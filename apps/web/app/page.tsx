@@ -65,20 +65,20 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 mx-auto max-w-5xl text-center">
-          <h1 className="stagger-1 mx-auto mb-8 max-w-4xl animate-fade-in-up text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground opacity-0 sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
+          <h1 className="mx-auto mb-8 max-w-4xl text-4xl leading-tight font-extrabold tracking-[-1px] text-foreground sm:text-5xl md:text-6xl md:leading-[1.08] lg:text-7xl xl:text-[84px]">
             Trust every certificate.{" "}
             <span className="bg-gradient-to-r from-accent to-accent-soft bg-clip-text text-transparent">
               Instantly.
             </span>
           </h1>
 
-          <p className="stagger-3 mx-auto mb-12 max-w-2xl animate-fade-in-up text-base leading-relaxed text-muted-foreground opacity-0 sm:text-lg">
+          <p className="mx-auto mb-12 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             CertFyi anchors PDF document fingerprints on the blockchain,
             enabling anyone to verify document authenticity, issuer identity,
             and issuance timestamp without a central authority.
           </p>
 
-          <div className="stagger-4 mb-13 flex animate-fade-in-up flex-col justify-center gap-4 opacity-0 sm:flex-row">
+          <div className="mb-13 flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="/verify" className={heroCta}>
               <FileCheck className="h-5 w-5" />
               Start Verifying
@@ -130,8 +130,7 @@ export default function HomePage() {
               ].map((stat, idx) => (
                 <div
                   key={idx}
-                  className="group flex animate-fade-in-up flex-col items-center text-center opacity-0"
-                  style={{ animationDelay: `${0.5 + idx * 0.1}s` }}
+                  className="group flex flex-col items-center text-center"
                 >
                   {/* node */}
                   <div className="relative z-10 mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-card shadow-sm transition-all duration-300 ease-[var(--ease-premium)] group-hover:-translate-y-1 group-hover:border-accent/50 group-hover:shadow-glow">

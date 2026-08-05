@@ -53,7 +53,11 @@ export function Header() {
           >
             Verify PDF
           </Link>
-          <Button onClick={handleIssueCertificateClick} size="lg" className="h-auto cursor-pointer py-3">
+          {/* Fixed width, not min-width: the label resolves late (generic CTA
+              until the session query lands, then the role-specific text) and
+              the variants differ in width, so anything elastic resizes the
+              button and drags the nav sideways mid-load. */}
+          <Button onClick={handleIssueCertificateClick} size="lg" className="h-auto w-[200px] cursor-pointer py-3">
             {dashboard.label}
           </Button>
         </nav>
@@ -68,13 +72,17 @@ export function Header() {
             >
               Verify
             </Link>
-            <Button onClick={handleIssueCertificateClick} size="sm">
+            <Button onClick={handleIssueCertificateClick} size="sm" className="w-[80px]">
               {dashboard.short}
             </Button>
           </div>
 
-          {/* Wallet Connect */}
-          <ConnectButton />
+          {/* Wallet Connect. Width is reserved for the connected account pill,
+              which is far wider than "Connect Wallet" - without it the swap on
+              reconnect pulls the centre nav across. */}
+          <div className="flex justify-end md:min-w-[196px]">
+            <ConnectButton />
+          </div>
         </div>
       </div>
     </header>

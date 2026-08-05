@@ -21,12 +21,11 @@ import { getExplorerUrl } from '@/lib/contracts/document-anchor'
 import { CidBadge } from '@/components/ipfs/cid-badge'
 
 interface VerificationResult {
-  status: 'verified' | 'revoked' | 'not_found' | 'error'
+  status: 'verified' | 'not_found' | 'error'
   documentHash: string
   issuerName: string
   documentType?: string
   issuanceDate: string
-  revocationReason?: string
   transactionHash?: string
   explorerUrl?: string | null
   cid?: string | null
@@ -35,7 +34,6 @@ interface VerificationResult {
 
 const STATUS_TONE: Record<VerificationResult['status'], string> = {
   verified: 'text-success',
-  revoked: 'text-destructive',
   not_found: 'text-muted-foreground',
   error: 'text-destructive',
 }
@@ -70,7 +68,7 @@ export default function VerifierPortal() {
   const verifyDocument = async (hash: string): Promise<VerificationResult> => {
     const response = await documentsApi.verify({ documentHash: hash })
 
-    if (response.status !== 'active' && response.status !== 'revoked') {
+    if (response.status !== 'active') {
       return {
         status: 'not_found',
         documentHash: hash,
@@ -80,12 +78,11 @@ export default function VerifierPortal() {
     }
 
     return {
-      status: response.status === 'revoked' ? 'revoked' : 'verified',
+      status: 'verified',
       documentHash: hash,
       issuerName: response.issuer ?? 'Unknown',
       documentType: response.documentType,
       issuanceDate: response.issuedDate ?? 'N/A',
-      revocationReason: response.status === 'revoked' ? response.error : undefined,
       transactionHash: response.onchainData?.transactionHash,
       explorerUrl: response.onchainData
         ? getExplorerUrl(response.onchainData.transactionHash)
@@ -316,15 +313,12 @@ export default function VerifierPortal() {
                     )}
                   >
                     {result.status === 'verified' && 'Document Verified'}
-                    {result.status === 'revoked' && 'Document Revoked'}
                     {result.status === 'not_found' && 'Document Not Found'}
                     {result.status === 'error' && 'Verification Error'}
                   </h3>
                   <p className="text-lg leading-[30.6px] text-muted-foreground">
                     {result.status === 'verified' &&
                       'This document has been verified and anchored on the blockchain.'}
-                    {result.status === 'revoked' &&
-                      `This document was revoked by the issuer. Reason: ${result.revocationReason}`}
                     {result.status === 'not_found' &&
                       'This document was not found on the blockchain. It may not be verified.'}
                     {result.status === 'error' &&
@@ -335,7 +329,7 @@ export default function VerifierPortal() {
               </div>
             </div>
 
-            {(result.status === 'verified' || result.status === 'revoked') && (
+            {result.status === 'verified' && (
               <div className="rounded-lg bg-card p-6 shadow-card ring-1 ring-border/5 sm:p-8">
                 <dl className="space-y-5 text-sm">
                   <div className="flex flex-col sm:flex-row sm:gap-4">

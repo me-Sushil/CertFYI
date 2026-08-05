@@ -105,8 +105,6 @@ model AnchoredDocument {
   metadataCid     String?   @map("metadata_cid")
   txHash          String    @map("tx_hash")
   anchoredAt      DateTime  @default(now()) @map("anchored_at")
-  revokedAt       DateTime? @map("revoked_at")
-  revokeTxHash    String?   @map("revoke_tx_hash")
   batchId         String?   @map("batch_id")
 
   @@index([issuerAddress])
