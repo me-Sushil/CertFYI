@@ -7,14 +7,14 @@ export declare class AdminController {
     constructor(adminService: AdminService);
     getRequests(query: RequestsQueryDto): Promise<{
         requests: {
-            description: string | null;
-            walletAddress: string;
             name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
             email: string | null;
             organization: string | null;
             website: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
             createdAt: Date;
             decidedAt: Date | null;
             rejectionReason: string | null;
@@ -22,14 +22,14 @@ export declare class AdminController {
     }>;
     approveUser(body: ApproveUserDto, session: SessionPayload): Promise<{
         accessRequest: {
-            description: string | null;
-            walletAddress: string;
             name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
             email: string | null;
             organization: string | null;
             website: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
             createdAt: Date;
             decidedAt: Date | null;
             rejectionReason: string | null;
@@ -37,14 +37,14 @@ export declare class AdminController {
     }>;
     rejectUser(body: RejectUserDto, session: SessionPayload): Promise<{
         accessRequest: {
-            description: string | null;
-            walletAddress: string;
             name: string | null;
+            description: string | null;
+            status: import("@prisma/client").$Enums.RequestStatus;
+            id: string;
+            walletAddress: string;
             email: string | null;
             organization: string | null;
             website: string | null;
-            status: import("@prisma/client").$Enums.RequestStatus;
-            id: string;
             createdAt: Date;
             decidedAt: Date | null;
             rejectionReason: string | null;
@@ -58,51 +58,53 @@ export declare class AdminController {
     }>;
     getIssuers(query: IssuersQueryDto): Promise<{
         issuers: {
+            name: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            documentCount: number;
             walletAddress: string;
             registerTxHash: string;
             suspendTxHash: string | null;
-            name: string | null;
             email: string | null;
             organization: string | null;
             website: string | null;
             metadataUri: string | null;
-            status: import("@prisma/client").$Enums.IssuerStatus;
             registeredAt: Date;
             suspendedAt: Date | null;
-            documentCount: number;
         }[];
         nextCursor: string | null;
     }>;
     getDocuments(query: AdminDocumentsQueryDto): Promise<{
         documents: {
+            documentType: string | null;
+            batchId: string | null;
             txHash: string;
+            cid: string | null;
             issuerAddress: string;
             issuerName: string | null;
             docHash: string;
-            documentType: string | null;
             recipientEmail: string | null;
             recipientName: string | null;
-            cid: string | null;
             metadataCid: string | null;
             anchoredAt: Date;
-            batchId: string | null;
+            revokedAt: Date | null;
+            revokeTxHash: string | null;
         }[];
         nextCursor: string | null;
     }>;
     getIssuer(address: string): Promise<{
         issuer: {
+            name: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            documentCount: number;
             walletAddress: string;
             registerTxHash: string;
             suspendTxHash: string | null;
-            name: string | null;
             email: string | null;
             organization: string | null;
             website: string | null;
             metadataUri: string | null;
-            status: import("@prisma/client").$Enums.IssuerStatus;
             registeredAt: Date;
             suspendedAt: Date | null;
-            documentCount: number;
         };
         recentActivity: {
             createdAt: Date;
@@ -113,34 +115,34 @@ export declare class AdminController {
     }>;
     suspendIssuer(body: SuspendIssuerDto, session: SessionPayload): Promise<{
         issuer: {
+            name: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            documentCount: number;
             walletAddress: string;
             registerTxHash: string;
             suspendTxHash: string | null;
-            name: string | null;
             email: string | null;
             organization: string | null;
             website: string | null;
             metadataUri: string | null;
-            status: import("@prisma/client").$Enums.IssuerStatus;
             registeredAt: Date;
             suspendedAt: Date | null;
-            documentCount: number;
         };
     }>;
     reactivateIssuer(body: ReactivateIssuerDto, session: SessionPayload): Promise<{
         issuer: {
+            name: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            documentCount: number;
             walletAddress: string;
             registerTxHash: string;
             suspendTxHash: string | null;
-            name: string | null;
             email: string | null;
             organization: string | null;
             website: string | null;
             metadataUri: string | null;
-            status: import("@prisma/client").$Enums.IssuerStatus;
             registeredAt: Date;
             suspendedAt: Date | null;
-            documentCount: number;
         };
     }>;
     uploadIssuerMetadata(address: string): Promise<{
@@ -150,17 +152,17 @@ export declare class AdminController {
     setIssuerMetadata(address: string, body: SetIssuerMetadataDto, session: SessionPayload): Promise<{
         issuer: {
             metadataUri: string;
+            name: string | null;
+            status: import("@prisma/client").$Enums.IssuerStatus;
+            documentCount: number;
             walletAddress: string;
             registerTxHash: string;
             suspendTxHash: string | null;
-            name: string | null;
             email: string | null;
             organization: string | null;
             website: string | null;
-            status: import("@prisma/client").$Enums.IssuerStatus;
             registeredAt: Date;
             suspendedAt: Date | null;
-            documentCount: number;
         };
     }>;
     getAuditLog(query: AuditLogQueryDto): Promise<{
